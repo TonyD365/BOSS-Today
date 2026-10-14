@@ -171,7 +171,8 @@ export const Articles: CollectionConfig = {
       required: true,
       defaultValue: ({ user }) => (user ? [user.id] : []),
       filterOptions: { role: { not_equals: 'reader' } },
-      admin: { position: 'sidebar' },
+      // People are added under People, never from a story.
+      admin: { position: 'sidebar', allowCreate: false },
     },
     {
       name: 'publishedAt',
@@ -198,7 +199,12 @@ export const Articles: CollectionConfig = {
               type: 'select',
               options: WORKFLOW_STATES.map((value) => ({ label: value, value })),
             },
-            { name: 'by', type: 'relationship', relationTo: 'users' },
+            {
+              name: 'by',
+              type: 'relationship',
+              relationTo: 'users',
+              admin: { allowCreate: false },
+            },
             { name: 'at', type: 'date', admin: { date: { pickerAppearance: 'dayAndTime' } } },
           ],
         },

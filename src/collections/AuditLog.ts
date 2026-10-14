@@ -39,7 +39,7 @@ export const AuditLog: CollectionConfig = {
         'settings',
       ],
     },
-    { name: 'actor', type: 'relationship', relationTo: 'users' },
+    { name: 'actor', type: 'relationship', relationTo: 'users', admin: { allowCreate: false } },
     { name: 'target', type: 'text', index: true },
   ],
 }
