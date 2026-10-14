@@ -1,4 +1,5 @@
 import { jwtVerify } from 'jose'
+import { rankOf } from '../access'
 import { JWT_AUTH_VERSION, jwtSign, type AuthStrategy, type Payload } from 'payload'
 
 export const SESSION_SECONDS = 60 * 60 * 24 * 7
@@ -63,6 +64,8 @@ export const googleSessionStrategy: AuthStrategy = {
         disableErrors: true,
       })
       if (!user) return { user: null }
+      // Deactivated people keep their bylines but lose access straight away.
+      if (rankOf(user) < 0) return { user: null }
 
       return { user: { ...user, collection: 'users', _strategy: 'google-session' } }
     } catch {

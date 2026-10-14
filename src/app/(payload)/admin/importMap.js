@@ -22,8 +22,12 @@ import { StrikethroughFeatureClient as StrikethroughFeatureClient_e70f5e05f09f93
 import { UnderlineFeatureClient as UnderlineFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+import { WorkflowPanel as WorkflowPanel_9168d7f4a9a9ae1abb1fc28b012db3f0 } from '@/components/admin/WorkflowPanel'
 import { PrintEditionLink as PrintEditionLink_444df7a4575e6b37272975c680a7085d } from '@/components/admin/PrintEditionLink'
+import { Icon as Icon_066c562e10ad4e70ff0de1a39f9b91f6 } from '@/components/admin/Brand'
+import { Logo as Logo_066c562e10ad4e70ff0de1a39f9b91f6 } from '@/components/admin/Brand'
 import { GoogleSignIn as GoogleSignIn_3622291b1bfa74ec382150aa8aa4a666 } from '@/components/admin/GoogleSignIn'
+import { Dashboard as Dashboard_0e7b23c75ea046975e1784ba01f82886 } from '@/components/admin/Dashboard'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 import { VercelBlobClientUploadHandler as VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e } from '@payloadcms/storage-vercel-blob/client'
 
@@ -53,8 +57,12 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#UnderlineFeatureClient": UnderlineFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#BoldFeatureClient": BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#ItalicFeatureClient": ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+  "@/components/admin/WorkflowPanel#WorkflowPanel": WorkflowPanel_9168d7f4a9a9ae1abb1fc28b012db3f0,
   "@/components/admin/PrintEditionLink#PrintEditionLink": PrintEditionLink_444df7a4575e6b37272975c680a7085d,
+  "@/components/admin/Brand#Icon": Icon_066c562e10ad4e70ff0de1a39f9b91f6,
+  "@/components/admin/Brand#Logo": Logo_066c562e10ad4e70ff0de1a39f9b91f6,
   "@/components/admin/GoogleSignIn#GoogleSignIn": GoogleSignIn_3622291b1bfa74ec382150aa8aa4a666,
+  "@/components/admin/Dashboard#Dashboard": Dashboard_0e7b23c75ea046975e1784ba01f82886,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1,
   "@payloadcms/storage-vercel-blob/client#VercelBlobClientUploadHandler": VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e
 }

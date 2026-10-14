@@ -1,18 +1,18 @@
 import type { CollectionConfig } from 'payload'
 
-import { isAdmin, isEditor } from '../access'
+import { withPermission } from '../access'
 import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 import { slugFrom } from '../hooks/slug'
 
 export const Sections: CollectionConfig = {
   slug: 'sections',
-  admin: { useAsTitle: 'name', defaultColumns: ['name', 'slug', 'order'] },
+  admin: { useAsTitle: 'name', defaultColumns: ['name', 'slug', 'order'], group: 'Site' },
   defaultSort: 'order',
   access: {
     read: () => true,
-    create: isEditor,
-    update: isEditor,
-    delete: isAdmin,
+    create: withPermission('frontPage'),
+    update: withPermission('frontPage'),
+    delete: withPermission('frontPage'),
   },
   hooks: {
     beforeValidate: [slugFrom('name')],

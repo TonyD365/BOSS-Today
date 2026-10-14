@@ -94,8 +94,12 @@ export interface Config {
     defaultIDType: number
   }
   fallbackLocale: null
-  globals: {}
-  globalsSelect: {}
+  globals: {
+    'front-page': FrontPage
+  }
+  globalsSelect: {
+    'front-page': FrontPageSelect<false> | FrontPageSelect<true>
+  }
   locale: null
   widgets: {
     collections: CollectionsWidget
@@ -151,18 +155,24 @@ export interface Article {
     }
     [k: string]: unknown
   }
+  workflow?: ('draft' | 'review' | 'changes' | 'published' | 'withdrawn') | null
+  reviewNotes?: string | null
   section: number | Section
   authors: (number | User)[]
-  readyForReview?: boolean | null
-  /**
-   * Where this story sits on the home page.
-   */
-  placement: 'lead' | 'featured' | 'standard'
   /**
    * Filled in automatically the first time the story is published.
    */
   publishedAt?: string | null
   slug?: string | null
+  history?:
+    | {
+        status?: ('draft' | 'review' | 'changes' | 'published' | 'withdrawn') | null
+        by?: (number | null) | User
+        at?: string | null
+        note?: string | null
+        id?: string | null
+      }[]
+    | null
   updatedAt: string
   createdAt: string
   _status?: ('draft' | 'published') | null
@@ -237,16 +247,34 @@ export interface Section {
   createdAt: string
 }
 /**
- * Only people listed here can sign in. Add a staff member with their school Google address, then they sign in with Google.
+ * Staff are invited by adding their school Google address here; they then sign in with Google. When someone leaves, untick Active instead of deleting them so their bylines stay.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
 export interface User {
   id: number
+  /**
+   * Their school Google address, e.g. 123456@gapps.yrdsb.ca.
+   */
   email: string
   name: string
-  role: 'admin' | 'editor' | 'writer'
+  /**
+   * Reporters write; editors review and publish; execs also get the permissions below.
+   */
+  role: 'reader' | 'reporter' | 'editor' | 'exec'
+  /**
+   * Untick when someone leaves. They can no longer sign in.
+   */
+  active?: boolean | null
+  /**
+   * Only the super admin can change these.
+   */
+  permissions?: ('frontPage' | 'print' | 'staff' | 'media')[] | null
+  /**
+   * Set in the deployment settings (SUPER_ADMIN_EMAILS), not here.
+   */
+  isSuperAdmin?: boolean | null
   /**
    * Shown under the byline, e.g. "Sports Editor" or "Staff Writer".
    */
@@ -382,12 +410,21 @@ export interface ArticlesSelect<T extends boolean = true> {
   summary?: T
   heroImage?: T
   content?: T
+  workflow?: T
+  reviewNotes?: T
   section?: T
   authors?: T
-  readyForReview?: T
-  placement?: T
   publishedAt?: T
   slug?: T
+  history?:
+    | T
+    | {
+        status?: T
+        by?: T
+        at?: T
+        note?: T
+        id?: T
+      }
   updatedAt?: T
   createdAt?: T
   _status?: T
@@ -482,6 +519,9 @@ export interface UsersSelect<T extends boolean = true> {
   email?: T
   name?: T
   role?: T
+  active?: T
+  permissions?: T
+  isSuperAdmin?: T
   title?: T
   bio?: T
   photo?: T
@@ -529,6 +569,33 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T
   updatedAt?: T
   createdAt?: T
+}
+/**
+ * Choose the lead story and the stories beside it. Drag to reorder. Anything left empty is filled with the newest stories.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "front-page".
+ */
+export interface FrontPage {
+  id: number
+  lead?: (number | null) | Article
+  /**
+   * Up to six. The first three sit under the lead.
+   */
+  featured?: (number | Article)[] | null
+  updatedAt?: string | null
+  createdAt?: string | null
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "front-page_select".
+ */
+export interface FrontPageSelect<T extends boolean = true> {
+  lead?: T
+  featured?: T
+  updatedAt?: T
+  createdAt?: T
+  globalType?: T
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

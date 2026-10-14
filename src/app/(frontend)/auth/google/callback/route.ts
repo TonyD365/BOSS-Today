@@ -5,6 +5,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 
+import { rankOf, RANK } from '@/access'
 import { googleConfig, siteOrigin, STATE_COOKIE } from '@/auth/google'
 import { SESSION_SECONDS, sessionCookieName, signSession } from '@/auth/session'
 
@@ -21,7 +22,8 @@ export async function GET(request: Request) {
     return response
   }
 
-  const { clientId, clientSecret, adminEmails, allowedDomains } = googleConfig()
+  const { clientId, clientSecret, superAdminEmails, allowedDomains, allowReaderSignup } =
+    googleConfig()
   if (!clientId || !clientSecret) return fail('not-configured')
 
   const url = new URL(request.url)
@@ -57,8 +59,9 @@ export async function GET(request: Request) {
   const email = typeof claims.email === 'string' ? claims.email.toLowerCase() : ''
   if (!email || claims.email_verified !== true) return fail('sign-in-failed')
 
+  const isSuperAdmin = superAdminEmails.includes(email)
   const domain = email.split('@')[1] ?? ''
-  if (allowedDomains.length > 0 && !allowedDomains.includes(domain)) {
+  if (!isSuperAdmin && allowedDomains.length > 0 && !allowedDomains.includes(domain)) {
     return fail('wrong-domain')
   }
 
@@ -75,24 +78,25 @@ export async function GET(request: Request) {
   let user = existing.docs[0]
 
   if (!user) {
-    // Sign-in is invite-only: unknown people are turned away, not stored.
-    if (!adminEmails.includes(email)) return fail('not-invited')
+    // Staff are invited by email. Everyone else is turned away (and not stored)
+    // unless reader accounts have been switched on.
+    if (!isSuperAdmin && !allowReaderSignup) return fail('not-invited')
     user = await payload.create({
       collection: 'users',
-      data: { email, name, role: 'admin', googleId },
+      data: { email, name, role: isSuperAdmin ? 'exec' : 'reader', googleId },
     })
-  } else if (!user.googleId) {
-    user = await payload.update({
-      collection: 'users',
-      id: user.id,
-      data: { googleId },
-    })
-  } else if (user.googleId !== googleId) {
+  } else if (user.googleId && user.googleId !== googleId) {
     return fail('sign-in-failed')
+  } else if (!isSuperAdmin && user.active === false) {
+    return fail('deactivated')
+  } else if (!user.googleId) {
+    user = await payload.update({ collection: 'users', id: user.id, data: { googleId } })
   }
 
   const token = await signSession(payload, user.id)
-  const response = NextResponse.redirect(`${origin}/admin`)
+  const response = NextResponse.redirect(
+    rankOf(user) >= RANK.reporter ? `${origin}/admin` : `${origin}/`,
+  )
   response.cookies.delete({ name: STATE_COOKIE, path: '/auth/google' })
   response.cookies.set(sessionCookieName(payload), token, {
     httpOnly: true,

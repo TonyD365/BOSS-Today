@@ -96,7 +96,7 @@ const run = async () => {
           data: {
             email,
             name,
-            role: 'writer',
+            role: 'reporter',
             title: 'Staff Writer',
             bio: 'Placeholder staff profile.',
           },
@@ -139,13 +139,17 @@ const run = async () => {
         section: sectionIds[sectionIndex],
         authors: [staff[index % staff.length].id],
         heroImage: image.id,
-        placement: index === 0 ? 'lead' : index < 4 ? 'featured' : 'standard',
         publishedAt: new Date(Date.now() - index * 36e5).toISOString(),
         _status: 'published',
       },
     })
     articleIds.push(article.id)
   }
+
+  await payload.updateGlobal({
+    slug: 'front-page',
+    data: { lead: articleIds[0], featured: articleIds.slice(1, 4) },
+  })
 
   const issues = await payload.find({ collection: 'issues', limit: 1 })
   if (issues.totalDocs === 0) {

@@ -12,6 +12,7 @@ import { Issues } from './collections/Issues'
 import { Media } from './collections/Media'
 import { Sections } from './collections/Sections'
 import { Users } from './collections/Users'
+import { FrontPage } from './globals/FrontPage'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -25,9 +26,21 @@ export default buildConfig({
     meta: { titleSuffix: ' — BOSS Today' },
     components: {
       afterLogin: ['@/components/admin/GoogleSignIn#GoogleSignIn'],
+      beforeDashboard: ['@/components/admin/Dashboard#Dashboard'],
+      graphics: {
+        Logo: '@/components/admin/Brand#Logo',
+        Icon: '@/components/admin/Brand#Icon',
+      },
+    },
+    livePreview: {
+      breakpoints: [
+        { label: 'Phone', name: 'phone', width: 390, height: 844 },
+        { label: 'Desktop', name: 'desktop', width: 1280, height: 900 },
+      ],
     },
   },
   collections: [Articles, Issues, Sections, Media, Users],
+  globals: [FrontPage],
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => [...defaultFeatures, BlocksFeature({ blocks: [YouTube] })],
   }),

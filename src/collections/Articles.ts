@@ -1,45 +1,104 @@
-import type { CollectionConfig, Where } from 'payload'
+import {
+  APIError,
+  type CollectionBeforeChangeHook,
+  type CollectionConfig,
+  type Where,
+} from 'payload'
 
-import { isEditor, isEditorField, isStaff, publishedOrStaff, type Role } from '../access'
+import { atLeast, atLeastField, publishedOrStaff, RANK, rankOf } from '../access'
+import {
+  articleWorkflowEndpoint,
+  WORKFLOW_STATES,
+  type WorkflowState,
+} from '../endpoints/articleWorkflow'
 import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 import { slugFrom } from '../hooks/slug'
+
+type HistoryEntry = { status: WorkflowState; by?: number | null; at: string; note?: string | null }
+
+/**
+ * Keeps the review workflow consistent no matter how a save arrives
+ * (workflow panel, Payload's own Publish button, or the API).
+ */
+const syncWorkflow: CollectionBeforeChangeHook = ({ data, originalDoc, req, context }) => {
+  const actor = req.user
+  const rank = rankOf(actor)
+  const previous = (originalDoc?.workflow ?? 'draft') as WorkflowState
+  const action = context.workflowAction as string | undefined
+
+  if (data._status === 'published') {
+    if (actor && rank < RANK.editor) {
+      throw new APIError(
+        'Only editors can publish. Use "Submit for review" instead.',
+        403,
+        undefined,
+        true,
+      )
+    }
+    data.workflow = 'published'
+    if (!data.publishedAt && !originalDoc?.publishedAt) data.publishedAt = new Date().toISOString()
+  } else if (
+    !action &&
+    originalDoc?._status === 'published' &&
+    data._status === 'draft' &&
+    req.query?.draft !== 'true'
+  ) {
+    // Payload's own "Unpublish" button.
+    data.workflow = 'withdrawn'
+  } else if (!action) {
+    // Outside the workflow panel the state can't be changed by hand.
+    data.workflow = previous
+  }
+
+  const history = [...((originalDoc?.history as HistoryEntry[] | undefined) ?? [])]
+  if (data.workflow !== previous) {
+    history.push({
+      status: data.workflow,
+      by: actor ? Number(actor.id) : null,
+      at: new Date().toISOString(),
+      note: (context.workflowNote as string | undefined) ?? null,
+    })
+  }
+  data.history = history.map(({ status, by, at, note }) => ({
+    status,
+    by: typeof by === 'object' && by ? (by as { id: number }).id : by,
+    at,
+    note,
+  }))
+  return data
+}
 
 export const Articles: CollectionConfig = {
   slug: 'articles',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'section', 'authors', '_status', 'publishedAt'],
+    defaultColumns: ['title', 'section', 'authors', 'workflow', 'publishedAt'],
+    group: 'Newsroom',
+    livePreview: {
+      url: ({ data }) => (data?.id ? `/preview/articles/${data.id}` : null),
+    },
   },
-  defaultSort: '-publishedAt',
+  defaultSort: '-updatedAt',
   versions: { drafts: true, maxPerDoc: 25 },
+  endpoints: [articleWorkflowEndpoint],
   access: {
     read: publishedOrStaff,
-    create: isStaff,
-    // Writers work on their own unpublished drafts; editors handle the rest.
+    create: atLeast('reporter'),
+    // Reporters work on their own stories until they are published; editors handle the rest.
     update: ({ req }) => {
-      if (!req.user) return false
-      if ((req.user as { role?: Role }).role !== 'writer') return true
-      const ownDrafts: Where = {
+      const rank = rankOf(req.user)
+      if (rank >= RANK.editor) return true
+      if (rank < RANK.reporter || !req.user) return false
+      const ownUnpublished: Where = {
         and: [{ authors: { in: [req.user.id] } }, { _status: { not_equals: 'published' } }],
       }
-      return ownDrafts
+      return ownUnpublished
     },
-    delete: isEditor,
+    delete: atLeast('exec'),
   },
   hooks: {
     beforeValidate: [slugFrom('title')],
-    beforeChange: [
-      ({ data, req, originalDoc }) => {
-        const role = (req.user as { role?: Role } | null)?.role
-        if (role === 'writer' && data._status === 'published') {
-          data._status = 'draft'
-        }
-        if (data._status === 'published' && !data.publishedAt && !originalDoc?.publishedAt) {
-          data.publishedAt = new Date().toISOString()
-        }
-        return data
-      },
-    ],
+    beforeChange: [syncWorkflow],
     afterChange: [revalidateAfterChange],
     afterDelete: [revalidateAfterDelete],
   },
@@ -60,6 +119,42 @@ export const Articles: CollectionConfig = {
     },
     { name: 'content', type: 'richText', required: true, label: 'Story' },
     {
+      name: 'workflowPanel',
+      type: 'ui',
+      admin: {
+        position: 'sidebar',
+        components: { Field: '@/components/admin/WorkflowPanel#WorkflowPanel' },
+      },
+    },
+    {
+      name: 'workflow',
+      type: 'select',
+      defaultValue: 'draft',
+      index: true,
+      options: WORKFLOW_STATES.map((value) => ({
+        value,
+        label: {
+          draft: 'Draft',
+          review: 'In review',
+          changes: 'Changes requested',
+          published: 'Published',
+          withdrawn: 'Withdrawn',
+        }[value],
+      })),
+      admin: { hidden: true },
+    },
+    {
+      name: 'reviewNotes',
+      type: 'textarea',
+      label: 'Notes from the editor',
+      access: { update: atLeastField('editor') },
+      admin: {
+        position: 'sidebar',
+        condition: (data) => Boolean(data?.reviewNotes),
+        readOnly: true,
+      },
+    },
+    {
       name: 'section',
       type: 'relationship',
       relationTo: 'sections',
@@ -74,27 +169,8 @@ export const Articles: CollectionConfig = {
       hasMany: true,
       required: true,
       defaultValue: ({ user }) => (user ? [user.id] : []),
+      filterOptions: { role: { not_equals: 'reader' } },
       admin: { position: 'sidebar' },
-    },
-    {
-      name: 'readyForReview',
-      type: 'checkbox',
-      label: 'Ready for an editor to review',
-      defaultValue: false,
-      admin: { position: 'sidebar' },
-    },
-    {
-      name: 'placement',
-      type: 'select',
-      defaultValue: 'standard',
-      required: true,
-      access: { create: isEditorField, update: isEditorField },
-      options: [
-        { label: 'Lead story (top of the front page)', value: 'lead' },
-        { label: 'Featured (front page, beside the lead)', value: 'featured' },
-        { label: 'Standard', value: 'standard' },
-      ],
-      admin: { position: 'sidebar', description: 'Where this story sits on the home page.' },
     },
     {
       name: 'publishedAt',
@@ -107,5 +183,26 @@ export const Articles: CollectionConfig = {
       },
     },
     { name: 'slug', type: 'text', unique: true, index: true, admin: { position: 'sidebar' } },
+    {
+      name: 'history',
+      type: 'array',
+      label: 'Review history',
+      admin: { readOnly: true, initCollapsed: true },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'status',
+              type: 'select',
+              options: WORKFLOW_STATES.map((value) => ({ label: value, value })),
+            },
+            { name: 'by', type: 'relationship', relationTo: 'users' },
+            { name: 'at', type: 'date', admin: { date: { pickerAppearance: 'dayAndTime' } } },
+          ],
+        },
+        { name: 'note', type: 'textarea' },
+      ],
+    },
   ],
 }

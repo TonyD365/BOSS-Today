@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { isAdmin, isEditor, publishedOrStaff } from '../access'
+import { publishedOrStaff, withPermission } from '../access'
 import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 
 /**
@@ -11,6 +11,7 @@ export const Issues: CollectionConfig = {
   slug: 'issues',
   admin: {
     useAsTitle: 'title',
+    group: 'Print',
     defaultColumns: ['title', 'volume', 'number', 'date', 'printEdition', '_status'],
     description:
       'Pick the stories for an edition, then publish. Tick "Print edition" to also get a paper layout.',
@@ -19,9 +20,9 @@ export const Issues: CollectionConfig = {
   versions: { drafts: true, maxPerDoc: 10 },
   access: {
     read: publishedOrStaff,
-    create: isEditor,
-    update: isEditor,
-    delete: isAdmin,
+    create: withPermission('print'),
+    update: withPermission('print'),
+    delete: withPermission('print'),
   },
   hooks: {
     afterChange: [revalidateAfterChange],

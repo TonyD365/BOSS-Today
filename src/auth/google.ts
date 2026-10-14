@@ -1,16 +1,17 @@
-const list = (value: string | undefined): string[] =>
-  (value ?? '')
-    .split(',')
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean)
+import { envList, superAdminEmails } from '../lib/env'
+
+/** York Region DSB student and staff accounts. Override with ALLOWED_EMAIL_DOMAINS. */
+const SCHOOL_DOMAINS = ['gapps.yrdsb.ca', 'yrdsb.ca']
 
 export const googleConfig = () => ({
   clientId: process.env.GOOGLE_CLIENT_ID ?? '',
   clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
-  /** Emails that become admins on first sign-in, so the first account does not need an invite. */
-  adminEmails: list(process.env.ADMIN_EMAILS),
-  /** If set, only Google accounts on these domains may sign in. */
-  allowedDomains: list(process.env.ALLOWED_EMAIL_DOMAINS),
+  superAdminEmails: superAdminEmails(),
+  allowedDomains: process.env.ALLOWED_EMAIL_DOMAINS
+    ? envList(process.env.ALLOWED_EMAIL_DOMAINS)
+    : SCHOOL_DOMAINS,
+  /** Off until there is something for readers to do once signed in. */
+  allowReaderSignup: process.env.ALLOW_READER_SIGNUP === 'true',
 })
 
 /** The public origin of the site, used to build the OAuth redirect address. */

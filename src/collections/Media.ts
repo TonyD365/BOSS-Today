@@ -1,15 +1,15 @@
 import type { CollectionConfig } from 'payload'
 
-import { isEditor, isStaff } from '../access'
+import { atLeast, withPermission } from '../access'
 
 export const Media: CollectionConfig = {
   slug: 'media',
-  admin: { useAsTitle: 'alt' },
+  admin: { useAsTitle: 'alt', group: 'Newsroom' },
   access: {
     read: () => true,
-    create: isStaff,
-    update: isStaff,
-    delete: isEditor,
+    create: atLeast('reporter'),
+    update: atLeast('reporter'),
+    delete: withPermission('media'),
   },
   fields: [
     {

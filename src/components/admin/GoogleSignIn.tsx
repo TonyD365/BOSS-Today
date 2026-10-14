@@ -3,7 +3,9 @@ import React from 'react'
 const messages: Record<string, string> = {
   'not-invited':
     'That Google account is not on the staff list. Ask an admin to add your school email first.',
-  'wrong-domain': 'Please sign in with your school Google account.',
+  'wrong-domain': 'Please sign in with your school Google account (@gapps.yrdsb.ca or @yrdsb.ca).',
+  deactivated: 'This account has been deactivated. Ask an exec if you think this is a mistake.',
+  unauthorized: 'Your account does not have access to the staff area.',
   'not-configured': 'Google sign-in has not been set up yet. See the README for the steps.',
   'sign-in-failed': 'Sign-in did not complete. Please try again.',
 }

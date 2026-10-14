@@ -26,33 +26,38 @@ const findArticles = async (where: Where, limit: number, page = 1) => {
   })
 }
 
+const isPublishedArticle = (value: unknown): value is Article =>
+  typeof value === 'object' && value !== null && (value as Article)._status === 'published'
+
 export const getFrontPage = async () => {
+  const payload = await client()
   const sections = await getSections()
-  const [leadResult, featuredResult, latestResult, ...sectionResults] = await Promise.all([
-    findArticles({ placement: { equals: 'lead' } }, 1),
-    findArticles({ placement: { equals: 'featured' } }, 6),
+  const [frontPage, latestResult, ...sectionResults] = await Promise.all([
+    payload.findGlobal({ slug: 'front-page', depth: 2 }),
     findArticles({}, 16),
     ...sections.map((section) => findArticles({ section: { equals: section.id } }, 4)),
   ])
+  const latestDocs = latestResult.docs as Article[]
 
-  const lead = leadResult.docs[0] ?? latestResult.docs[0]
-  const used = new Set<number>(lead ? [lead.id] : [])
+  const used = new Set<number>()
   const take = (docs: Article[], count: number) => {
     const picked = docs.filter((doc) => !used.has(doc.id)).slice(0, count)
     picked.forEach((doc) => used.add(doc.id))
     return picked
   }
 
-  let featured = take(featuredResult.docs as Article[], 3)
-  if (featured.length < 3) {
-    featured = [...featured, ...take(latestResult.docs as Article[], 3 - featured.length)]
-  }
-  const latest = take(latestResult.docs as Article[], 6)
+  // Editors' picks first; empty slots fall back to the newest stories.
+  const chosenLead = isPublishedArticle(frontPage.lead) ? frontPage.lead : undefined
+  const lead = take(chosenLead ? [chosenLead] : latestDocs, 1)[0]
+  const chosenFeatured = (frontPage.featured ?? []).filter(isPublishedArticle)
+  let featured = take(chosenFeatured, 6)
+  if (featured.length < 3) featured = [...featured, ...take(latestDocs, 3 - featured.length)]
+  const latest = take(latestDocs, 6)
 
   return {
-    lead: lead as Article | undefined,
-    featured,
-    latest,
+    lead,
+    featured: featured.slice(0, 3),
+    latest: [...featured.slice(3), ...latest].slice(0, 6),
     bySection: sections
       .map((section, index) => ({ section, articles: sectionResults[index].docs as Article[] }))
       .filter((block) => block.articles.length > 0),

@@ -8,7 +8,7 @@
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
     "ci": "payload migrate && npm run build",
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
-    "db:local": "pglite-server --db=./.pglite --port=5433 --max-connections=20",
+    "db:local": "node scripts/db-local.mjs",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
     "lint": "cross-env NODE_OPTIONS=--no-deprecation eslint .",
@@ -33,11 +33,10 @@
     "sharp": "0.35.4"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "0.5.9",
-    "@electric-sql/pglite-socket": "0.2.12",
     "@types/node": "22.19.9",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
+    "embedded-postgres": "^17.10.0-beta.17",
     "eslint": "^9.16.0",
     "eslint-config-next": "16.3.3",
     "prettier": "^3.4.2",
