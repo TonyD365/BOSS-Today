@@ -143,6 +143,8 @@ export const Users: CollectionConfig = {
       return { id: { equals: req.user.id } }
     },
     delete: superAdminOnly,
+    // "Force unlock" clears the 10-minute lock after five wrong passwords.
+    unlock: ({ req }) => isSuperAdminUser(req.user) || canManageStaff(req.user),
   },
   hooks: {
     beforeValidate: [
