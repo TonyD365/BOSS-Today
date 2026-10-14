@@ -1,5 +1,4 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
-import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
 import { BlocksFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
 import { cloudStoragePlugin } from '@payloadcms/plugin-cloud-storage'
 import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
@@ -15,13 +14,11 @@ import { Issues } from './collections/Issues'
 import { Media } from './collections/Media'
 import { Sections } from './collections/Sections'
 import { Users } from './collections/Users'
-import { emailConfig } from './lib/email'
 import { githubAdapter, githubStorageConfig } from './storage/github'
 import { FrontPage } from './globals/FrontPage'
 import { Settings } from './globals/Settings'
 
 const github = githubStorageConfig()
-const mail = emailConfig()
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -36,6 +33,15 @@ export default buildConfig({
     components: {
       afterLogin: ['@/components/admin/SignIn#SignIn'],
       beforeDashboard: ['@/components/admin/Dashboard#Dashboard'],
+      views: {
+        // No email is sent from this site, so password help means asking an exec,
+        // and the first account comes from a super admin's Google sign-in.
+        forgot: { Component: '@/components/admin/AccessHelp#PasswordHelp', path: '/forgot' },
+        createFirstUser: {
+          Component: '@/components/admin/AccessHelp#FirstSignIn',
+          path: '/create-first-user',
+        },
+      },
       graphics: {
         Logo: '@/components/admin/Brand#Logo',
         Icon: '@/components/admin/Brand#Icon',
@@ -64,20 +70,6 @@ export default buildConfig({
     migrationDir: path.resolve(dirname, 'migrations'),
   }),
   sharp,
-  // Without SMTP settings Payload prints emails to the console (fine for local development).
-  email: mail
-    ? nodemailerAdapter({
-        defaultFromAddress: mail.from,
-        defaultFromName: mail.fromName,
-        skipVerify: true,
-        transportOptions: {
-          host: mail.host,
-          port: mail.port,
-          secure: mail.secure,
-          auth: mail.auth,
-        },
-      })
-    : undefined,
   plugins: [
     // Images go to the GitHub image repository when it is configured, otherwise
     // to Vercel Blob, otherwise to ./media during local development. Exactly one

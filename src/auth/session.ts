@@ -1,75 +1,43 @@
-import { jwtVerify } from 'jose'
-import { rankOf } from '../access'
-import { JWT_AUTH_VERSION, jwtSign, type AuthStrategy, type Payload } from 'payload'
+import { randomUUID } from 'crypto'
+import { jwtSign, type Payload } from 'payload'
 
 export const SESSION_SECONDS = 60 * 60 * 24 * 7
 
 export const sessionCookieName = (payload: Payload) => `${payload.config.cookiePrefix}-token`
 
-export const signSession = async (payload: Payload, userId: number | string) => {
+type Session = { id: string; createdAt: string | Date; expiresAt: string | Date }
+
+/**
+ * Starts a session the same way Payload's password login does (a session row plus
+ * a token that names it), so Google sign-ins can be signed out and revoked too.
+ */
+export const signSession = async (
+  payload: Payload,
+  user: { id: number | string; email?: string | null },
+) => {
+  const now = new Date()
+  const sid = randomUUID()
+  const current = (await payload.db.findOne({
+    collection: 'users',
+    where: { id: { equals: user.id } },
+  })) as { sessions?: Session[] } | null
+  const sessions = (current?.sessions ?? []).filter((session) => new Date(session.expiresAt) > now)
+  sessions.push({
+    id: sid,
+    createdAt: now,
+    expiresAt: new Date(now.getTime() + SESSION_SECONDS * 1000),
+  })
+  await payload.db.updateOne({
+    collection: 'users',
+    id: user.id,
+    data: { sessions },
+    returning: false,
+  })
+
   const { token } = await jwtSign({
-    fieldsToSign: { id: userId, collection: 'users' },
+    fieldsToSign: { id: user.id, collection: 'users', email: user.email, sid },
     secret: payload.secret,
     tokenExpiration: SESSION_SECONDS,
   })
   return token
-}
-
-const readCookie = (headers: Headers, name: string): string | null => {
-  const header = headers.get('cookie')
-  if (!header) return null
-  for (const part of header.split(';')) {
-    const [key, ...rest] = part.trim().split('=')
-    if (key === name) return decodeURIComponent(rest.join('='))
-  }
-  return null
-}
-
-/** Rejects cookie auth on requests that another site initiated. */
-const isSameOrigin = (headers: Headers): boolean => {
-  const origin = headers.get('origin')
-  if (!origin) return true
-  const host = headers.get('x-forwarded-host') ?? headers.get('host')
-  try {
-    return new URL(origin).host === host
-  } catch {
-    return false
-  }
-}
-
-/**
- * Staff sign in with Google (see app/(frontend)/auth/google). This strategy
- * turns the session cookie issued there back into a Payload user.
- */
-export const googleSessionStrategy: AuthStrategy = {
-  name: 'google-session',
-  authenticate: async ({ headers, payload }) => {
-    try {
-      const token = readCookie(headers, sessionCookieName(payload))
-      if (!token || !isSameOrigin(headers)) return { user: null }
-
-      const { payload: claims, protectedHeader } = await jwtVerify(
-        token,
-        new TextEncoder().encode(payload.secret),
-        { algorithms: ['HS256'] },
-      )
-      if (protectedHeader.authVersion !== JWT_AUTH_VERSION) return { user: null }
-      if (claims.collection !== 'users') return { user: null }
-      if (typeof claims.id !== 'number' && typeof claims.id !== 'string') return { user: null }
-
-      const user = await payload.findByID({
-        collection: 'users',
-        id: claims.id,
-        depth: 0,
-        disableErrors: true,
-      })
-      if (!user) return { user: null }
-      // Deactivated people keep their bylines but lose access straight away.
-      if (rankOf(user) < 0) return { user: null }
-
-      return { user: { ...user, collection: 'users', _strategy: 'google-session' } }
-    } catch {
-      return { user: null }
-    }
-  },
 }

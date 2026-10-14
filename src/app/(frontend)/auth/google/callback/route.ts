@@ -1,5 +1,5 @@
 import config from '@payload-config'
-import { timingSafeEqual } from 'crypto'
+import { randomBytes, timingSafeEqual } from 'crypto'
 import { decodeJwt } from 'jose'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
@@ -83,7 +83,15 @@ export async function GET(request: Request) {
     if (!isSuperAdmin && !allowReaderSignup) return fail('not-invited')
     user = await payload.create({
       collection: 'users',
-      data: { email, name, role: isSuperAdmin ? 'exec' : 'reader', googleId },
+      // A random password they never see; they can set their own later.
+      data: {
+        email,
+        name,
+        role: isSuperAdmin ? 'exec' : 'reader',
+        googleId,
+        password: randomBytes(24).toString('base64url'),
+      },
+      context: { trustedCreate: true },
     })
   } else if (user.googleId && user.googleId !== googleId) {
     return fail('sign-in-failed')
@@ -93,7 +101,7 @@ export async function GET(request: Request) {
     user = await payload.update({ collection: 'users', id: user.id, data: { googleId } })
   }
 
-  const token = await signSession(payload, user.id)
+  const token = await signSession(payload, user)
   const response = NextResponse.redirect(
     rankOf(user) >= RANK.reporter ? `${origin}/admin` : `${origin}/`,
   )

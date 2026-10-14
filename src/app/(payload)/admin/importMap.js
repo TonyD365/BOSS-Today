@@ -29,6 +29,8 @@ import { Icon as Icon_066c562e10ad4e70ff0de1a39f9b91f6 } from '@/components/admi
 import { Logo as Logo_066c562e10ad4e70ff0de1a39f9b91f6 } from '@/components/admin/Brand'
 import { SignIn as SignIn_c0c1f60db6522e831c3edb4dc0680df2 } from '@/components/admin/SignIn'
 import { Dashboard as Dashboard_0e7b23c75ea046975e1784ba01f82886 } from '@/components/admin/Dashboard'
+import { PasswordHelp as PasswordHelp_4e68073b0c98bae6fb0309aaf0d14949 } from '@/components/admin/AccessHelp'
+import { FirstSignIn as FirstSignIn_4e68073b0c98bae6fb0309aaf0d14949 } from '@/components/admin/AccessHelp'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 import { VercelBlobClientUploadHandler as VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e } from '@payloadcms/storage-vercel-blob/client'
 
@@ -90,6 +92,8 @@ export const importMap = {
   '@/components/admin/Brand#Logo': Logo_066c562e10ad4e70ff0de1a39f9b91f6,
   '@/components/admin/SignIn#SignIn': SignIn_c0c1f60db6522e831c3edb4dc0680df2,
   '@/components/admin/Dashboard#Dashboard': Dashboard_0e7b23c75ea046975e1784ba01f82886,
+  '@/components/admin/AccessHelp#PasswordHelp': PasswordHelp_4e68073b0c98bae6fb0309aaf0d14949,
+  '@/components/admin/AccessHelp#FirstSignIn': FirstSignIn_4e68073b0c98bae6fb0309aaf0d14949,
   '@payloadcms/next/rsc#CollectionCards': CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1,
   '@payloadcms/storage-vercel-blob/client#VercelBlobClientUploadHandler':
     VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e,

@@ -30,9 +30,9 @@ npm run dev                 # → http://localhost:3000
 | Variable | Value |
 |---|---|
 | `PAYLOAD_SECRET` | Output of `openssl rand -hex 32` |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | From Google Cloud Console (see below) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | From Google Cloud Console (see below); needed for the first sign-in |
 | `SUPER_ADMIN_EMAILS` | Your Google address; you become the super admin |
-| `ALLOWED_EMAIL_DOMAINS` | Optional. Defaults to `gapps.yrdsb.ca,yrdsb.ca` |
+| `ALLOWED_EMAIL_DOMAINS` | Optional. Limits Google sign-in to these domains |
 | `ALLOW_READER_SIGNUP` | Optional. `true` lets any student create a reader account |
 | `SITE_URL` | Optional. e.g. `https://boss-today.vercel.app` |
 
@@ -40,17 +40,13 @@ Every push to `main` deploys. The build runs database migrations first (`npm run
 
 ## Signing in
 
-Staff sign in at `/admin` with a 6-digit code emailed to their school address, or with Google. Both are invite-only: only people listed under **People** (plus `SUPER_ADMIN_EMAILS`) can get in, and unknown addresses are never stored.
+Staff sign in at `/admin` with their email and password, or with Google (personal Gmail works). Both are invite-only: an exec with the Staff permission adds each person under **People** with a starting password, and they can change it from their account page. Nothing is emailed from the site, so forgotten passwords are reset by an exec.
 
-### Email codes
+Five wrong passwords lock an account for 10 minutes. Unticking **Active** signs a person out everywhere.
 
-Codes are sent from any SMTP account. With Gmail:
+The first account is the super admin's: with an empty database, sign in with Google using the address in `SUPER_ADMIN_EMAILS`. (Payload's usual "create first user" screen is disabled so nobody else can claim an empty site.)
 
-1. Turn on 2-Step Verification for the Google account that will send the codes.
-2. Create an app password at myaccount.google.com/apppasswords.
-3. Set `SMTP_USER` (that Gmail address) and `SMTP_PASS` (the 16-character app password) on Vercel and redeploy.
-
-Codes expire after 10 minutes, lock after 5 wrong tries, and can be re-sent once a minute. Gmail allows about 500 emails a day.
+YRDSB blocks unapproved Google apps for student accounts (`admin_policy_enforced`), so students use a password or a personal Gmail unless the site goes through the board's Digital Tools Approval Process.
 
 ### Google
 
@@ -58,7 +54,7 @@ Codes expire after 10 minutes, lock after 5 wrong tries, and can be re-sent once
 2. Authorized redirect URIs: `https://<your-domain>/auth/google/callback` (and `http://localhost:3000/auth/google/callback` for local use).
 3. Copy the client ID and secret into the environment variables.
 
-Only people listed under **People** in the admin can sign in (plus anyone in `SUPER_ADMIN_EMAILS`). Accounts must be on the school domains unless they are super admins.
+Only people listed under **People** in the admin can sign in with Google (plus anyone in `SUPER_ADMIN_EMAILS`).
 
 ## Roles
 

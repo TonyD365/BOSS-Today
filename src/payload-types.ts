@@ -253,17 +253,13 @@ export interface Section {
   createdAt: string
 }
 /**
- * Staff are invited by adding their school Google address here; they then sign in with Google. When someone leaves, untick Active instead of deleting them so their bylines stay.
+ * Add people here with a starting password; they can sign in with it, or with Google if their email is a Google account. When someone leaves, untick Active instead of deleting them so their bylines stay.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
 export interface User {
   id: number
-  /**
-   * Their school Google address, e.g. 123456@gapps.yrdsb.ca.
-   */
-  email: string
   name: string
   /**
    * Reporters write; editors review and publish; execs also get the permissions below.
@@ -291,13 +287,28 @@ export interface User {
    * Used in the author page address.
    */
   slug?: string | null
-  loginCodeHash?: string | null
-  loginCodeExpiresAt?: string | null
-  loginCodeAttempts?: number | null
-  loginCodeSentAt?: string | null
   googleId?: string | null
   updatedAt: string
   createdAt: string
+  /**
+   * What they sign in with. Use their Gmail address if they will sign in with Google.
+   */
+  email: string
+  resetPasswordToken?: string | null
+  resetPasswordExpiration?: string | null
+  salt?: string | null
+  hash?: string | null
+  resetPasswordRequestedAt?: string | null
+  loginAttempts?: number | null
+  lockUntil?: string | null
+  sessions?:
+    | {
+        id: string
+        createdAt?: string | null
+        expiresAt: string
+      }[]
+    | null
+  password?: string | null
   collection: 'users'
 }
 /**
@@ -569,7 +580,6 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
-  email?: T
   name?: T
   role?: T
   active?: T
@@ -579,13 +589,24 @@ export interface UsersSelect<T extends boolean = true> {
   bio?: T
   photo?: T
   slug?: T
-  loginCodeHash?: T
-  loginCodeExpiresAt?: T
-  loginCodeAttempts?: T
-  loginCodeSentAt?: T
   googleId?: T
   updatedAt?: T
   createdAt?: T
+  email?: T
+  resetPasswordToken?: T
+  resetPasswordExpiration?: T
+  salt?: T
+  hash?: T
+  resetPasswordRequestedAt?: T
+  loginAttempts?: T
+  lockUntil?: T
+  sessions?:
+    | T
+    | {
+        id?: T
+        createdAt?: T
+        expiresAt?: T
+      }
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

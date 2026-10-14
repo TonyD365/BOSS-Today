@@ -1,15 +1,11 @@
 import { envList, superAdminEmails } from '../lib/env'
 
-/** York Region DSB student and staff accounts. Override with ALLOWED_EMAIL_DOMAINS. */
-const SCHOOL_DOMAINS = ['gapps.yrdsb.ca', 'yrdsb.ca']
-
 export const googleConfig = () => ({
   clientId: process.env.GOOGLE_CLIENT_ID ?? '',
   clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
   superAdminEmails: superAdminEmails(),
-  allowedDomains: process.env.ALLOWED_EMAIL_DOMAINS
-    ? envList(process.env.ALLOWED_EMAIL_DOMAINS)
-    : SCHOOL_DOMAINS,
+  /** Optional extra restriction. Sign-in is invite-only either way. */
+  allowedDomains: envList(process.env.ALLOWED_EMAIL_DOMAINS),
   /** Off until there is something for readers to do once signed in. */
   allowReaderSignup: process.env.ALLOW_READER_SIGNUP === 'true',
 })

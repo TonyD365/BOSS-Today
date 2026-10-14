@@ -2,7 +2,6 @@ import {
   APIError,
   type CollectionBeforeChangeHook,
   type CollectionConfig,
-  type Field,
   type Where,
 } from 'payload'
 
@@ -17,7 +16,7 @@ import {
   superAdminOnly,
   superAdminOnlyField,
 } from '../access'
-import { googleSessionStrategy, SESSION_SECONDS } from '../auth/session'
+import { SESSION_SECONDS } from '../auth/session'
 import { auditDelete, auditPeople } from '../hooks/audit'
 import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 import { slugFrom } from '../hooks/slug'
@@ -38,10 +37,23 @@ const sameSet = (a: unknown, b: unknown) => {
  * nobody changes their own role, only people above someone can change them,
  * and only the super admin appoints execs.
  */
-const enforceRoleRules: CollectionBeforeChangeHook = ({ data, originalDoc, operation, req }) => {
+const enforceRoleRules: CollectionBeforeChangeHook = ({
+  context,
+  data,
+  originalDoc,
+  operation,
+  req,
+}) => {
   const actor = req.user
-  // System actions (Google sign-in, seed scripts) run without a signed-in user.
-  if (!actor) return data
+  if (!actor) {
+    // Without a signed-in user, only trusted server code (Google sign-in for a super
+    // admin, seed scripts) may add people. This also shuts Payload's "create first
+    // user" screen, which would otherwise let anyone claim an empty site.
+    if (operation === 'create' && !context.trustedCreate) {
+      throw forbid('New people are added by an exec.')
+    }
+    return data
+  }
 
   const actorIsSuper = isSuperAdminUser(actor)
   const target = operation === 'update' ? originalDoc : undefined
@@ -86,6 +98,8 @@ const enforceRoleRules: CollectionBeforeChangeHook = ({ data, originalDoc, opera
     throw forbid('Only the super admin can assign exec permissions.')
   }
   if ((data.role ?? target?.role) !== 'exec') data.permissions = []
+  // Deactivating someone signs them out everywhere at once.
+  if (data.active === false && activeChanged) data.sessions = []
 
   return data
 }
@@ -100,12 +114,12 @@ export const Users: CollectionConfig = {
     defaultColumns: ['name', 'email', 'role', 'active'],
     group: 'Admin',
     description:
-      'Staff are invited by adding their school Google address here; they then sign in with Google. When someone leaves, untick Active instead of deleting them so their bylines stay.',
+      'Add people here with a starting password; they can sign in with it, or with Google if their email is a Google account. When someone leaves, untick Active instead of deleting them so their bylines stay.',
   },
   auth: {
-    disableLocalStrategy: true,
-    strategies: [googleSessionStrategy],
     tokenExpiration: SESSION_SECONDS,
+    maxLoginAttempts: 5,
+    lockTime: 10 * 60 * 1000,
     cookies: { sameSite: 'Lax', secure: process.env.NODE_ENV === 'production' },
   },
   access: {
@@ -139,6 +153,27 @@ export const Users: CollectionConfig = {
       },
     ],
     beforeChange: [enforceRoleRules],
+    beforeLogin: [
+      ({ user }) => {
+        if (user?.active === false && !isSuperAdminUser(user)) {
+          throw new APIError('This account has been deactivated.', 401, undefined, true)
+        }
+        return user
+      },
+    ],
+    beforeOperation: [
+      ({ operation, args }) => {
+        if (operation === 'forgotPassword') {
+          throw new APIError(
+            'Ask an exec with the Staff permission to reset your password.',
+            403,
+            undefined,
+            true,
+          )
+        }
+        return args
+      },
+    ],
     afterChange: [revalidateAfterChange, auditPeople],
     afterDelete: [revalidateAfterDelete, auditDelete('person')],
   },
@@ -152,7 +187,10 @@ export const Users: CollectionConfig = {
       access: {
         update: ({ req }) => isSuperAdminUser(req.user) || canManageStaff(req.user),
       },
-      admin: { description: 'Their school Google address, e.g. 123456@gapps.yrdsb.ca.' },
+      admin: {
+        description:
+          'What they sign in with. Use their Gmail address if they will sign in with Google.',
+      },
     },
     { name: 'name', type: 'text', required: true },
     {
@@ -231,20 +269,6 @@ export const Users: CollectionConfig = {
       index: true,
       admin: { position: 'sidebar', description: 'Used in the author page address.' },
     },
-    // One-time email sign-in codes (see app/(frontend)/auth/email). Server-only.
-    ...((
-      [
-        ['loginCodeHash', 'text'],
-        ['loginCodeExpiresAt', 'date'],
-        ['loginCodeAttempts', 'number'],
-        ['loginCodeSentAt', 'date'],
-      ] as const
-    ).map(([name, type]) => ({
-      name,
-      type,
-      hidden: true,
-      access: { read: () => false, create: () => false, update: () => false },
-    })) as Field[]),
     {
       name: 'googleId',
       type: 'text',

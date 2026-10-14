@@ -93,9 +93,11 @@ const run = async () => {
         found.docs[0] ??
         (await payload.create({
           collection: 'users',
+          context: { trustedCreate: true },
           data: {
             email,
             name,
+            password: crypto.randomUUID(),
             role: 'reporter',
             title: 'Staff Writer',
             bio: 'Placeholder staff profile.',
