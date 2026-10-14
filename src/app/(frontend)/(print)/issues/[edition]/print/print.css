@@ -1,0 +1,246 @@
+/* Typeset print edition. On screen it previews as a sheet; in print it flows across real pages. */
+
+body:has(.paper) {
+  background: #e9e7e2;
+}
+
+.print-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  font:
+    14px/1.3 var(--font-sans),
+    sans-serif;
+  background: #fff;
+  border-bottom: 1px solid var(--rule);
+}
+
+.paper {
+  max-width: 11in;
+  margin: 24px auto;
+  padding: 0.5in;
+  background: #fff;
+  color: #000;
+  font:
+    10pt/1.38 var(--font-serif),
+    Georgia,
+    serif;
+  box-shadow: 0 1px 8px rgb(0 0 0 / 15%);
+}
+
+.paper__masthead {
+  text-align: center;
+  border-bottom: 3px double #000;
+  margin-bottom: 14pt;
+  padding-bottom: 6pt;
+}
+
+.paper__masthead h1 {
+  margin: 4pt 0 0;
+  font:
+    400 54pt/1 var(--font-masthead),
+    serif;
+}
+
+.paper__ears {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  padding-bottom: 4pt;
+  border-bottom: 1px solid #000;
+  font:
+    600 7.5pt/1.2 var(--font-sans),
+    sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.paper__title {
+  margin: 2pt 0 0;
+  font-style: italic;
+}
+
+.paper__story {
+  padding-bottom: 12pt;
+  margin-bottom: 12pt;
+  border-bottom: 1px solid #000;
+}
+
+.paper__story:last-child {
+  border-bottom: 0;
+}
+
+.paper__story h2 {
+  margin: 0 0 6pt;
+  font:
+    700 20pt/1.1 var(--font-serif),
+    Georgia,
+    serif;
+  break-after: avoid;
+}
+
+.paper__story--lead h2 {
+  font-size: 34pt;
+  line-height: 1.04;
+}
+
+.paper__summary {
+  margin: 0 0 10pt;
+  font-size: 13pt;
+  line-height: 1.3;
+  break-after: avoid;
+}
+
+.paper__kicker {
+  margin: 0 0 3pt;
+  font:
+    700 7.5pt/1.2 var(--font-sans),
+    sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.paper__byline {
+  margin: 0 0 5pt;
+  font:
+    700 7.5pt/1.2 var(--font-sans),
+    sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.paper__columns {
+  column-count: var(--columns, 3);
+  column-gap: 16pt;
+  column-rule: 0.5pt solid #999;
+  text-align: justify;
+  hyphens: auto;
+}
+
+.paper__columns p {
+  margin: 0;
+  text-indent: 1em;
+  orphans: 2;
+  widows: 2;
+}
+
+.paper__columns .paper__byline,
+.paper__columns .paper__byline + div > p:first-child {
+  text-indent: 0;
+}
+
+.paper__columns h2,
+.paper__columns h3,
+.paper__columns h4 {
+  margin: 8pt 0 2pt;
+  font:
+    700 10.5pt/1.2 var(--font-sans),
+    sans-serif;
+  text-align: left;
+  break-after: avoid;
+}
+
+.paper__columns blockquote {
+  margin: 6pt 0;
+  padding: 0 0 0 8pt;
+  border-left: 2pt solid #000;
+  font-style: italic;
+}
+
+.paper__columns ul,
+.paper__columns ol {
+  margin: 4pt 0;
+  padding-left: 1.2em;
+}
+
+.paper__columns a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.paper figure {
+  margin: 0 0 8pt;
+  break-inside: avoid;
+}
+
+.paper__story--lead figure {
+  column-span: all;
+}
+
+.paper img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.paper__story--lead img {
+  max-height: 4.2in;
+  object-fit: cover;
+}
+
+.paper figcaption {
+  margin-top: 3pt;
+  font:
+    7.5pt/1.3 var(--font-sans),
+    sans-serif;
+  text-align: left;
+  color: #333;
+}
+
+@media (max-width: 700px) {
+  .paper {
+    margin: 0;
+    padding: 16px;
+    box-shadow: none;
+  }
+
+  .paper__columns {
+    column-count: 1;
+  }
+
+  .paper__masthead h1 {
+    font-size: 36pt;
+  }
+
+  .paper__story--lead h2 {
+    font-size: 24pt;
+  }
+}
+
+@media print {
+  body:has(.paper) {
+    background: #fff;
+  }
+
+  .print-toolbar {
+    display: none;
+  }
+
+  .paper {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  @page {
+    @bottom-center {
+      content: 'BOSS Today  ·  ' counter(page);
+      font: 7.5pt sans-serif;
+    }
+  }
+}
+
+.paper__columns .video-note {
+  margin: 4pt 0;
+  text-indent: 0;
+  font:
+    600 8pt/1.3 var(--font-sans),
+    sans-serif;
+}
