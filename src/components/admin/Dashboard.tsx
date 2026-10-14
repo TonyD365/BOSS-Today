@@ -2,8 +2,11 @@ import type { Payload, TypedUser, Where } from 'payload'
 import Link from 'next/link'
 import React from 'react'
 
-import { hasPermission, RANK, rankOf } from '@/access'
+import { canPublishIssues, hasPermission, RANK, rankOf } from '@/access'
+import { deploysThisMonth, ISSUE_DEPLOY_LIMIT } from '@/publishing/deploy'
 import type { Article, Issue } from '@/payload-types'
+
+import { RebuildButton } from './RebuildButton'
 
 type Props = { payload: Payload; user?: TypedUser | null }
 
@@ -11,6 +14,7 @@ const STATE_LABELS: Record<string, string> = {
   draft: 'Draft',
   review: 'In review',
   changes: 'Changes requested',
+  approved: 'Waiting for the next issue',
   published: 'Published',
   withdrawn: 'Withdrawn',
 }
@@ -45,18 +49,22 @@ export async function Dashboard({ payload, user }: Props) {
     ).docs as Article[]
 
   const mine: Where = { authors: { in: [user.id] } }
-  const [returned, drafts, myPublished, queue, recent, issue] = await Promise.all([
-    stories({ and: [mine, { workflow: { equals: 'changes' } }] }),
-    stories({ and: [mine, { workflow: { in: ['draft', 'review', 'withdrawn'] } }] }),
-    stories({ and: [mine, { workflow: { equals: 'published' } }] }, 5, '-publishedAt'),
-    rank >= RANK.editor ? stories({ workflow: { equals: 'review' } }, 20, 'updatedAt') : [],
-    rank >= RANK.editor ? stories({ workflow: { equals: 'published' } }, 6, '-publishedAt') : [],
-    hasPermission(user, 'print')
-      ? payload
-          .find({ collection: 'issues', draft: true, sort: '-updatedAt', limit: 1, depth: 1 })
-          .then((result) => result.docs[0] as Issue | undefined)
-      : undefined,
-  ])
+  const [returned, drafts, myPublished, queue, recent, issue, waiting, deploys] = await Promise.all(
+    [
+      stories({ and: [mine, { workflow: { equals: 'changes' } }] }),
+      stories({ and: [mine, { workflow: { in: ['draft', 'review', 'approved', 'withdrawn'] } }] }),
+      stories({ and: [mine, { workflow: { equals: 'published' } }] }, 5, '-publishedAt'),
+      rank >= RANK.editor ? stories({ workflow: { equals: 'review' } }, 20, 'updatedAt') : [],
+      rank >= RANK.editor ? stories({ workflow: { equals: 'published' } }, 6, '-publishedAt') : [],
+      hasPermission(user, 'print') || canPublishIssues(user)
+        ? payload
+            .find({ collection: 'issues', draft: true, sort: '-updatedAt', limit: 1, depth: 1 })
+            .then((result) => result.docs[0] as Issue | undefined)
+        : undefined,
+      rank >= RANK.editor ? stories({ workflow: { equals: 'approved' } }, 50, 'updatedAt') : [],
+      canPublishIssues(user) ? deploysThisMonth(payload) : undefined,
+    ],
+  )
 
   const name = (user as { name?: string }).name?.split(' ')[0]
 
@@ -67,6 +75,15 @@ export async function Dashboard({ payload, user }: Props) {
         {rank >= RANK.editor && (
           <Card title="Waiting for review" count={queue.length} empty="Nothing to review.">
             <StoryList stories={queue} showState={false} />
+          </Card>
+        )}
+        {rank >= RANK.editor && (
+          <Card
+            title="Waiting for the next issue"
+            count={waiting.length}
+            empty="Nothing approved yet."
+          >
+            <StoryList stories={waiting} showState={false} />
           </Card>
         )}
         <Card title="Sent back to you" count={returned.length} empty="Nothing sent back.">
@@ -91,6 +108,20 @@ export async function Dashboard({ payload, user }: Props) {
           </Card>
         )}
         {issue && <IssueCard issue={issue} />}
+        {deploys !== undefined && (
+          <Card title="Public website">
+            <p style={{ margin: 0 }}>
+              Rebuilt {deploys} of {ISSUE_DEPLOY_LIMIT} times this month. The site changes only when
+              an issue is published or a story is withdrawn.
+            </p>
+            {process.env.PUBLIC_SITE_URL && (
+              <a href={process.env.PUBLIC_SITE_URL} target="_blank" rel="noreferrer" style={link}>
+                Open the website ↗
+              </a>
+            )}
+            <RebuildButton />
+          </Card>
+        )}
       </div>
     </div>
   )

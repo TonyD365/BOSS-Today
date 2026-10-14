@@ -23,6 +23,7 @@ import { UnderlineFeatureClient as UnderlineFeatureClient_e70f5e05f09f93e00b997e
 import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { WorkflowPanel as WorkflowPanel_9168d7f4a9a9ae1abb1fc28b012db3f0 } from '@/components/admin/WorkflowPanel'
+import { Hidden as Hidden_41307c565f8fce656d97d4772c57ad1c } from '@/components/admin/Hidden'
 import { StoryRowLabel as StoryRowLabel_8b2a60b2d92bff4132c96c6748202029 } from '@/components/admin/StoryRowLabel'
 import { PrintEditionLink as PrintEditionLink_444df7a4575e6b37272975c680a7085d } from '@/components/admin/PrintEditionLink'
 import { Icon as Icon_066c562e10ad4e70ff0de1a39f9b91f6 } from '@/components/admin/Brand'
@@ -30,6 +31,7 @@ import { Logo as Logo_066c562e10ad4e70ff0de1a39f9b91f6 } from '@/components/admi
 import { SignIn as SignIn_c0c1f60db6522e831c3edb4dc0680df2 } from '@/components/admin/SignIn'
 import { Dashboard as Dashboard_0e7b23c75ea046975e1784ba01f82886 } from '@/components/admin/Dashboard'
 import { PasswordHelp as PasswordHelp_4e68073b0c98bae6fb0309aaf0d14949 } from '@/components/admin/AccessHelp'
+import { PublishIssue as PublishIssue_0352ad6b925961598622ddff39fc2a3e } from '@/components/admin/PublishIssue'
 import { FirstSignIn as FirstSignIn_4e68073b0c98bae6fb0309aaf0d14949 } from '@/components/admin/AccessHelp'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 import { VercelBlobClientUploadHandler as VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e } from '@payloadcms/storage-vercel-blob/client'
@@ -85,6 +87,7 @@ export const importMap = {
   '@payloadcms/richtext-lexical/client#ItalicFeatureClient':
     ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   '@/components/admin/WorkflowPanel#WorkflowPanel': WorkflowPanel_9168d7f4a9a9ae1abb1fc28b012db3f0,
+  '@/components/admin/Hidden#Hidden': Hidden_41307c565f8fce656d97d4772c57ad1c,
   '@/components/admin/StoryRowLabel#StoryRowLabel': StoryRowLabel_8b2a60b2d92bff4132c96c6748202029,
   '@/components/admin/PrintEditionLink#PrintEditionLink':
     PrintEditionLink_444df7a4575e6b37272975c680a7085d,
@@ -93,6 +96,7 @@ export const importMap = {
   '@/components/admin/SignIn#SignIn': SignIn_c0c1f60db6522e831c3edb4dc0680df2,
   '@/components/admin/Dashboard#Dashboard': Dashboard_0e7b23c75ea046975e1784ba01f82886,
   '@/components/admin/AccessHelp#PasswordHelp': PasswordHelp_4e68073b0c98bae6fb0309aaf0d14949,
+  '@/components/admin/PublishIssue#PublishIssue': PublishIssue_0352ad6b925961598622ddff39fc2a3e,
   '@/components/admin/AccessHelp#FirstSignIn': FirstSignIn_4e68073b0c98bae6fb0309aaf0d14949,
   '@payloadcms/next/rsc#CollectionCards': CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1,
   '@payloadcms/storage-vercel-blob/client#VercelBlobClientUploadHandler':

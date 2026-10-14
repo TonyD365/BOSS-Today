@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import React from 'react'
 
 import type { SiteSettings } from '@/lib/data'
@@ -6,7 +5,12 @@ import type { Section } from '@/payload-types'
 
 import { Today } from './Today'
 
-export function Header({ sections, settings }: { sections: Section[]; settings: SiteSettings }) {
+type Props = {
+  sections: Pick<Section, 'id' | 'name' | 'slug'>[]
+  settings: Pick<SiteSettings, 'siteName'>
+}
+
+export function Header({ sections, settings }: Props) {
   return (
     <header className="site-header">
       <div className="site-header__top">
@@ -14,9 +18,9 @@ export function Header({ sections, settings }: { sections: Section[]; settings: 
           <Today />
           <span>Bur Oak Secondary School</span>
         </div>
-        <Link className="masthead" href="/" aria-label={`${settings.siteName} — home`}>
+        <a className="masthead" href="/" aria-label={`${settings.siteName} — home`}>
           {settings.siteName}
-        </Link>
+        </a>
         <form className="site-header__search" action="/search" role="search">
           <label className="visually-hidden" htmlFor="site-search">
             Search
@@ -28,11 +32,11 @@ export function Header({ sections, settings }: { sections: Section[]; settings: 
         <ul>
           {sections.map((section) => (
             <li key={section.id}>
-              <Link href={`/section/${section.slug}`}>{section.name}</Link>
+              <a href={`/section/${section.slug}`}>{section.name}</a>
             </li>
           ))}
           <li>
-            <Link href="/issues">Issues</Link>
+            <a href="/issues">Issues</a>
           </li>
         </ul>
       </nav>

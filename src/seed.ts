@@ -70,7 +70,9 @@ const run = async () => {
       existing.docs[0] ??
       (await payload.create({
         collection: 'sections',
-        data: { name, description, order: (index + 1) * 10, slug: '' },
+        data: { name, description, order: (index + 1) * 10, slug: '', _status: 'published' },
+        // Seeding stands in for an issue publish.
+        context: { issuePublish: true },
       }))
     sectionIds.push(doc.id)
   }
@@ -133,6 +135,7 @@ const run = async () => {
     })
     const article = await payload.create({
       collection: 'articles',
+      context: { issuePublish: true },
       data: {
         title,
         summary:
@@ -150,13 +153,15 @@ const run = async () => {
 
   await payload.updateGlobal({
     slug: 'front-page',
-    data: { lead: articleIds[0], featured: articleIds.slice(1, 4) },
+    data: { lead: articleIds[0], featured: articleIds.slice(1, 4), _status: 'published' },
+    context: { issuePublish: true },
   })
 
   const issues = await payload.find({ collection: 'issues', limit: 1 })
   if (issues.totalDocs === 0) {
     await payload.create({
       collection: 'issues',
+      context: { issuePublish: true },
       data: {
         title: 'Sample Issue',
         volume: 1,

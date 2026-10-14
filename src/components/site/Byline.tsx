@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import React from 'react'
 
 import type { Author } from '@/lib/author'
@@ -12,7 +11,7 @@ export function Byline({ authors, linked = true }: { authors: Author[]; linked?:
         <React.Fragment key={author.id}>
           {index > 0 && (index === authors.length - 1 ? ' and ' : ', ')}
           {linked && author.slug ? (
-            <Link href={`/author/${author.slug}`}>{author.name}</Link>
+            <a href={`/author/${author.slug}`}>{author.name}</a>
           ) : (
             author.name
           )}

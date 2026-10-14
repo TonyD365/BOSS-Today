@@ -1,8 +1,17 @@
 import type { CollectionConfig } from 'payload'
 
-import { publishedOrStaff, withPermission } from '../access'
+import { canPublishIssues, hasPermission, publishedOrStaff } from '../access'
+import {
+  issueAddWaitingEndpoint,
+  issueCheckEndpoint,
+  issuePublishEndpoint,
+  issueReviewEndpoint,
+} from '../endpoints/issuePublishing'
 import { auditDelete, auditPublishing } from '../hooks/audit'
+import { guardPublishing } from '../hooks/publishing'
 import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
+
+const canManageIssues = (user: unknown) => canPublishIssues(user) || hasPermission(user, 'print')
 
 /**
  * An issue is one edition of the paper: an ordered set of stories that is
@@ -13,19 +22,32 @@ export const Issues: CollectionConfig = {
   admin: {
     useAsTitle: 'title',
     group: 'Print',
+    components: {
+      edit: {
+        PublishButton: '@/components/admin/Hidden#Hidden',
+        UnpublishButton: '@/components/admin/Hidden#Hidden',
+      },
+    },
     defaultColumns: ['title', 'volume', 'number', 'date', 'printEdition', '_status'],
     description:
-      'Pick the stories for an edition, then publish. Tick "Print edition" to also get a paper layout.',
+      'An issue is how stories reach the website: publishing it puts every story waiting for the next issue online at once. Tick "Print edition" to also typeset it for paper.',
   },
   defaultSort: '-date',
   versions: { drafts: true, maxPerDoc: 10 },
   access: {
     read: publishedOrStaff,
-    create: withPermission('print'),
-    update: withPermission('print'),
-    delete: withPermission('print'),
+    create: ({ req }) => canManageIssues(req.user),
+    update: ({ req }) => canManageIssues(req.user),
+    delete: ({ req }) => canManageIssues(req.user),
   },
+  endpoints: [
+    issueReviewEndpoint,
+    issueAddWaitingEndpoint,
+    issueCheckEndpoint,
+    issuePublishEndpoint,
+  ],
   hooks: {
+    beforeChange: [guardPublishing('An issue')],
     afterChange: [revalidateAfterChange, auditPublishing('issue')],
     afterDelete: [revalidateAfterDelete, auditDelete('issue')],
   },
@@ -52,7 +74,7 @@ export const Issues: CollectionConfig = {
       labels: { singular: 'Story', plural: 'Stories' },
       admin: {
         description:
-          'Drag to reorder. The first story is the front-page lead of the print edition. Width and image only affect the print edition.',
+          'Which stories the print edition carries, in order; the first is the front-page lead. "Add all waiting stories" in the sidebar fills this in. The website gets every waiting story either way.',
         components: { RowLabel: '@/components/admin/StoryRowLabel#StoryRowLabel' },
       },
       fields: [
@@ -120,6 +142,32 @@ export const Issues: CollectionConfig = {
       defaultValue: true,
       label: 'Staff box on the last page',
       admin: { position: 'sidebar', condition: (data) => Boolean(data?.printEdition) },
+    },
+    {
+      name: 'publishedBy',
+      type: 'relationship',
+      relationTo: 'users',
+      label: 'Published by',
+      access: { create: () => false, update: () => false },
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        allowCreate: false,
+        condition: (data) => Boolean(data?.publishedBy),
+        description:
+          'Signed the publisher’s declaration. See Issue sign-offs for every story check.',
+      },
+    },
+    {
+      name: 'publishedAt',
+      type: 'date',
+      access: { create: () => false, update: () => false },
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        condition: (data) => Boolean(data?.publishedAt),
+        date: { pickerAppearance: 'dayAndTime' },
+      },
     },
     {
       name: 'printLink',

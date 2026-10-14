@@ -54,3 +54,6 @@ node_modules/
 
 # local tooling
 /.claude
+
+# static public site build
+/site-dist

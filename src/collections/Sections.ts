@@ -1,22 +1,36 @@
 import type { CollectionConfig } from 'payload'
 
-import { withPermission } from '../access'
+import { publishedOrStaff, withPermission } from '../access'
 import { auditDelete } from '../hooks/audit'
+import { guardPublishing } from '../hooks/publishing'
 import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 import { slugFrom } from '../hooks/slug'
 
 export const Sections: CollectionConfig = {
   slug: 'sections',
-  admin: { useAsTitle: 'name', defaultColumns: ['name', 'slug', 'order'], group: 'Site' },
+  admin: {
+    useAsTitle: 'name',
+    defaultColumns: ['name', 'slug', 'order', '_status'],
+    group: 'Site',
+    description: 'Changes are saved as drafts and go live with the next issue.',
+    components: {
+      edit: {
+        PublishButton: '@/components/admin/Hidden#Hidden',
+        UnpublishButton: '@/components/admin/Hidden#Hidden',
+      },
+    },
+  },
+  versions: { drafts: true, maxPerDoc: 10 },
   defaultSort: 'order',
   access: {
-    read: () => true,
+    read: publishedOrStaff,
     create: withPermission('frontPage'),
     update: withPermission('frontPage'),
     delete: withPermission('frontPage'),
   },
   hooks: {
     beforeValidate: [slugFrom('name')],
+    beforeChange: [guardPublishing('A section')],
     afterChange: [revalidateAfterChange],
     afterDelete: [revalidateAfterDelete, auditDelete('section')],
   },

@@ -6,6 +6,7 @@ import {
 } from 'payload'
 
 import {
+  EDITOR_PERMISSIONS,
   hasPermission,
   isSuperAdminUser,
   PERMISSIONS,
@@ -32,6 +33,18 @@ const sameSet = (a: unknown, b: unknown) => {
   return left.size === right.size && [...left].every((item) => right.has(item))
 }
 
+/** Editors can only hold the Issue permission; reporters and readers hold none. */
+const trimPermissions = (data: Record<string, unknown>, target?: Record<string, unknown>) => {
+  const finalRole = (data.role ?? target?.role) as Role | undefined
+  if (finalRole === 'editor') {
+    data.permissions = ((data.permissions ?? target?.permissions ?? []) as Permission[]).filter(
+      (permission) => EDITOR_PERMISSIONS.includes(permission),
+    )
+  } else if (finalRole !== 'exec') {
+    data.permissions = []
+  }
+}
+
 /**
  * Enforces the role rules from docs/plans/01-user-roles.md:
  * nobody changes their own role, only people above someone can change them,
@@ -52,6 +65,7 @@ const enforceRoleRules: CollectionBeforeChangeHook = ({
     if (operation === 'create' && !context.trustedCreate) {
       throw forbid('New people are added by an exec.')
     }
+    trimPermissions(data, originalDoc)
     return data
   }
 
@@ -97,7 +111,7 @@ const enforceRoleRules: CollectionBeforeChangeHook = ({
   if (permissionsChanged && !actorIsSuper) {
     throw forbid('Only the super admin can assign exec permissions.')
   }
-  if ((data.role ?? target?.role) !== 'exec') data.permissions = []
+  trimPermissions(data, target)
   // Deactivating someone signs them out everywhere at once.
   if (data.active === false && activeChanged) data.sessions = []
 
@@ -226,12 +240,13 @@ export const Users: CollectionConfig = {
       name: 'permissions',
       type: 'select',
       hasMany: true,
-      label: 'Exec permissions',
+      label: 'Permissions',
       access: { update: superAdminOnlyField, create: superAdminOnlyField },
       options: PERMISSIONS.map((value) => ({
         value,
         label: (
           {
+            issue: 'Issue — review and publish issues to the website (editors too)',
             frontPage: 'Front page — lead stories and sections',
             print: 'Print — issues and print editions',
             staff: 'Staff — invite and manage reporters and editors',
@@ -240,8 +255,9 @@ export const Users: CollectionConfig = {
         )[value],
       })),
       admin: {
-        condition: (data) => data?.role === 'exec',
-        description: 'Only the super admin can change these.',
+        condition: (data) => data?.role === 'exec' || data?.role === 'editor',
+        description:
+          'Only the super admin can change these. Editors can only hold the Issue permission.',
       },
     },
     {

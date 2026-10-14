@@ -10,11 +10,14 @@ import { fileURLToPath } from 'url'
 import { YouTube } from './blocks/YouTube'
 import { Articles } from './collections/Articles'
 import { AuditLog } from './collections/AuditLog'
+import { Deployments } from './collections/Deployments'
+import { IssueChecks } from './collections/IssueChecks'
 import { Issues } from './collections/Issues'
 import { Media } from './collections/Media'
 import { Sections } from './collections/Sections'
 import { Users } from './collections/Users'
 import { githubAdapter, githubStorageConfig } from './storage/github'
+import { siteExportEndpoint } from './endpoints/siteExport'
 import { FrontPage } from './globals/FrontPage'
 import { Settings } from './globals/Settings'
 
@@ -37,6 +40,10 @@ export default buildConfig({
         // No email is sent from this site, so password help means asking an exec,
         // and the first account comes from a super admin's Google sign-in.
         forgot: { Component: '@/components/admin/AccessHelp#PasswordHelp', path: '/forgot' },
+        publishIssue: {
+          Component: '@/components/admin/PublishIssue#PublishIssue',
+          path: '/publish-issue',
+        },
         createFirstUser: {
           Component: '@/components/admin/AccessHelp#FirstSignIn',
           path: '/create-first-user',
@@ -54,8 +61,9 @@ export default buildConfig({
       ],
     },
   },
-  collections: [Articles, Issues, Sections, Media, Users, AuditLog],
+  collections: [Articles, Issues, Sections, Media, Users, AuditLog, IssueChecks, Deployments],
   globals: [FrontPage, Settings],
+  endpoints: [siteExportEndpoint],
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => [...defaultFeatures, BlocksFeature({ blocks: [YouTube] })],
   }),

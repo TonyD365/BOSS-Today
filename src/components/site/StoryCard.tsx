@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import React from 'react'
 
 import { articleAuthors, articleSection, asMedia, formatDate } from '@/lib/format'
@@ -29,12 +28,12 @@ export function StoryCard({
     <article className={`story story--${variant}`}>
       <div className="story__text">
         {showSection && section && (
-          <Link className="kicker" href={`/section/${section.slug}`}>
+          <a className="kicker" href={`/section/${section.slug}`}>
             {section.name}
-          </Link>
+          </a>
         )}
         <Heading className="story__headline">
-          <Link href={href}>{article.title}</Link>
+          <a href={href}>{article.title}</a>
         </Heading>
         {variant !== 'compact' && <p className="story__summary">{article.summary}</p>}
         <p className="story__meta">
@@ -43,7 +42,7 @@ export function StoryCard({
         </p>
       </div>
       {image && (
-        <Link className="story__image" href={href} tabIndex={-1} aria-hidden="true">
+        <a className="story__image" href={href} tabIndex={-1} aria-hidden="true">
           <Picture
             media={image}
             priority={variant === 'lead'}
@@ -53,7 +52,7 @@ export function StoryCard({
                 : '(min-width: 900px) 280px, 100vw'
             }
           />
-        </Link>
+        </a>
       )}
     </article>
   )

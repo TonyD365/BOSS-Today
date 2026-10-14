@@ -2,10 +2,10 @@
 
 The student newspaper of Bur Oak Secondary School.
 
-- **Site and admin**: Next.js + Payload CMS (admin at `/admin`)
-- **Database**: PostgreSQL (Neon in production)
-- **Sign-in**: Google, invite-only for staff
-- **Hosting**: Vercel
+- **Newsroom (admin)**: Next.js + Payload CMS on Vercel, at `/admin`
+- **Public site**: static pages on Cloudflare Pages, rebuilt when an issue is published
+- **Database**: PostgreSQL (Neon)
+- **Images**: GitHub Pages (or Vercel Blob)
 
 Design plans awaiting approval are in [docs/plans](docs/plans).
 
@@ -21,22 +21,43 @@ npm run dev                 # → http://localhost:3000
 
 `npm run seed` creates the default sections. `SEED_DEMO=1 npm run seed` also adds placeholder stories for checking the layout.
 
-## Deploy to Vercel
+## How publishing works
+
+Stories move Draft → In review → Waiting for the next issue. Nothing reaches the public site until someone with the **Issue** permission opens an issue and chooses **Review & publish**: they must open and tick every waiting story (each tick is recorded with their name, the story version and the time), may send stories back instead, and sign the publisher's declaration. Publishing then puts every waiting story, plus any section, front page and site-settings drafts, live at once and asks Cloudflare Pages to rebuild the site.
+
+An **emergency withdrawal** (Issue permission, reason required) takes a story down immediately and rebuilds the site.
+
+Rebuilds are counted in **Site rebuilds**: publishing stops at 400 a month and withdrawals may use up to 490, below Cloudflare's free limit of 500 builds. Sign-offs live in **Issue sign-offs** and cannot be edited or deleted.
+
+## Deploy
+
+### 1. Newsroom on Vercel
 
 1. Import this repository at vercel.com/new.
-2. In the project's **Storage** tab, add **Neon** (sets `DATABASE_URL`) and **Blob** (sets `BLOB_READ_WRITE_TOKEN`).
-3. Add the environment variables below, then redeploy.
+2. In the project's **Storage** tab, add **Neon** (sets `DATABASE_URL`) and, unless you use GitHub for images, **Blob** (sets `BLOB_READ_WRITE_TOKEN`).
+3. Add the environment variables below, then redeploy. The build runs database migrations first (`npm run ci`).
 
-| Variable | Value |
-|---|---|
-| `PAYLOAD_SECRET` | Output of `openssl rand -hex 32` |
+| Variable                                   | Value                                                               |
+| ------------------------------------------ | ------------------------------------------------------------------- |
+| `PAYLOAD_SECRET`                           | Output of `openssl rand -hex 32`                                    |
+| `SUPER_ADMIN_EMAILS`                       | Your Google address; you become the super admin                     |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | From Google Cloud Console (see below); needed for the first sign-in |
-| `SUPER_ADMIN_EMAILS` | Your Google address; you become the super admin |
-| `ALLOWED_EMAIL_DOMAINS` | Optional. Limits Google sign-in to these domains |
-| `ALLOW_READER_SIGNUP` | Optional. `true` lets any student create a reader account |
-| `SITE_URL` | Optional. e.g. `https://boss-today.vercel.app` |
+| `SITE_EXPORT_TOKEN`                        | Another `openssl rand -hex 32`; also set on Cloudflare              |
+| `PUBLIC_SITE_URL`                          | The Cloudflare Pages address, once it exists                        |
+| `CLOUDFLARE_DEPLOY_HOOK_URL`               | From Cloudflare (step 2)                                            |
+| `SITE_URL`                                 | Optional. This host's address, e.g. `https://bosstoday.vercel.app`  |
+| `ALLOWED_EMAIL_DOMAINS`                    | Optional. Limits Google sign-in to these domains                    |
 
-Every push to `main` deploys. The build runs database migrations first (`npm run ci`).
+### 2. Public site on Cloudflare Pages
+
+1. Cloudflare dashboard → Workers & Pages → Create → Pages → connect the `BOSS-Today` repository.
+2. Build settings: framework preset **None**, build command `npm run build:site`, output directory `site-dist`.
+3. Environment variables: `CMS_URL` (the Vercel address), `SITE_EXPORT_TOKEN` (same value as on Vercel), `PUBLIC_SITE_URL` (this Pages address), `NODE_VERSION` = `22`.
+4. Settings → Builds → turn **off** automatic production deployments, so the site only rebuilds when the newsroom asks (and code pushes don't use up builds).
+5. Settings → Builds → **Deploy hooks** → add one for the `main` branch and copy its URL into Vercel's `CLOUDFLARE_DEPLOY_HOOK_URL`. Treat it like a password.
+6. Set `PUBLIC_SITE_URL` on Vercel too and redeploy Vercel, so old reader links redirect to Pages.
+
+To try the static build locally: `CMS_URL=http://localhost:3000 SITE_EXPORT_TOKEN=… npm run build:site`, then serve `site-dist`.
 
 ## Signing in
 

@@ -12,43 +12,39 @@ import {
   type WorkflowState,
 } from '../endpoints/articleWorkflow'
 import { auditDelete, auditPublishing } from '../hooks/audit'
+import { guardPublishing } from '../hooks/publishing'
 import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 import { slugFrom } from '../hooks/slug'
 
 type HistoryEntry = { status: WorkflowState; by?: number | null; at: string; note?: string | null }
 
 /**
- * Keeps the review workflow consistent no matter how a save arrives
- * (workflow panel, Payload's own Publish button, or the API).
+ * Keeps the review workflow consistent however a save arrives, and records each
+ * change of state in the story's history.
  */
 const syncWorkflow: CollectionBeforeChangeHook = ({ data, originalDoc, req, context }) => {
   const actor = req.user
-  const rank = rankOf(actor)
   const previous = (originalDoc?.workflow ?? 'draft') as WorkflowState
   const action = context.workflowAction as string | undefined
 
   if (data._status === 'published') {
-    if (actor && rank < RANK.editor) {
-      throw new APIError(
-        'Only editors can publish. Use "Submit for review" instead.',
-        403,
-        undefined,
-        true,
-      )
-    }
+    // Only an issue publish gets here (see guardPublishing).
     data.workflow = 'published'
     if (!data.publishedAt && !originalDoc?.publishedAt) data.publishedAt = new Date().toISOString()
-  } else if (
-    !action &&
-    originalDoc?._status === 'published' &&
-    data._status === 'draft' &&
-    req.query?.draft !== 'true'
-  ) {
-    // Payload's own "Unpublish" button.
-    data.workflow = 'withdrawn'
   } else if (!action) {
     // Outside the workflow panel the state can't be changed by hand.
     data.workflow = previous
+  }
+
+  // Once approved, the text is what the issue publisher will check; reporters
+  // need an editor to send it back before changing it.
+  if (!action && previous === 'approved' && actor && rankOf(actor) < RANK.editor) {
+    throw new APIError(
+      'This story is approved for the next issue. Ask an editor to send it back before changing it.',
+      403,
+      undefined,
+      true,
+    )
   }
 
   const history = [...((originalDoc?.history as HistoryEntry[] | undefined) ?? [])]
@@ -75,6 +71,12 @@ export const Articles: CollectionConfig = {
     useAsTitle: 'title',
     defaultColumns: ['title', 'section', 'authors', 'workflow', 'publishedAt'],
     group: 'Newsroom',
+    components: {
+      edit: {
+        PublishButton: '@/components/admin/Hidden#Hidden',
+        UnpublishButton: '@/components/admin/Hidden#Hidden',
+      },
+    },
     livePreview: {
       url: ({ data }) => (data?.id ? `/preview/articles/${data.id}` : null),
     },
@@ -99,7 +101,7 @@ export const Articles: CollectionConfig = {
   },
   hooks: {
     beforeValidate: [slugFrom('title')],
-    beforeChange: [syncWorkflow],
+    beforeChange: [guardPublishing('A story'), syncWorkflow],
     afterChange: [revalidateAfterChange, auditPublishing('story')],
     afterDelete: [revalidateAfterDelete, auditDelete('story')],
   },
@@ -138,6 +140,7 @@ export const Articles: CollectionConfig = {
           draft: 'Draft',
           review: 'In review',
           changes: 'Changes requested',
+          approved: 'Waiting for the next issue',
           published: 'Published',
           withdrawn: 'Withdrawn',
         }[value],

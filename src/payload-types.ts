@@ -59,198 +59,204 @@ export type SupportedTimezones =
   | 'Pacific/Guam'
   | 'Pacific/Noumea'
   | 'Pacific/Auckland'
-  | 'Pacific/Fiji'
+  | 'Pacific/Fiji';
 
 export interface Config {
   auth: {
-    users: UserAuthOperations
-  }
-  blocks: {}
+    users: UserAuthOperations;
+  };
+  blocks: {};
   collections: {
-    articles: Article
-    issues: Issue
-    sections: Section
-    media: Media
-    users: User
-    'audit-log': AuditLog
-    'payload-kv': PayloadKv
-    'payload-locked-documents': PayloadLockedDocument
-    'payload-preferences': PayloadPreference
-    'payload-migrations': PayloadMigration
-  }
-  collectionsJoins: {}
+    articles: Article;
+    issues: Issue;
+    sections: Section;
+    media: Media;
+    users: User;
+    'audit-log': AuditLog;
+    'issue-checks': IssueCheck;
+    deployments: Deployment;
+    'payload-kv': PayloadKv;
+    'payload-locked-documents': PayloadLockedDocument;
+    'payload-preferences': PayloadPreference;
+    'payload-migrations': PayloadMigration;
+  };
+  collectionsJoins: {};
   collectionsSelect: {
-    articles: ArticlesSelect<false> | ArticlesSelect<true>
-    issues: IssuesSelect<false> | IssuesSelect<true>
-    sections: SectionsSelect<false> | SectionsSelect<true>
-    media: MediaSelect<false> | MediaSelect<true>
-    users: UsersSelect<false> | UsersSelect<true>
-    'audit-log': AuditLogSelect<false> | AuditLogSelect<true>
-    'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>
-    'payload-locked-documents':
-      PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>
-    'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>
-    'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>
-  }
+    articles: ArticlesSelect<false> | ArticlesSelect<true>;
+    issues: IssuesSelect<false> | IssuesSelect<true>;
+    sections: SectionsSelect<false> | SectionsSelect<true>;
+    media: MediaSelect<false> | MediaSelect<true>;
+    users: UsersSelect<false> | UsersSelect<true>;
+    'audit-log': AuditLogSelect<false> | AuditLogSelect<true>;
+    'issue-checks': IssueChecksSelect<false> | IssueChecksSelect<true>;
+    deployments: DeploymentsSelect<false> | DeploymentsSelect<true>;
+    'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
+    'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
+    'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
+    'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
+  };
   db: {
-    defaultIDType: number
-  }
-  fallbackLocale: null
+    defaultIDType: number;
+  };
+  fallbackLocale: null;
   globals: {
-    'front-page': FrontPage
-    settings: Setting
-  }
+    'front-page': FrontPage;
+    settings: Setting;
+  };
   globalsSelect: {
-    'front-page': FrontPageSelect<false> | FrontPageSelect<true>
-    settings: SettingsSelect<false> | SettingsSelect<true>
-  }
-  locale: null
+    'front-page': FrontPageSelect<false> | FrontPageSelect<true>;
+    settings: SettingsSelect<false> | SettingsSelect<true>;
+  };
+  locale: null;
   widgets: {
-    collections: CollectionsWidget
-  }
-  user: User
+    collections: CollectionsWidget;
+  };
+  user: User;
   jobs: {
-    tasks: unknown
-    workflows: unknown
-  }
+    tasks: unknown;
+    workflows: unknown;
+  };
 }
 export interface UserAuthOperations {
   forgotPassword: {
-    email: string
-    password: string
-  }
+    email: string;
+    password: string;
+  };
   login: {
-    email: string
-    password: string
-  }
+    email: string;
+    password: string;
+  };
   registerFirstUser: {
-    email: string
-    password: string
-  }
+    email: string;
+    password: string;
+  };
   unlock: {
-    email: string
-    password: string
-  }
+    email: string;
+    password: string;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "articles".
  */
 export interface Article {
-  id: number
-  title: string
+  id: number;
+  title: string;
   /**
    * One or two sentences shown under the headline.
    */
-  summary: string
-  heroImage?: (number | null) | Media
+  summary: string;
+  heroImage?: (number | null) | Media;
   content: {
     root: {
-      type: string
+      type: string;
       children: {
-        type: any
-        version: number
-        [k: string]: unknown
-      }[]
-      direction: ('ltr' | 'rtl') | null
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | ''
-      indent: number
-      version: number
-    }
-    [k: string]: unknown
-  }
-  workflow?: ('draft' | 'review' | 'changes' | 'published' | 'withdrawn') | null
-  reviewNotes?: string | null
-  section: number | Section
-  authors: (number | User)[]
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  workflow?: ('draft' | 'review' | 'changes' | 'approved' | 'published' | 'withdrawn') | null;
+  reviewNotes?: string | null;
+  section: number | Section;
+  authors: (number | User)[];
   /**
    * Filled in automatically the first time the story is published.
    */
-  publishedAt?: string | null
-  slug?: string | null
+  publishedAt?: string | null;
+  slug?: string | null;
   history?:
     | {
-        status?: ('draft' | 'review' | 'changes' | 'published' | 'withdrawn') | null
-        by?: (number | null) | User
-        at?: string | null
-        note?: string | null
-        id?: string | null
+        status?: ('draft' | 'review' | 'changes' | 'approved' | 'published' | 'withdrawn') | null;
+        by?: (number | null) | User;
+        at?: string | null;
+        note?: string | null;
+        id?: string | null;
       }[]
-    | null
-  updatedAt: string
-  createdAt: string
-  _status?: ('draft' | 'published') | null
+    | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
 export interface Media {
-  id: number
+  id: number;
   /**
    * Describe the image for readers who cannot see it.
    */
-  alt: string
-  caption?: string | null
+  alt: string;
+  caption?: string | null;
   /**
    * Photographer or source.
    */
-  credit?: string | null
-  prefix?: string | null
-  _objectKey?: string | null
-  updatedAt: string
-  createdAt: string
-  url?: string | null
-  thumbnailURL?: string | null
-  filename?: string | null
-  mimeType?: string | null
-  filesize?: number | null
-  width?: number | null
-  height?: number | null
-  focalX?: number | null
-  focalY?: number | null
+  credit?: string | null;
+  prefix?: string | null;
+  _objectKey?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
   sizes?: {
     thumb?: {
-      url?: string | null
-      width?: number | null
-      height?: number | null
-      mimeType?: string | null
-      filesize?: number | null
-      filename?: string | null
-    }
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
     card?: {
-      url?: string | null
-      width?: number | null
-      height?: number | null
-      mimeType?: string | null
-      filesize?: number | null
-      filename?: string | null
-    }
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
     hero?: {
-      url?: string | null
-      width?: number | null
-      height?: number | null
-      mimeType?: string | null
-      filesize?: number | null
-      filename?: string | null
-    }
-  }
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
 }
 /**
+ * Changes are saved as drafts and go live with the next issue.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "sections".
  */
 export interface Section {
-  id: number
-  name: string
-  slug: string
-  description?: string | null
+  id: number;
+  name: string;
+  slug: string;
+  description?: string | null;
   /**
    * Lower numbers appear first in the navigation bar.
    */
-  order?: number | null
-  updatedAt: string
-  createdAt: string
+  order?: number | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * Add people here with a starting password; they can sign in with it, or with Google if their email is a Google account. When someone leaves, untick Active instead of deleting them so their bylines stay.
@@ -259,93 +265,98 @@ export interface Section {
  * via the `definition` "users".
  */
 export interface User {
-  id: number
-  name: string
+  id: number;
+  name: string;
   /**
    * Reporters write; editors review and publish; execs also get the permissions below.
    */
-  role: 'reader' | 'reporter' | 'editor' | 'exec'
+  role: 'reader' | 'reporter' | 'editor' | 'exec';
   /**
    * Untick when someone leaves. They can no longer sign in.
    */
-  active?: boolean | null
+  active?: boolean | null;
   /**
-   * Only the super admin can change these.
+   * Only the super admin can change these. Editors can only hold the Issue permission.
    */
-  permissions?: ('frontPage' | 'print' | 'staff' | 'media')[] | null
+  permissions?: ('issue' | 'frontPage' | 'print' | 'staff' | 'media')[] | null;
   /**
    * Set in the deployment settings (SUPER_ADMIN_EMAILS), not here.
    */
-  isSuperAdmin?: boolean | null
+  isSuperAdmin?: boolean | null;
   /**
    * Shown under the byline, e.g. "Sports Editor" or "Staff Writer".
    */
-  title?: string | null
-  bio?: string | null
-  photo?: (number | null) | Media
+  title?: string | null;
+  bio?: string | null;
+  photo?: (number | null) | Media;
   /**
    * Used in the author page address.
    */
-  slug?: string | null
-  googleId?: string | null
-  updatedAt: string
-  createdAt: string
+  slug?: string | null;
+  googleId?: string | null;
+  updatedAt: string;
+  createdAt: string;
   /**
    * What they sign in with. Use their Gmail address if they will sign in with Google.
    */
-  email: string
-  resetPasswordToken?: string | null
-  resetPasswordExpiration?: string | null
-  salt?: string | null
-  hash?: string | null
-  resetPasswordRequestedAt?: string | null
-  loginAttempts?: number | null
-  lockUntil?: string | null
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
   sessions?:
     | {
-        id: string
-        createdAt?: string | null
-        expiresAt: string
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
       }[]
-    | null
-  password?: string | null
-  collection: 'users'
+    | null;
+  password?: string | null;
+  collection: 'users';
 }
 /**
- * Pick the stories for an edition, then publish. Tick "Print edition" to also get a paper layout.
+ * An issue is how stories reach the website: publishing it puts every story waiting for the next issue online at once. Tick "Print edition" to also typeset it for paper.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "issues".
  */
 export interface Issue {
-  id: number
+  id: number;
   /**
    * e.g. "October 2026" or "The Homecoming Issue".
    */
-  title: string
-  volume: number
-  number: number
-  date: string
+  title: string;
+  volume: number;
+  number: number;
+  date: string;
   /**
-   * Drag to reorder. The first story is the front-page lead of the print edition. Width and image only affect the print edition.
+   * Which stories the print edition carries, in order; the first is the front-page lead. "Add all waiting stories" in the sidebar fills this in. The website gets every waiting story either way.
    */
   stories: {
-    article: number | Article
-    width: 'full' | 'twoThirds' | 'half' | 'column'
-    showImage?: boolean | null
-    id?: string | null
-  }[]
+    article: number | Article;
+    width: 'full' | 'twoThirds' | 'half' | 'column';
+    showImage?: boolean | null;
+    id?: string | null;
+  }[];
   /**
    * Optional notice boxed on the front page of the print edition.
    */
-  announcement?: string | null
-  printEdition?: boolean | null
-  paperSize?: ('letter' | 'tabloid' | 'a4' | 'a3') | null
-  showContents?: boolean | null
-  showStaffBox?: boolean | null
-  updatedAt: string
-  createdAt: string
-  _status?: ('draft' | 'published') | null
+  announcement?: string | null;
+  printEdition?: boolean | null;
+  paperSize?: ('letter' | 'tabloid' | 'a4' | 'a3') | null;
+  showContents?: boolean | null;
+  showStaffBox?: boolean | null;
+  /**
+   * Signed the publisher’s declaration. See Issue sign-offs for every story check.
+   */
+  publishedBy?: (number | null) | User;
+  publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * Every publish, withdrawal, deletion and staff change. Visible to the super admin only.
@@ -354,395 +365,480 @@ export interface Issue {
  * via the `definition` "audit-log".
  */
 export interface AuditLog {
-  id: number
-  summary: string
-  action:
-    'publish' | 'withdraw' | 'delete' | 'invite' | 'role' | 'deactivate' | 'reactivate' | 'settings'
-  actor?: (number | null) | User
-  target?: string | null
-  updatedAt: string
-  createdAt: string
+  id: number;
+  summary: string;
+  action: 'publish' | 'withdraw' | 'delete' | 'invite' | 'role' | 'deactivate' | 'reactivate' | 'settings';
+  actor?: (number | null) | User;
+  target?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Every story ticked as checked before an issue was published, and every issue publish with its declaration. Permanent: nobody can edit or delete these.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "issue-checks".
+ */
+export interface IssueCheck {
+  id: number;
+  summary: string;
+  kind: 'checked' | 'sent-back' | 'published';
+  issue?: (number | null) | Issue;
+  article?: (number | null) | Article;
+  /**
+   * The story’s last-saved time when it was checked.
+   */
+  articleVersion?: string | null;
+  checkedBy: number | User;
+  note?: string | null;
+  declaration?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Each publish or withdrawal rebuilds the public site on Cloudflare Pages. Publishing stops at 400 rebuilds a month; withdrawals may use up to 490.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "deployments".
+ */
+export interface Deployment {
+  id: number;
+  reason: 'issue' | 'withdrawal' | 'rebuild';
+  status: 'triggered' | 'failed' | 'not-configured';
+  httpStatus?: number | null;
+  note?: string | null;
+  issue?: (number | null) | Issue;
+  actor?: (number | null) | User;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: number
-  key: string
+  id: number;
+  key: string;
   data:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
+    | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: number
+  id: number;
   document?:
     | ({
-        relationTo: 'articles'
-        value: number | Article
+        relationTo: 'articles';
+        value: number | Article;
       } | null)
     | ({
-        relationTo: 'issues'
-        value: number | Issue
+        relationTo: 'issues';
+        value: number | Issue;
       } | null)
     | ({
-        relationTo: 'sections'
-        value: number | Section
+        relationTo: 'sections';
+        value: number | Section;
       } | null)
     | ({
-        relationTo: 'media'
-        value: number | Media
+        relationTo: 'media';
+        value: number | Media;
       } | null)
     | ({
-        relationTo: 'users'
-        value: number | User
+        relationTo: 'users';
+        value: number | User;
       } | null)
     | ({
-        relationTo: 'audit-log'
-        value: number | AuditLog
+        relationTo: 'audit-log';
+        value: number | AuditLog;
       } | null)
-  globalSlug?: string | null
+    | ({
+        relationTo: 'issue-checks';
+        value: number | IssueCheck;
+      } | null)
+    | ({
+        relationTo: 'deployments';
+        value: number | Deployment;
+      } | null);
+  globalSlug?: string | null;
   user: {
-    relationTo: 'users'
-    value: number | User
-  }
-  updatedAt: string
-  createdAt: string
+    relationTo: 'users';
+    value: number | User;
+  };
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: number
+  id: number;
   user: {
-    relationTo: 'users'
-    value: number | User
-  }
-  key?: string | null
+    relationTo: 'users';
+    value: number | User;
+  };
+  key?: string | null;
   value?:
     | {
-        [k: string]: unknown
+        [k: string]: unknown;
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null
-  updatedAt: string
-  createdAt: string
+    | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: number
-  name?: string | null
-  batch?: number | null
-  updatedAt: string
-  createdAt: string
+  id: number;
+  name?: string | null;
+  batch?: number | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "articles_select".
  */
 export interface ArticlesSelect<T extends boolean = true> {
-  title?: T
-  summary?: T
-  heroImage?: T
-  content?: T
-  workflow?: T
-  reviewNotes?: T
-  section?: T
-  authors?: T
-  publishedAt?: T
-  slug?: T
+  title?: T;
+  summary?: T;
+  heroImage?: T;
+  content?: T;
+  workflow?: T;
+  reviewNotes?: T;
+  section?: T;
+  authors?: T;
+  publishedAt?: T;
+  slug?: T;
   history?:
     | T
     | {
-        status?: T
-        by?: T
-        at?: T
-        note?: T
-        id?: T
-      }
-  updatedAt?: T
-  createdAt?: T
-  _status?: T
+        status?: T;
+        by?: T;
+        at?: T;
+        note?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "issues_select".
  */
 export interface IssuesSelect<T extends boolean = true> {
-  title?: T
-  volume?: T
-  number?: T
-  date?: T
+  title?: T;
+  volume?: T;
+  number?: T;
+  date?: T;
   stories?:
     | T
     | {
-        article?: T
-        width?: T
-        showImage?: T
-        id?: T
-      }
-  announcement?: T
-  printEdition?: T
-  paperSize?: T
-  showContents?: T
-  showStaffBox?: T
-  updatedAt?: T
-  createdAt?: T
-  _status?: T
+        article?: T;
+        width?: T;
+        showImage?: T;
+        id?: T;
+      };
+  announcement?: T;
+  printEdition?: T;
+  paperSize?: T;
+  showContents?: T;
+  showStaffBox?: T;
+  publishedBy?: T;
+  publishedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "sections_select".
  */
 export interface SectionsSelect<T extends boolean = true> {
-  name?: T
-  slug?: T
-  description?: T
-  order?: T
-  updatedAt?: T
-  createdAt?: T
+  name?: T;
+  slug?: T;
+  description?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
-  alt?: T
-  caption?: T
-  credit?: T
-  prefix?: T
-  _objectKey?: T
-  updatedAt?: T
-  createdAt?: T
-  url?: T
-  thumbnailURL?: T
-  filename?: T
-  mimeType?: T
-  filesize?: T
-  width?: T
-  height?: T
-  focalX?: T
-  focalY?: T
+  alt?: T;
+  caption?: T;
+  credit?: T;
+  prefix?: T;
+  _objectKey?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
   sizes?:
     | T
     | {
         thumb?:
           | T
           | {
-              url?: T
-              width?: T
-              height?: T
-              mimeType?: T
-              filesize?: T
-              filename?: T
-            }
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
         card?:
           | T
           | {
-              url?: T
-              width?: T
-              height?: T
-              mimeType?: T
-              filesize?: T
-              filename?: T
-            }
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
         hero?:
           | T
           | {
-              url?: T
-              width?: T
-              height?: T
-              mimeType?: T
-              filesize?: T
-              filename?: T
-            }
-      }
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
-  name?: T
-  role?: T
-  active?: T
-  permissions?: T
-  isSuperAdmin?: T
-  title?: T
-  bio?: T
-  photo?: T
-  slug?: T
-  googleId?: T
-  updatedAt?: T
-  createdAt?: T
-  email?: T
-  resetPasswordToken?: T
-  resetPasswordExpiration?: T
-  salt?: T
-  hash?: T
-  resetPasswordRequestedAt?: T
-  loginAttempts?: T
-  lockUntil?: T
+  name?: T;
+  role?: T;
+  active?: T;
+  permissions?: T;
+  isSuperAdmin?: T;
+  title?: T;
+  bio?: T;
+  photo?: T;
+  slug?: T;
+  googleId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  resetPasswordRequestedAt?: T;
+  loginAttempts?: T;
+  lockUntil?: T;
   sessions?:
     | T
     | {
-        id?: T
-        createdAt?: T
-        expiresAt?: T
-      }
+        id?: T;
+        createdAt?: T;
+        expiresAt?: T;
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "audit-log_select".
  */
 export interface AuditLogSelect<T extends boolean = true> {
-  summary?: T
-  action?: T
-  actor?: T
-  target?: T
-  updatedAt?: T
-  createdAt?: T
+  summary?: T;
+  action?: T;
+  actor?: T;
+  target?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "issue-checks_select".
+ */
+export interface IssueChecksSelect<T extends boolean = true> {
+  summary?: T;
+  kind?: T;
+  issue?: T;
+  article?: T;
+  articleVersion?: T;
+  checkedBy?: T;
+  note?: T;
+  declaration?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "deployments_select".
+ */
+export interface DeploymentsSelect<T extends boolean = true> {
+  reason?: T;
+  status?: T;
+  httpStatus?: T;
+  note?: T;
+  issue?: T;
+  actor?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
-  key?: T
-  data?: T
+  key?: T;
+  data?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents_select".
  */
 export interface PayloadLockedDocumentsSelect<T extends boolean = true> {
-  document?: T
-  globalSlug?: T
-  user?: T
-  updatedAt?: T
-  createdAt?: T
+  document?: T;
+  globalSlug?: T;
+  user?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-preferences_select".
  */
 export interface PayloadPreferencesSelect<T extends boolean = true> {
-  user?: T
-  key?: T
-  value?: T
-  updatedAt?: T
-  createdAt?: T
+  user?: T;
+  key?: T;
+  value?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-migrations_select".
  */
 export interface PayloadMigrationsSelect<T extends boolean = true> {
-  name?: T
-  batch?: T
-  updatedAt?: T
-  createdAt?: T
+  name?: T;
+  batch?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
- * Choose the lead story and the stories beside it. Drag to reorder. Anything left empty is filled with the newest stories.
+ * Choose the lead story and the stories beside it. Drag to reorder. Anything left empty is filled with the newest stories. Changes go live with the next issue.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "front-page".
  */
 export interface FrontPage {
-  id: number
-  lead?: (number | null) | Article
+  id: number;
+  lead?: (number | null) | Article;
   /**
    * Up to six. The first three sit under the lead.
    */
-  featured?: (number | Article)[] | null
-  updatedAt?: string | null
-  createdAt?: string | null
+  featured?: (number | Article)[] | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
 }
 /**
+ * Changes go live with the next issue.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "settings".
  */
 export interface Setting {
-  id: number
-  siteName: string
-  tagline?: string | null
+  id: number;
+  siteName: string;
+  tagline?: string | null;
   /**
    * Shown at /about. Leave empty to hide the page.
    */
   about?: {
     root: {
-      type: string
+      type: string;
       children: {
-        type: any
-        version: number
-        [k: string]: unknown
-      }[]
-      direction: ('ltr' | 'rtl') | null
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | ''
-      indent: number
-      version: number
-    }
-    [k: string]: unknown
-  } | null
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
   socialLinks?:
     | {
-        label: string
-        url: string
-        id?: string | null
+        label: string;
+        url: string;
+        id?: string | null;
       }[]
-    | null
-  footerNote?: string | null
-  updatedAt?: string | null
-  createdAt?: string | null
+    | null;
+  footerNote?: string | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "front-page_select".
  */
 export interface FrontPageSelect<T extends boolean = true> {
-  lead?: T
-  featured?: T
-  updatedAt?: T
-  createdAt?: T
-  globalType?: T
+  lead?: T;
+  featured?: T;
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "settings_select".
  */
 export interface SettingsSelect<T extends boolean = true> {
-  siteName?: T
-  tagline?: T
-  about?: T
+  siteName?: T;
+  tagline?: T;
+  about?: T;
   socialLinks?:
     | T
     | {
-        label?: T
-        url?: T
-        id?: T
-      }
-  footerNote?: T
-  updatedAt?: T
-  createdAt?: T
-  globalType?: T
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  footerNote?: T;
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -750,17 +846,18 @@ export interface SettingsSelect<T extends boolean = true> {
  */
 export interface CollectionsWidget {
   data?: {
-    [k: string]: unknown
-  }
-  width: 'full'
+    [k: string]: unknown;
+  };
+  width: 'full';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "auth".
  */
 export interface Auth {
-  [k: string]: unknown
+  [k: string]: unknown;
 }
+
 
 declare module 'payload' {
   export interface GeneratedTypes extends Config {}

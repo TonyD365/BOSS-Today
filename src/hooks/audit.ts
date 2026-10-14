@@ -32,7 +32,9 @@ const label = (doc: Record<string, unknown>) =>
 /** Publish and withdraw, for collections with drafts (stories, issues). */
 export const auditPublishing =
   (noun: string): CollectionAfterChangeHook =>
-  async ({ doc, previousDoc, req, operation }) => {
+  async ({ doc, previousDoc, req, operation, context }) => {
+    // Emergency withdrawals write their own entry, with the reason.
+    if (context.withdrawal) return doc
     const wasPublished = previousDoc?._status === 'published'
     const isPublished = doc._status === 'published'
     if (isPublished && (!wasPublished || operation === 'create')) {

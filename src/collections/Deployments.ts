@@ -1,0 +1,53 @@
+import type { CollectionConfig } from 'payload'
+
+import { canPublishIssues, isSuperAdminUser } from '../access'
+import { rebuildEndpoint } from '../endpoints/issuePublishing'
+
+/** Every request to rebuild the public site. Written by the server only. */
+export const Deployments: CollectionConfig = {
+  slug: 'deployments',
+  labels: { singular: 'Site rebuild', plural: 'Site rebuilds' },
+  admin: {
+    useAsTitle: 'reason',
+    defaultColumns: ['createdAt', 'reason', 'status', 'actor', 'issue'],
+    group: 'Admin',
+    hidden: ({ user }) => !canPublishIssues(user),
+    description:
+      'Each publish or withdrawal rebuilds the public site on Cloudflare Pages. Publishing stops at 400 rebuilds a month; withdrawals may use up to 490.',
+  },
+  defaultSort: '-createdAt',
+  endpoints: [rebuildEndpoint],
+  access: {
+    read: ({ req }) => isSuperAdminUser(req.user) || canPublishIssues(req.user),
+    create: () => false,
+    update: () => false,
+    delete: () => false,
+  },
+  fields: [
+    {
+      name: 'reason',
+      type: 'select',
+      required: true,
+      options: [
+        { label: 'Issue published', value: 'issue' },
+        { label: 'Emergency withdrawal', value: 'withdrawal' },
+        { label: 'Manual rebuild', value: 'rebuild' },
+      ],
+    },
+    {
+      name: 'status',
+      type: 'select',
+      required: true,
+      index: true,
+      options: [
+        { label: 'Triggered', value: 'triggered' },
+        { label: 'Failed', value: 'failed' },
+        { label: 'Not configured', value: 'not-configured' },
+      ],
+    },
+    { name: 'httpStatus', type: 'number' },
+    { name: 'note', type: 'textarea' },
+    { name: 'issue', type: 'relationship', relationTo: 'issues', admin: { allowCreate: false } },
+    { name: 'actor', type: 'relationship', relationTo: 'users', admin: { allowCreate: false } },
+  ],
+}

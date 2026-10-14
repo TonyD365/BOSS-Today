@@ -2,6 +2,7 @@ import type { GlobalConfig } from 'payload'
 
 import { withPermission } from '../access'
 import { auditGlobal } from '../hooks/audit'
+import { guardGlobalPublishing } from '../hooks/publishing'
 
 const revalidate = async () => {
   try {
@@ -16,12 +17,25 @@ const revalidate = async () => {
 export const Settings: GlobalConfig = {
   slug: 'settings',
   label: 'Site Settings',
-  admin: { group: 'Site' },
+  admin: {
+    group: 'Site',
+    description: 'Changes go live with the next issue.',
+    components: {
+      elements: {
+        PublishButton: '@/components/admin/Hidden#Hidden',
+        UnpublishButton: '@/components/admin/Hidden#Hidden',
+      },
+    },
+  },
+  versions: { drafts: true, max: 10 },
   access: {
     read: () => true,
     update: withPermission('frontPage'),
   },
-  hooks: { afterChange: [revalidate, auditGlobal('site settings')] },
+  hooks: {
+    beforeChange: [guardGlobalPublishing('Site settings')],
+    afterChange: [revalidate, auditGlobal('site settings')],
+  },
   fields: [
     { name: 'siteName', type: 'text', required: true, defaultValue: 'BOSS Today' },
     {

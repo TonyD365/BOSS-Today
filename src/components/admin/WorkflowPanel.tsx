@@ -3,12 +3,14 @@
 import { Button, useAuth, useDocumentInfo, useFormFields, useFormModified } from '@payloadcms/ui'
 import React, { useState } from 'react'
 
-type State = 'draft' | 'review' | 'changes' | 'published' | 'withdrawn'
+type State = 'draft' | 'review' | 'changes' | 'approved' | 'published' | 'withdrawn'
+type Action = 'submit' | 'return' | 'approve' | 'withdraw'
 
 const LABELS: Record<State, string> = {
   draft: 'Draft',
   review: 'In review',
   changes: 'Changes requested',
+  approved: 'Waiting for the next issue',
   published: 'Published',
   withdrawn: 'Withdrawn',
 }
@@ -17,23 +19,35 @@ const COLORS: Record<State, string> = {
   draft: 'var(--theme-elevation-500)',
   review: 'var(--theme-warning-500)',
   changes: 'var(--theme-error-500)',
+  approved: 'var(--theme-success-250, var(--theme-success-500))',
   published: 'var(--theme-success-500)',
   withdrawn: 'var(--theme-elevation-500)',
 }
 
 const RANKS: Record<string, number> = { reader: 0, reporter: 1, editor: 2, exec: 3 }
 
+type PanelUser = {
+  id: number
+  role?: string
+  isSuperAdmin?: boolean
+  permissions?: string[]
+}
+
 /** The review workflow, shown in the sidebar of every story. */
 export function WorkflowPanel() {
-  const { id } = useDocumentInfo()
-  const { user } = useAuth<{ id: number; role?: string; isSuperAdmin?: boolean }>()
+  const { id, hasPublishedDoc } = useDocumentInfo()
+  const { user } = useAuth<PanelUser>()
   const state = (useFormFields(([fields]) => fields.workflow?.value) ?? 'draft') as State
   const modified = useFormModified()
   const [note, setNote] = useState('')
+  const [mode, setMode] = useState<'return' | 'withdraw' | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const isEditor = Boolean(user?.isSuperAdmin) || (RANKS[user?.role ?? 'reader'] ?? 0) >= 2
+  const rank = user?.isSuperAdmin ? 4 : (RANKS[user?.role ?? 'reader'] ?? 0)
+  const isEditor = rank >= 2
+  const canIssue =
+    Boolean(user?.isSuperAdmin) || (rank >= 2 && Boolean(user?.permissions?.includes('issue')))
 
   if (!id) {
     return (
@@ -43,7 +57,7 @@ export function WorkflowPanel() {
     )
   }
 
-  const act = async (action: 'submit' | 'return' | 'publish' | 'withdraw') => {
+  const act = async (action: Action) => {
     setBusy(true)
     setError(null)
     try {
@@ -62,15 +76,21 @@ export function WorkflowPanel() {
     }
   }
 
-  const canSubmit = ['draft', 'changes', 'withdrawn'].includes(state)
+  const needsSave = modified && (
+    <p style={hint}>You have unsaved changes. Save the draft before moving the story on.</p>
+  )
 
   return (
     <Panel state={state}>
-      {modified && (
-        <p style={hint}>You have unsaved changes. Save the draft before moving the story on.</p>
+      {hasPublishedDoc && state !== 'published' && (
+        <p style={hint}>
+          An earlier version is on the website. These changes go live with the next issue once
+          approved.
+        </p>
       )}
+      {needsSave}
 
-      {canSubmit && (
+      {['draft', 'changes', 'withdrawn'].includes(state) && (
         <Button
           buttonStyle="primary"
           size="small"
@@ -81,49 +101,83 @@ export function WorkflowPanel() {
         </Button>
       )}
 
-      {isEditor && state !== 'published' && (
+      {isEditor && state !== 'approved' && (
         <Button
           buttonStyle="primary"
           size="small"
           disabled={busy || modified}
-          onClick={() => act('publish')}
+          onClick={() => act('approve')}
         >
-          Publish
+          Approve for the next issue
         </Button>
       )}
 
-      {isEditor && state === 'review' && (
-        <div style={{ display: 'grid', gap: 8 }}>
-          <textarea
-            value={note}
-            onChange={(event) => setNote(event.target.value)}
-            placeholder="What should the reporter change?"
-            rows={3}
-            style={{ width: '100%', font: 'inherit', padding: 8 }}
-          />
-          <Button
-            buttonStyle="secondary"
-            size="small"
-            disabled={busy || !note.trim()}
-            onClick={() => act('return')}
-          >
-            Return to reporter
-          </Button>
-        </div>
-      )}
-
-      {isEditor && state === 'published' && (
+      {isEditor && ['review', 'approved'].includes(state) && mode !== 'return' && (
         <Button
           buttonStyle="secondary"
           size="small"
           disabled={busy}
-          onClick={() => act('withdraw')}
+          onClick={() => setMode('return')}
         >
-          Withdraw from the site
+          Send back to reporter
         </Button>
       )}
 
+      {canIssue && hasPublishedDoc && mode !== 'withdraw' && (
+        <Button
+          buttonStyle="secondary"
+          size="small"
+          disabled={busy}
+          onClick={() => setMode('withdraw')}
+        >
+          Emergency withdrawal…
+        </Button>
+      )}
+
+      {mode && (
+        <div style={{ display: 'grid', gap: 8 }}>
+          {mode === 'withdraw' && (
+            <p style={{ ...hint, color: 'var(--theme-error-500)' }}>
+              This takes the story off the website right away and rebuilds the site. Use it only for
+              errors, privacy or policy problems.
+            </p>
+          )}
+          <textarea
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+            placeholder={
+              mode === 'return'
+                ? 'What should the reporter change?'
+                : 'Why is this being withdrawn?'
+            }
+            rows={3}
+            style={{ width: '100%', font: 'inherit', padding: 8 }}
+          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button
+              buttonStyle="primary"
+              size="small"
+              disabled={busy || !note.trim()}
+              onClick={() => act(mode)}
+            >
+              {mode === 'return' ? 'Send back' : 'Withdraw now'}
+            </Button>
+            <Button
+              buttonStyle="secondary"
+              size="small"
+              disabled={busy}
+              onClick={() => setMode(null)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
       {!isEditor && state === 'review' && <p style={hint}>Waiting for an editor.</p>}
+      {!isEditor && state === 'approved' && (
+        <p style={hint}>Approved. It will go live when the next issue is published.</p>
+      )}
       {!isEditor && state === 'published' && (
         <p style={hint}>Published stories can only be changed by an editor.</p>
       )}

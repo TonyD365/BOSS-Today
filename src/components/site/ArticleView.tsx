@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import React from 'react'
 
 import { articleAuthors, articleSection, asMedia, formatDate } from '@/lib/format'
@@ -18,9 +17,9 @@ export function ArticleView({ article }: { article: Article }) {
     <article className="article">
       <header className="article__header">
         {section && (
-          <Link className="kicker" href={`/section/${section.slug}`}>
+          <a className="kicker" href={`/section/${section.slug}`}>
             {section.name}
-          </Link>
+          </a>
         )}
         <h1>{article.title}</h1>
         <p className="article__summary">{article.summary}</p>

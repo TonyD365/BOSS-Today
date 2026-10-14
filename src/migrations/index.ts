@@ -1,9 +1,10 @@
-import * as migration_20261014_010817_initial from './20261014_010817_initial'
-import * as migration_20261014_115215_roles_workflow_front_page from './20261014_115215_roles_workflow_front_page'
-import * as migration_20261014_151041_storage_fields from './20261014_151041_storage_fields'
-import * as migration_20261014_151605_print_settings_audit from './20261014_151605_print_settings_audit'
-import * as migration_20261014_154757_email_sign_in from './20261014_154757_email_sign_in'
-import * as migration_20261014_160633_password_sign_in from './20261014_160633_password_sign_in'
+import * as migration_20261014_010817_initial from './20261014_010817_initial';
+import * as migration_20261014_115215_roles_workflow_front_page from './20261014_115215_roles_workflow_front_page';
+import * as migration_20261014_151041_storage_fields from './20261014_151041_storage_fields';
+import * as migration_20261014_151605_print_settings_audit from './20261014_151605_print_settings_audit';
+import * as migration_20261014_154757_email_sign_in from './20261014_154757_email_sign_in';
+import * as migration_20261014_160633_password_sign_in from './20261014_160633_password_sign_in';
+import * as migration_20261014_185527_issue_publishing from './20261014_185527_issue_publishing';
 
 export const migrations = [
   {
@@ -36,4 +37,9 @@ export const migrations = [
     down: migration_20261014_160633_password_sign_in.down,
     name: '20261014_160633_password_sign_in',
   },
-]
+  {
+    up: migration_20261014_185527_issue_publishing.up,
+    down: migration_20261014_185527_issue_publishing.down,
+    name: '20261014_185527_issue_publishing'
+  },
+];

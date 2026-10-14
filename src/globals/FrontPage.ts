@@ -2,6 +2,7 @@ import type { GlobalConfig } from 'payload'
 
 import { withPermission } from '../access'
 import { auditGlobal } from '../hooks/audit'
+import { guardGlobalPublishing } from '../hooks/publishing'
 
 const revalidate = async () => {
   try {
@@ -19,20 +20,29 @@ export const FrontPage: GlobalConfig = {
   admin: {
     group: 'Site',
     description:
-      'Choose the lead story and the stories beside it. Drag to reorder. Anything left empty is filled with the newest stories.',
+      'Choose the lead story and the stories beside it. Drag to reorder. Anything left empty is filled with the newest stories. Changes go live with the next issue.',
+    components: {
+      elements: {
+        PublishButton: '@/components/admin/Hidden#Hidden',
+        UnpublishButton: '@/components/admin/Hidden#Hidden',
+      },
+    },
   },
   access: {
     read: () => true,
     update: withPermission('frontPage'),
   },
-  hooks: { afterChange: [revalidate, auditGlobal('the front page')] },
+  versions: { drafts: true, max: 10 },
+  hooks: {
+    beforeChange: [guardGlobalPublishing('The front page')],
+    afterChange: [revalidate, auditGlobal('the front page')],
+  },
   fields: [
     {
       name: 'lead',
       type: 'relationship',
       relationTo: 'articles',
       label: 'Lead story',
-      filterOptions: { _status: { equals: 'published' } },
     },
     {
       name: 'featured',
@@ -41,7 +51,6 @@ export const FrontPage: GlobalConfig = {
       hasMany: true,
       maxRows: 6,
       label: 'Beside the lead',
-      filterOptions: { _status: { equals: 'published' } },
       admin: { description: 'Up to six. The first three sit under the lead.' },
     },
   ],

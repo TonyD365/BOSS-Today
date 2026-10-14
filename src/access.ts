@@ -5,7 +5,7 @@ import { superAdminEmails } from './lib/env'
 export const ROLES = ['reader', 'reporter', 'editor', 'exec'] as const
 export type Role = (typeof ROLES)[number]
 
-export const PERMISSIONS = ['frontPage', 'print', 'staff', 'media'] as const
+export const PERMISSIONS = ['issue', 'frontPage', 'print', 'staff', 'media'] as const
 export type Permission = (typeof PERMISSIONS)[number]
 
 /** Rank used for "only manage people below you". Super admin sits above exec. */
@@ -35,9 +35,20 @@ export const rankOf = (user: unknown): number => {
   return RANK[u.role ?? 'reader'] ?? -1
 }
 
-export const hasPermission = (user: unknown, permission: Permission): boolean =>
-  isSuperAdminUser(user) ||
-  (rankOf(user) === RANK.exec && Boolean(asUser(user)?.permissions?.includes(permission)))
+/** Permissions an editor may hold. Everything else is for execs only. */
+export const EDITOR_PERMISSIONS: Permission[] = ['issue']
+
+export const hasPermission = (user: unknown, permission: Permission): boolean => {
+  if (isSuperAdminUser(user)) return true
+  const rank = rankOf(user)
+  const granted = Boolean(asUser(user)?.permissions?.includes(permission))
+  if (rank === RANK.exec) return granted
+  if (rank === RANK.editor) return granted && EDITOR_PERMISSIONS.includes(permission)
+  return false
+}
+
+/** Publishing an issue (and emergency withdrawals) puts content on the public site. */
+export const canPublishIssues = (user: unknown) => hasPermission(user, 'issue')
 
 const userOf = (req: PayloadRequest) => req.user
 
