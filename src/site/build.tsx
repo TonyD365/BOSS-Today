@@ -54,7 +54,20 @@ const fetchExport = async <T,>(query: string): Promise<T> => {
   const response = await fetch(`${CMS_URL}/api/site-export?${query}`, {
     headers: { Authorization: `Bearer ${TOKEN}` },
   })
-  if (!response.ok) throw new Error(`Export failed (${response.status}) for ${query}`)
+  if (!response.ok) {
+    const body = (await response.text()).slice(0, 300).replace(/\s+/g, ' ')
+    const hint =
+      response.status === 401 && body.includes('Unauthorized.')
+        ? 'The newsroom rejected SITE_EXPORT_TOKEN: it must match the value on Vercel exactly.'
+        : response.status === 401 || response.status === 403
+          ? 'Vercel blocked the request before it reached the newsroom. Use the production address (e.g. https://<project>.vercel.app) for CMS_URL, not a preview address.'
+          : response.status === 404
+            ? 'The newsroom does not have /api/site-export yet. Redeploy Vercel with the latest code.'
+            : ''
+    throw new Error(
+      `Export failed (${response.status}) for ${query} from ${CMS_URL}. ${hint}\nResponse: ${body}`,
+    )
+  }
   return (await response.json()) as T
 }
 
