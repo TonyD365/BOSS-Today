@@ -1,5 +1,7 @@
 import { APIError, type Payload, type PayloadRequest } from 'payload'
 
+import { deploymentIdFromHook } from './progress'
+
 /** Cloudflare Pages allows 500 builds a month on the free plan; we stop well short of it. */
 export const ISSUE_DEPLOY_LIMIT = 400
 /** Emergency withdrawals may dip into the reserve between 400 and this. */
@@ -100,22 +102,26 @@ export const triggerDeploy = async (
   const hook = process.env.CLOUDFLARE_DEPLOY_HOOK_URL?.trim()
   let status: 'triggered' | 'failed' | 'not-configured' = 'not-configured'
   let httpStatus: number | undefined
+  let cloudflareId: string | undefined
   if (hook) {
     try {
       const response = await fetch(hook, { method: 'POST' })
       httpStatus = response.status
       status = response.ok ? 'triggered' : 'failed'
+      cloudflareId = deploymentIdFromHook(await response.json().catch(() => null))
     } catch {
       status = 'failed'
     }
   }
 
-  await payload.create({
+  const record = await payload.create({
     collection: 'deployments',
     data: {
       reason,
       status,
       httpStatus,
+      cloudflareId: cloudflareId ?? null,
+      buildStatus: status === 'triggered' ? 'queued' : null,
       note: note ?? null,
       issue: issue ? Number(issue) : null,
       actor: req.user ? Number(req.user.id) : null,
@@ -124,5 +130,10 @@ export const triggerDeploy = async (
     overrideAccess: true,
   })
 
-  return { status, used: await deploysThisMonth(payload, req), limit: ISSUE_DEPLOY_LIMIT }
+  return {
+    id: record.id,
+    status,
+    used: await deploysThisMonth(payload, req),
+    limit: ISSUE_DEPLOY_LIMIT,
+  }
 }

@@ -56,6 +56,7 @@ Rebuilds are counted in **Site rebuilds**: publishing stops at 400 a month and w
 4. Settings → Builds → turn **off** automatic production deployments, so the site only rebuilds when the newsroom asks (and code pushes don't use up builds).
 5. Settings → Builds → **Deploy hooks** → add one for the `main` branch and copy its URL into Vercel's `CLOUDFLARE_DEPLOY_HOOK_URL`. Treat it like a password.
 6. Set `PUBLIC_SITE_URL` on Vercel too and redeploy Vercel, so old reader links redirect to Pages.
+7. Optional, to see rebuild progress in the newsroom: Cloudflare → My Profile → API Tokens → Create token → custom token with **Account → Cloudflare Pages → Read**. On Vercel set `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` (shown on the Workers & Pages overview) and `CLOUDFLARE_PAGES_PROJECT` (the project name), then redeploy.
 
 To try the static build locally: `CMS_URL=http://localhost:3000 SITE_EXPORT_TOKEN=… npm run build:site`, then serve `site-dist`.
 

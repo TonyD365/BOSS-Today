@@ -35,8 +35,8 @@ export default buildConfig({
     meta: { titleSuffix: ' — BOSS Today' },
     components: {
       afterLogin: ['@/components/admin/SignIn#SignIn'],
-      beforeDashboard: ['@/components/admin/Dashboard#Dashboard'],
       views: {
+        dashboard: { Component: '@/components/admin/DashboardView#DashboardView' },
         // No email is sent from this site, so password help means asking an exec,
         // and the first account comes from a super admin's Google sign-in.
         forgot: { Component: '@/components/admin/AccessHelp#PasswordHelp', path: '/forgot' },

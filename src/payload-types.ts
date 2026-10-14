@@ -406,6 +406,9 @@ export interface Deployment {
   reason: 'issue' | 'withdrawal' | 'rebuild';
   status: 'triggered' | 'failed' | 'not-configured';
   httpStatus?: number | null;
+  buildStatus?: ('queued' | 'building' | 'live' | 'failed' | 'canceled') | null;
+  cloudflareId?: string | null;
+  finishedAt?: string | null;
   note?: string | null;
   issue?: (number | null) | Issue;
   actor?: (number | null) | User;
@@ -704,6 +707,9 @@ export interface DeploymentsSelect<T extends boolean = true> {
   reason?: T;
   status?: T;
   httpStatus?: T;
+  buildStatus?: T;
+  cloudflareId?: T;
+  finishedAt?: T;
   note?: T;
   issue?: T;
   actor?: T;

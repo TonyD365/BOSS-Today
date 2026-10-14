@@ -3,6 +3,8 @@
 import { Button } from '@payloadcms/ui'
 import React, { useCallback, useEffect, useState } from 'react'
 
+import { DeployProgress } from './DeployProgress'
+
 type Story = {
   id: number
   title: string
@@ -64,6 +66,7 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
+  const [deploymentId, setDeploymentId] = useState<number | null>(null)
 
   const fetchReview = useCallback(
     () =>
@@ -147,13 +150,14 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
         declaration,
       })) as {
         published?: number
-        deploy?: { status?: string; used?: number; limit?: number }
+        deploy?: { id?: number; status?: string; used?: number; limit?: number }
       }
       const deploy = result.deploy?.status
+      if (deploy === 'triggered' && result.deploy?.id) setDeploymentId(result.deploy.id)
       setDone(
         `Published ${result.published ?? 0} stories. ` +
           (deploy === 'triggered'
-            ? `The website is rebuilding and will update in a minute or two (${result.deploy?.used}/${result.deploy?.limit} rebuilds this month).`
+            ? `The website is rebuilding (${result.deploy?.used}/${result.deploy?.limit} rebuilds this month).`
             : deploy === 'not-configured'
               ? 'The Cloudflare deploy hook is not set up yet, so the website was not rebuilt.'
               : 'The rebuild request failed. Use “Rebuild site” on the dashboard to try again.'),
@@ -165,6 +169,7 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
       <div style={{ display: 'grid', gap: 16, marginTop: 40, maxWidth: 720 }}>
         <h1 style={{ margin: 0 }}>{review.issue.title} is published</h1>
         <p style={{ margin: 0 }}>{done}</p>
+        {deploymentId && <DeployProgress deploymentId={deploymentId} />}
         <a href={`/admin/collections/issues/${issueId}`}>Back to the issue</a>
       </div>
     )

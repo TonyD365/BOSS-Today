@@ -29,7 +29,7 @@ import { PrintEditionLink as PrintEditionLink_444df7a4575e6b37272975c680a7085d }
 import { Icon as Icon_066c562e10ad4e70ff0de1a39f9b91f6 } from '@/components/admin/Brand'
 import { Logo as Logo_066c562e10ad4e70ff0de1a39f9b91f6 } from '@/components/admin/Brand'
 import { SignIn as SignIn_c0c1f60db6522e831c3edb4dc0680df2 } from '@/components/admin/SignIn'
-import { Dashboard as Dashboard_0e7b23c75ea046975e1784ba01f82886 } from '@/components/admin/Dashboard'
+import { DashboardView as DashboardView_8d5ccf53266e3797f61e9453e2f2d431 } from '@/components/admin/DashboardView'
 import { PasswordHelp as PasswordHelp_4e68073b0c98bae6fb0309aaf0d14949 } from '@/components/admin/AccessHelp'
 import { PublishIssue as PublishIssue_0352ad6b925961598622ddff39fc2a3e } from '@/components/admin/PublishIssue'
 import { FirstSignIn as FirstSignIn_4e68073b0c98bae6fb0309aaf0d14949 } from '@/components/admin/AccessHelp'
@@ -94,7 +94,7 @@ export const importMap = {
   '@/components/admin/Brand#Icon': Icon_066c562e10ad4e70ff0de1a39f9b91f6,
   '@/components/admin/Brand#Logo': Logo_066c562e10ad4e70ff0de1a39f9b91f6,
   '@/components/admin/SignIn#SignIn': SignIn_c0c1f60db6522e831c3edb4dc0680df2,
-  '@/components/admin/Dashboard#Dashboard': Dashboard_0e7b23c75ea046975e1784ba01f82886,
+  '@/components/admin/DashboardView#DashboardView': DashboardView_8d5ccf53266e3797f61e9453e2f2d431,
   '@/components/admin/AccessHelp#PasswordHelp': PasswordHelp_4e68073b0c98bae6fb0309aaf0d14949,
   '@/components/admin/PublishIssue#PublishIssue': PublishIssue_0352ad6b925961598622ddff39fc2a3e,
   '@/components/admin/AccessHelp#FirstSignIn': FirstSignIn_4e68073b0c98bae6fb0309aaf0d14949,

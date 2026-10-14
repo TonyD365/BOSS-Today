@@ -3,6 +3,8 @@
 import { Button, useAuth, useDocumentInfo, useFormFields, useFormModified } from '@payloadcms/ui'
 import React, { useState } from 'react'
 
+import { DeployProgress } from './DeployProgress'
+
 type SidebarUser = { role?: string; isSuperAdmin?: boolean; permissions?: string[] }
 
 /** Issue sidebar: fill in waiting stories, proof the print edition, and go to review & publish. */
@@ -83,6 +85,7 @@ export function PrintEditionLink() {
       {hasPublishedDoc && (
         <p style={hint}>This issue is published. Start a new issue for new stories.</p>
       )}
+      {hasPublishedDoc && canIssue && <DeployProgress deploymentId="latest" issueId={id} />}
       {modified && <p style={hint}>Save your changes first.</p>}
       {message && <p style={hint}>{message}</p>}
     </div>

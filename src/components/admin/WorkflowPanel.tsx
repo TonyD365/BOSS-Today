@@ -3,6 +3,8 @@
 import { Button, useAuth, useDocumentInfo, useFormFields, useFormModified } from '@payloadcms/ui'
 import React, { useState } from 'react'
 
+import { DeployProgress } from './DeployProgress'
+
 type State = 'draft' | 'review' | 'changes' | 'approved' | 'published' | 'withdrawn'
 type Action = 'submit' | 'return' | 'approve' | 'withdraw'
 
@@ -43,6 +45,7 @@ export function WorkflowPanel() {
   const [mode, setMode] = useState<'return' | 'withdraw' | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [withdrawnDeploy, setWithdrawnDeploy] = useState<number | null>(null)
 
   const rank = user?.isSuperAdmin ? 4 : (RANKS[user?.role ?? 'reader'] ?? 0)
   const isEditor = rank >= 2
@@ -67,13 +70,46 @@ export function WorkflowPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, note }),
       })
-      const result = (await response.json().catch(() => ({}))) as { message?: string }
+      const result = (await response.json().catch(() => ({}))) as {
+        message?: string
+        deploy?: { id?: number; status?: string }
+      }
       if (!response.ok) throw new Error(result.message ?? 'Something went wrong.')
+      if (action === 'withdraw' && result.deploy?.id) {
+        setWithdrawnDeploy(result.deploy.id)
+        setMode(null)
+        setBusy(false)
+        return
+      }
       window.location.reload()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.')
       setBusy(false)
     }
+  }
+
+  if (withdrawnDeploy) {
+    return (
+      <Panel state="withdrawn">
+        <p style={hint}>Withdrawn. The website is being rebuilt without this story.</p>
+        <DeployProgress deploymentId={withdrawnDeploy} />
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          style={{
+            ...hint,
+            textAlign: 'left',
+            textDecoration: 'underline',
+            background: 'none',
+            border: 0,
+            padding: 0,
+            cursor: 'pointer',
+          }}
+        >
+          Reload this story
+        </button>
+      </Panel>
+    )
   }
 
   const needsSave = modified && (

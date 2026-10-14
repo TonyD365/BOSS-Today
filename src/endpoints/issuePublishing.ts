@@ -8,6 +8,7 @@ import {
   ISSUE_DEPLOY_LIMIT,
   triggerDeploy,
 } from '../publishing/deploy'
+import { getProgress } from '../publishing/progress'
 
 const json = (body: unknown, status = 200) => Response.json(body, { status })
 
@@ -457,5 +458,59 @@ export const rebuildEndpoint: Endpoint = {
     } catch (error) {
       return errorResponse(error)
     }
+  },
+}
+
+/** GET /api/deployments/:id/progress — how far Cloudflare has got with one rebuild. */
+export const deploymentProgressEndpoint: Endpoint = {
+  path: '/:id/progress',
+  method: 'get',
+  handler: async (req) => {
+    if (!canPublishIssues(req.user)) return json({ message: 'You need the Issue permission.' }, 403)
+    try {
+      const record = await req.payload.findByID({
+        collection: 'deployments',
+        id: req.routeParams?.id as string,
+        depth: 0,
+        overrideAccess: true,
+        disableErrors: true,
+      })
+      if (!record) return json({ message: 'Rebuild not found.' }, 404)
+      const progress = await getProgress(req.payload, record)
+      return json({
+        id: record.id,
+        reason: record.reason,
+        createdAt: record.createdAt,
+        siteUrl: process.env.PUBLIC_SITE_URL ?? null,
+        ...progress,
+      })
+    } catch (error) {
+      return errorResponse(error)
+    }
+  },
+}
+
+/** GET /api/deployments/latest[?issue=ID] — the most recent rebuild that reached Cloudflare. */
+export const latestDeploymentEndpoint: Endpoint = {
+  path: '/latest',
+  method: 'get',
+  handler: async (req) => {
+    if (!canPublishIssues(req.user)) return json({ message: 'You need the Issue permission.' }, 403)
+    const { docs } = await req.payload.find({
+      collection: 'deployments',
+      where: {
+        and: [
+          { status: { equals: 'triggered' } },
+          ...(req.searchParams.get('issue')
+            ? [{ issue: { equals: req.searchParams.get('issue') } }]
+            : []),
+        ],
+      },
+      sort: '-createdAt',
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+    })
+    return json({ id: docs[0]?.id ?? null })
   },
 }
