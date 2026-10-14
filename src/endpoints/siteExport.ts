@@ -53,6 +53,9 @@ const publicAuthor = (user: User | number | null | undefined) =>
 
 const published: Where = { _status: { equals: 'published' } }
 
+const idOf = (value: unknown) =>
+  value && typeof value === 'object' ? (value as { id: number }).id : (value as number)
+
 /**
  * GET /api/site-export?part=meta
  * GET /api/site-export?part=articles&page=N
@@ -71,6 +74,16 @@ export const siteExportEndpoint: Endpoint = {
 
     if (part === 'articles') {
       const page = Math.max(1, Number(req.searchParams.get('page')) || 1)
+      const liveTags = await payload.find({
+        collection: 'tags',
+        where: published,
+        limit: 0,
+        pagination: false,
+        depth: 0,
+        overrideAccess: true,
+        select: { name: true, slug: true },
+      })
+      const tagsById = new Map(liveTags.docs.map((tag) => [tag.id, tag]))
       const result = await payload.find({
         collection: 'articles',
         where: published,
@@ -96,18 +109,34 @@ export const siteExportEndpoint: Endpoint = {
             ? { id: article.section.id, name: article.section.name, slug: article.section.slug }
             : null,
         authors: (article.authors ?? []).map(publicAuthor).filter(Boolean),
+        // Only tags that have themselves gone live.
+        tags: (article.tags ?? [])
+          .map((tag) => tagsById.get(idOf(tag)))
+          .filter((tag) => tag !== undefined)
+          .map((tag) => ({ id: tag.id, name: tag.name, slug: tag.slug })),
+        corrections: (article.corrections ?? []).map(({ date, text }) => ({ date, text })),
       }))
       return json(absolutize({ page, totalPages: result.totalPages, docs }, origin))
     }
 
-    const [settings, frontPage, sections, issues] = await Promise.all([
+    const [settings, frontPage, banner, sections, tags, issues] = await Promise.all([
       payload.findGlobal({ slug: 'settings', depth: 1, overrideAccess: true }),
       payload.findGlobal({ slug: 'front-page', depth: 0, overrideAccess: true }),
+      payload.findGlobal({ slug: 'banner', depth: 0, overrideAccess: true }),
       payload.find({
         collection: 'sections',
         where: published,
         sort: 'order',
         limit: 100,
+        overrideAccess: true,
+      }),
+      payload.find({
+        collection: 'tags',
+        where: published,
+        sort: 'name',
+        limit: 0,
+        pagination: false,
+        depth: 1,
         overrideAccess: true,
       }),
       payload.find({
@@ -141,6 +170,22 @@ export const siteExportEndpoint: Endpoint = {
               typeof item === 'object' ? item.id : item,
             ),
           },
+          banner:
+            banner._status === 'published' && banner.text?.trim()
+              ? {
+                  text: banner.text.trim(),
+                  link: banner.link || null,
+                  style: banner.style === 'urgent' ? 'urgent' : 'info',
+                  expiresAt: banner.expiresAt ?? null,
+                }
+              : null,
+          tags: tags.docs.map(({ id, name, slug, description, image }) => ({
+            id,
+            name,
+            slug,
+            description: description ?? null,
+            image: image && typeof image === 'object' ? image : null,
+          })),
           sections: sections.docs.map(({ id, name, slug, description, order }) => ({
             id,
             name,

@@ -70,6 +70,7 @@ export interface Config {
     articles: Article;
     issues: Issue;
     sections: Section;
+    tags: Tag;
     media: Media;
     users: User;
     'audit-log': AuditLog;
@@ -85,6 +86,7 @@ export interface Config {
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
     issues: IssuesSelect<false> | IssuesSelect<true>;
     sections: SectionsSelect<false> | SectionsSelect<true>;
+    tags: TagsSelect<false> | TagsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     'audit-log': AuditLogSelect<false> | AuditLogSelect<true>;
@@ -101,10 +103,12 @@ export interface Config {
   fallbackLocale: null;
   globals: {
     'front-page': FrontPage;
+    banner: Banner;
     settings: Setting;
   };
   globalsSelect: {
     'front-page': FrontPageSelect<false> | FrontPageSelect<true>;
+    banner: BannerSelect<false> | BannerSelect<true>;
     settings: SettingsSelect<false> | SettingsSelect<true>;
   };
   locale: null;
@@ -162,10 +166,24 @@ export interface Article {
     };
     [k: string]: unknown;
   };
+  /**
+   * Shown at the end of the story with an “Updated” date. Once published, a correction stays: add a new one rather than changing it. Goes live with the next issue.
+   */
+  corrections?:
+    | {
+        date: string;
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
   workflow?: ('draft' | 'review' | 'changes' | 'approved' | 'published' | 'withdrawn') | null;
   reviewNotes?: string | null;
   section: number | Section;
   authors: (number | User)[];
+  /**
+   * Topics this story belongs to. Editors add new tags under Site → Tags.
+   */
+  tags?: (number | Tag)[] | null;
   /**
    * Filled in automatically the first time the story is published.
    */
@@ -318,6 +336,25 @@ export interface User {
   collection: 'users';
 }
 /**
+ * Topics that link related stories, each with its own page. Changes go live with the next issue.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tags".
+ */
+export interface Tag {
+  id: number;
+  name: string;
+  slug: string;
+  /**
+   * One or two sentences shown at the top of the topic page.
+   */
+  description?: string | null;
+  image?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
  * An issue is how stories reach the website: publishing it puts every story waiting for the next issue online at once. Tick "Print edition" to also typeset it for paper.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -398,14 +435,14 @@ export interface IssueCheck {
   createdAt: string;
 }
 /**
- * Each publish or withdrawal rebuilds the public site on Cloudflare Pages. Publishing stops at 400 rebuilds a month; withdrawals may use up to 490.
+ * Each publish, withdrawal or urgent banner rebuilds the public site on Cloudflare Pages. Publishing stops at 400 rebuilds a month; withdrawals may use up to 490.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "deployments".
  */
 export interface Deployment {
   id: number;
-  reason: 'issue' | 'withdrawal' | 'rebuild';
+  reason: 'issue' | 'withdrawal' | 'rebuild' | 'banner';
   status: 'triggered' | 'failed' | 'not-configured';
   httpStatus?: number | null;
   buildStatus?: ('queued' | 'building' | 'live' | 'failed' | 'canceled') | null;
@@ -452,6 +489,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'sections';
         value: number | Section;
+      } | null)
+    | ({
+        relationTo: 'tags';
+        value: number | Tag;
       } | null)
     | ({
         relationTo: 'media';
@@ -524,10 +565,18 @@ export interface ArticlesSelect<T extends boolean = true> {
   summary?: T;
   heroImage?: T;
   content?: T;
+  corrections?:
+    | T
+    | {
+        date?: T;
+        text?: T;
+        id?: T;
+      };
   workflow?: T;
   reviewNotes?: T;
   section?: T;
   authors?: T;
+  tags?: T;
   publishedAt?: T;
   slug?: T;
   history?:
@@ -580,6 +629,19 @@ export interface SectionsSelect<T extends boolean = true> {
   slug?: T;
   description?: T;
   order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tags_select".
+ */
+export interface TagsSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  description?: T;
+  image?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -776,6 +838,28 @@ export interface FrontPage {
   createdAt?: string | null;
 }
 /**
+ * A notice across the top of every page, such as a school closure. It goes live with the next issue, or use “Publish banner now” for something urgent. Leave the text empty to show no banner.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "banner".
+ */
+export interface Banner {
+  id: number;
+  text?: string | null;
+  /**
+   * Optional.
+   */
+  link?: string | null;
+  style?: ('info' | 'urgent') | null;
+  /**
+   * Readers’ browsers hide the banner at this time by themselves, without a rebuild.
+   */
+  expiresAt?: string | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * Changes go live with the next issue.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -822,6 +906,20 @@ export interface Setting {
 export interface FrontPageSelect<T extends boolean = true> {
   lead?: T;
   featured?: T;
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "banner_select".
+ */
+export interface BannerSelect<T extends boolean = true> {
+  text?: T;
+  link?: T;
+  style?: T;
+  expiresAt?: T;
   _status?: T;
   updatedAt?: T;
   createdAt?: T;

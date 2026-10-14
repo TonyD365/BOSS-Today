@@ -14,6 +14,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 
 import { formatDate } from '@/lib/format'
 
+import { rssFeed } from './feed'
 import {
   byNewest,
   chunk,
@@ -34,6 +35,8 @@ import {
   SearchView,
   SectionView,
   Shell,
+  TagsView,
+  TagView,
 } from './views'
 
 const ROOT = process.cwd()
@@ -49,6 +52,8 @@ const required = (name: string) => {
 const CMS_URL = required('CMS_URL').replace(/\/$/, '')
 const TOKEN = required('SITE_EXPORT_TOKEN')
 const PUBLIC_URL = (process.env.PUBLIC_SITE_URL ?? '').replace(/\/$/, '')
+/** Feeds and share links need a full address; Cloudflare provides one if PUBLIC_SITE_URL is unset. */
+const SITE_URL = (PUBLIC_URL || process.env.CF_PAGES_URL || '').replace(/\/$/, '')
 
 const fetchExport = async <T,>(query: string): Promise<T> => {
   const response = await fetch(`${CMS_URL}/api/site-export?${query}`, {
@@ -79,6 +84,10 @@ const write = async (file: string, contents: string) => {
 
 const main = async () => {
   const site = await fetchExport<ExportMeta>('part=meta')
+  // A banner that has already expired isn't worth sending to readers at all.
+  if (site.banner?.expiresAt && new Date(site.banner.expiresAt).getTime() <= Date.now()) {
+    site.banner = null
+  }
   const articles: ExportArticle[] = []
   for (let page = 1; ; page++) {
     const batch = await fetchExport<{ docs: ExportArticle[]; totalPages: number }>(
@@ -123,6 +132,7 @@ const main = async () => {
           title: n === 1 ? section.name : `${section.name} (page ${n})`,
           description: section.description ?? `${section.name} from ${siteName}.`,
           path: n === 1 ? base : `${base}${n}/`,
+          feed: { title: section.name, path: `${base}feed.xml` },
         },
         <SectionView section={section} articles={items} page={n} pages={pages.length} />,
       )
@@ -140,7 +150,60 @@ const main = async () => {
         image: article.heroImage?.sizes?.hero?.url ?? article.heroImage?.url ?? null,
         type: 'article',
       },
-      <ArticlePage article={article} />,
+      <ArticlePage
+        article={article}
+        shareUrl={SITE_URL ? `${SITE_URL}/article/${article.slug}/` : undefined}
+      />,
+    )
+  }
+
+  const tagged = site.tags.map((tag) => ({
+    tag,
+    articles: articles.filter((article) => article.tags.some((item) => item.id === tag.id)),
+  }))
+  for (const { tag, articles: inTag } of tagged) {
+    await page(
+      `tags/${tag.slug}/index.html`,
+      {
+        title: tag.name,
+        description: tag.description ?? `Stories about ${tag.name} from ${siteName}.`,
+        path: `/tags/${tag.slug}/`,
+        image: tag.image?.sizes?.hero?.url ?? tag.image?.url ?? null,
+        feed: { title: tag.name, path: `/tags/${tag.slug}/feed.xml` },
+      },
+      <TagView tag={tag} articles={inTag} />,
+    )
+  }
+  await page(
+    'tags/index.html',
+    { title: 'Topics', description: `Topics covered by ${siteName}.`, path: '/tags/' },
+    <TagsView
+      tags={tagged
+        .filter((item) => item.articles.length > 0)
+        .map(({ tag, articles: inTag }) => ({ tag, count: inTag.length }))}
+    />,
+  )
+
+  const feed = (file: string, title: string, description: string, items: ExportArticle[]) =>
+    write(
+      file,
+      rssFeed({ title, description, path: `/${file}`, siteUrl: SITE_URL, articles: items }),
+    )
+  await feed('feed.xml', siteName, tagline, articles)
+  for (const section of site.sections) {
+    await feed(
+      `section/${section.slug}/feed.xml`,
+      `${section.name} — ${siteName}`,
+      section.description ?? `${section.name} from ${siteName}.`,
+      articles.filter((article) => article.section?.id === section.id),
+    )
+  }
+  for (const { tag, articles: inTag } of tagged) {
+    await feed(
+      `tags/${tag.slug}/feed.xml`,
+      `${tag.name} — ${siteName}`,
+      tag.description ?? `Stories about ${tag.name} from ${siteName}.`,
+      inTag,
     )
   }
 
@@ -218,15 +281,18 @@ const main = async () => {
           u: article.slug,
           c: article.section?.name ?? '',
           a: article.authors.map((author) => author.name).join(', '),
+          g: article.tags.map((tag) => tag.name).join(', '),
           d: formatDate(article.publishedAt),
         })),
     ),
   )
 
   const styles = await fs.readFile(path.join(ROOT, 'src/app/(frontend)/styles.css'), 'utf8')
+  // Dark mode is for the public site only; the print edition stays black on white.
+  const theme = await fs.readFile(path.join(ROOT, 'src/site/theme.css'), 'utf8')
   await write(
     'assets/styles.css',
-    `:root {\n  --font-masthead: 'Manufacturing Consent';\n  --font-serif: 'Newsreader';\n  --font-sans: 'Libre Franklin';\n}\n\n${styles}`,
+    `:root {\n  --font-masthead: 'Manufacturing Consent';\n  --font-serif: 'Newsreader';\n  --font-sans: 'Libre Franklin';\n}\n\n${styles}\n${theme}`,
   )
   await write('assets/site.js', await fs.readFile(path.join(ROOT, 'src/site/site.js'), 'utf8'))
   await write(
@@ -250,7 +316,7 @@ const main = async () => {
   }
 
   console.log(
-    `Built ${urls.length} pages: ${articles.length} stories, ${site.sections.length} sections, ${authors.size} authors, ${site.issues.length} issues.`,
+    `Built ${urls.length} pages: ${articles.length} stories, ${site.sections.length} sections, ${site.tags.length} topics, ${authors.size} authors, ${site.issues.length} issues.`,
   )
 }
 

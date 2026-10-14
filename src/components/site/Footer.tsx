@@ -8,9 +8,10 @@ type Props = {
   settings: Pick<SiteSettings, 'siteName' | 'tagline' | 'footerNote' | 'socialLinks' | 'about'>
   /** Where staff sign in; the public site lives on a different host from the admin. */
   staffUrl?: string
+  links?: { label: string; href: string }[]
 }
 
-export function Footer({ sections, settings, staffUrl = '/admin' }: Props) {
+export function Footer({ sections, settings, staffUrl = '/admin', links = [] }: Props) {
   return (
     <footer className="site-footer">
       <a className="masthead masthead--small" href="/">
@@ -35,6 +36,11 @@ export function Footer({ sections, settings, staffUrl = '/admin' }: Props) {
             <a href={link.url} rel="noreferrer" target="_blank">
               {link.label}
             </a>
+          </li>
+        ))}
+        {links.map((link) => (
+          <li key={link.href}>
+            <a href={link.href}>{link.label}</a>
           </li>
         ))}
         <li>

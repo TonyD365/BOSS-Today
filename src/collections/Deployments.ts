@@ -17,7 +17,7 @@ export const Deployments: CollectionConfig = {
     group: 'Admin',
     hidden: ({ user }) => !canPublishIssues(user),
     description:
-      'Each publish or withdrawal rebuilds the public site on Cloudflare Pages. Publishing stops at 400 rebuilds a month; withdrawals may use up to 490.',
+      'Each publish, withdrawal or urgent banner rebuilds the public site on Cloudflare Pages. Publishing stops at 400 rebuilds a month; withdrawals may use up to 490.',
   },
   defaultSort: '-createdAt',
   endpoints: [rebuildEndpoint, latestDeploymentEndpoint, deploymentProgressEndpoint],
@@ -36,6 +36,7 @@ export const Deployments: CollectionConfig = {
         { label: 'Issue published', value: 'issue' },
         { label: 'Emergency withdrawal', value: 'withdrawal' },
         { label: 'Manual rebuild', value: 'rebuild' },
+        { label: 'Banner published now', value: 'banner' },
       ],
     },
     {

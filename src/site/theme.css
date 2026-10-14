@@ -1,0 +1,39 @@
+/*
+ * Dark mode for the public site. It follows the reader's device unless they
+ * choose otherwise with the switch in the header (stored as data-theme).
+ * Only the static site loads this file; the print edition stays black on white.
+ */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --ink: #e8e6e3;
+    --ink-soft: #cfccc8;
+    --ink-muted: #a19d98;
+    --rule: #3a3a3a;
+    --rule-strong: #e8e6e3;
+    --paper: #121212;
+    --accent: #7fb2dc;
+    --placeholder: #262626;
+    --banner: #262626;
+    --urgent: #c4372e;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --ink: #e8e6e3;
+  --ink-soft: #cfccc8;
+  --ink-muted: #a19d98;
+  --rule: #3a3a3a;
+  --rule-strong: #e8e6e3;
+  --paper: #121212;
+  --accent: #7fb2dc;
+  --placeholder: #262626;
+  --banner: #262626;
+  --urgent: #c4372e;
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}

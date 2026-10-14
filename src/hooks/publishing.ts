@@ -20,7 +20,8 @@ const check = (noun: string, { data, originalDoc, context, query }: Args) => {
   const unpublishing =
     originalDoc?._status === 'published' &&
     data._status === 'draft' &&
-    query?.draft !== 'true' &&
+    // REST turns ?draft=true into a boolean on the request; accept either form.
+    String(query?.draft) !== 'true' &&
     !context.draftSave &&
     !context.withdrawal
   if (unpublishing) {

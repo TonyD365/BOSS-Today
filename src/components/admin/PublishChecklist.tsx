@@ -27,8 +27,10 @@ type Review = {
   }
   stories: Story[]
   sections: { id: number; name: string }[]
+  tags: { id: number; name: string }[]
   frontPage: boolean
   settings: boolean
+  banner: boolean
   deploys: { used: number; limit: number }
   checked: { article: number; version: string; at: string }[]
   declaration: string
@@ -177,7 +179,12 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
   }
 
   const { issue, stories } = review
-  const hasStructure = review.sections.length > 0 || review.frontPage || review.settings
+  const hasStructure =
+    review.sections.length > 0 ||
+    review.tags.length > 0 ||
+    review.frontPage ||
+    review.settings ||
+    review.banner
   const allChecked = stories.every(isChecked)
   const budgetLeft = review.deploys.limit - review.deploys.used
   const canPublish =
@@ -342,6 +349,11 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
                 Section: <a href={`/admin/collections/sections/${section.id}`}>{section.name}</a>
               </li>
             ))}
+            {review.tags.map((tag) => (
+              <li key={`tag-${tag.id}`}>
+                Tag: <a href={`/admin/collections/tags/${tag.id}`}>{tag.name}</a>
+              </li>
+            ))}
             {review.frontPage && (
               <li>
                 <a href="/admin/globals/front-page">Front page</a> arrangement
@@ -350,6 +362,11 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
             {review.settings && (
               <li>
                 <a href="/admin/globals/settings">Site settings</a>
+              </li>
+            )}
+            {review.banner && (
+              <li>
+                <a href="/admin/globals/banner">Banner</a>
               </li>
             )}
           </ul>

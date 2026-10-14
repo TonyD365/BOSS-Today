@@ -65,6 +65,49 @@ const syncWorkflow: CollectionBeforeChangeHook = ({ data, originalDoc, req, cont
   return data
 }
 
+type Correction = { id?: string | null; date?: string | null; text?: string | null }
+
+/**
+ * A correction that readers have seen stays on the record: it can't be edited
+ * or removed later, only followed by another correction.
+ */
+const keepPublishedCorrections: CollectionBeforeChangeHook = async ({
+  data,
+  originalDoc,
+  operation,
+  req,
+}) => {
+  if (operation !== 'update' || !originalDoc?.id || data.corrections === undefined) return data
+  const live = await req.payload.findByID({
+    collection: 'articles',
+    id: originalDoc.id,
+    draft: false,
+    depth: 0,
+    overrideAccess: true,
+    disableErrors: true,
+    req,
+    select: { corrections: true, _status: true },
+  })
+  if (live?._status !== 'published') return data
+  const next = ((data.corrections as Correction[] | null) ?? []).map((item) => ({ ...item }))
+  for (const published of (live.corrections ?? []) as Correction[]) {
+    const kept = next.find((item) => item.id === published.id)
+    const same =
+      kept &&
+      (kept.text ?? '').trim() === (published.text ?? '').trim() &&
+      new Date(kept.date ?? 0).getTime() === new Date(published.date ?? 0).getTime()
+    if (!same) {
+      throw new APIError(
+        'Published corrections can’t be changed or removed. Add a new correction instead.',
+        403,
+        undefined,
+        true,
+      )
+    }
+  }
+  return data
+}
+
 export const Articles: CollectionConfig = {
   slug: 'articles',
   admin: {
@@ -101,7 +144,7 @@ export const Articles: CollectionConfig = {
   },
   hooks: {
     beforeValidate: [slugFrom('title')],
-    beforeChange: [guardPublishing('A story'), syncWorkflow],
+    beforeChange: [guardPublishing('A story'), syncWorkflow, keepPublishedCorrections],
     afterChange: [revalidateAfterChange, auditPublishing('story')],
     afterDelete: [revalidateAfterDelete, auditDelete('story')],
   },
@@ -122,11 +165,54 @@ export const Articles: CollectionConfig = {
     },
     { name: 'content', type: 'richText', required: true, label: 'Story' },
     {
+      name: 'corrections',
+      type: 'array',
+      labels: { singular: 'Correction', plural: 'Corrections' },
+      access: { update: atLeastField('editor') },
+      admin: {
+        description:
+          'Shown at the end of the story with an “Updated” date. Once published, a correction stays: add a new one rather than changing it. Goes live with the next issue.',
+        condition: (data) => Boolean(data?.publishedAt) || (data?.corrections?.length ?? 0) > 0,
+      },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'date',
+              type: 'date',
+              required: true,
+              defaultValue: () => new Date().toISOString(),
+              admin: { width: '30%', date: { pickerAppearance: 'dayOnly' } },
+            },
+            {
+              name: 'text',
+              type: 'textarea',
+              required: true,
+              admin: {
+                width: '70%',
+                placeholder:
+                  'An earlier version of this article misstated the date of the game. It was Oct. 3.',
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
       name: 'workflowPanel',
       type: 'ui',
       admin: {
         position: 'sidebar',
         components: { Field: '@/components/admin/WorkflowPanel#WorkflowPanel' },
+      },
+    },
+    {
+      name: 'writingHints',
+      type: 'ui',
+      admin: {
+        position: 'sidebar',
+        components: { Field: '@/components/admin/WritingHints#WritingHints' },
       },
     },
     {
@@ -176,6 +262,17 @@ export const Articles: CollectionConfig = {
       filterOptions: { role: { not_equals: 'reader' } },
       // People are added under People, never from a story.
       admin: { position: 'sidebar', allowCreate: false },
+    },
+    {
+      name: 'tags',
+      type: 'relationship',
+      relationTo: 'tags',
+      hasMany: true,
+      index: true,
+      admin: {
+        position: 'sidebar',
+        description: 'Topics this story belongs to. Editors add new tags under Site → Tags.',
+      },
     },
     {
       name: 'publishedAt',

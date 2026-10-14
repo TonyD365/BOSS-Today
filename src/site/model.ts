@@ -10,6 +10,21 @@ export type ExportSection = {
   order: number
 }
 
+export type ExportTag = {
+  id: number
+  name: string
+  slug: string
+  description: string | null
+  image: Media | null
+}
+
+export type ExportBanner = {
+  text: string
+  link: string | null
+  style: 'info' | 'urgent'
+  expiresAt: string | null
+}
+
 export type ExportIssue = {
   id: number
   title: string
@@ -31,6 +46,8 @@ export type ExportMeta = {
     footerNote: string
   }
   frontPage: { lead: number | null; featured: number[] }
+  banner: ExportBanner | null
+  tags: ExportTag[]
   sections: ExportSection[]
   issues: ExportIssue[]
 }
@@ -46,6 +63,8 @@ export type ExportArticle = {
   heroImage: Media | null
   section: { id: number; name: string; slug: string } | null
   authors: (Author & { photo: Media | null })[]
+  tags: { id: number; name: string; slug: string }[]
+  corrections: { date: string; text: string }[]
 }
 
 /** The site components were written against Payload's Article type; exported stories fit it. */

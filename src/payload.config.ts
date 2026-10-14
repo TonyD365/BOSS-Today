@@ -15,9 +15,11 @@ import { IssueChecks } from './collections/IssueChecks'
 import { Issues } from './collections/Issues'
 import { Media } from './collections/Media'
 import { Sections } from './collections/Sections'
+import { Tags } from './collections/Tags'
 import { Users } from './collections/Users'
 import { githubAdapter, githubStorageConfig } from './storage/github'
 import { siteExportEndpoint } from './endpoints/siteExport'
+import { Banner } from './globals/Banner'
 import { FrontPage } from './globals/FrontPage'
 import { Settings } from './globals/Settings'
 
@@ -61,8 +63,8 @@ export default buildConfig({
       ],
     },
   },
-  collections: [Articles, Issues, Sections, Media, Users, AuditLog, IssueChecks, Deployments],
-  globals: [FrontPage, Settings],
+  collections: [Articles, Issues, Sections, Tags, Media, Users, AuditLog, IssueChecks, Deployments],
+  globals: [FrontPage, Banner, Settings],
   endpoints: [siteExportEndpoint],
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => [...defaultFeatures, BlocksFeature({ blocks: [YouTube] })],

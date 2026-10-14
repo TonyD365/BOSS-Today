@@ -49,7 +49,7 @@ export const pendingChanges = async (
   issueId?: number | string,
   req?: PayloadRequest,
 ) => {
-  const [articles, sections, frontPage, settings, issue] = await Promise.all([
+  const [articles, sections, tags, frontPage, settings, banner, issue] = await Promise.all([
     payload.find({
       collection: 'articles',
       draft: true,
@@ -77,8 +77,17 @@ export const pendingChanges = async (
       overrideAccess: true,
       req,
     }),
+    payload.find({
+      collection: 'tags',
+      draft: true,
+      where: { _status: { equals: 'draft' } },
+      limit: 500,
+      overrideAccess: true,
+      req,
+    }),
     payload.findGlobal({ slug: 'front-page', draft: true, depth: 0, overrideAccess: true, req }),
     payload.findGlobal({ slug: 'settings', draft: true, depth: 0, overrideAccess: true, req }),
+    payload.findGlobal({ slug: 'banner', draft: true, depth: 0, overrideAccess: true, req }),
     issueId
       ? payload.findByID({
           collection: 'issues',
@@ -118,10 +127,20 @@ export const pendingChanges = async (
       name: section.name,
       updatedAt: section.updatedAt,
     })),
+    tags: tags.docs.map((tag) => ({ id: tag.id, name: tag.name, updatedAt: tag.updatedAt })),
     frontPage: frontPage._status === 'draft',
     settings: settings._status === 'draft',
+    banner: banner._status === 'draft',
   }
 }
+
+/** Sections, tags, front page, settings or banner changes waiting to go live. */
+const hasStructureChanges = (pending: Awaited<ReturnType<typeof pendingChanges>>) =>
+  pending.sections.length > 0 ||
+  pending.tags.length > 0 ||
+  pending.frontPage ||
+  pending.settings ||
+  pending.banner
 
 const canManageIssue = (user: unknown) => canPublishIssues(user) || hasPermission(user, 'print')
 
@@ -145,8 +164,10 @@ export const issueReviewEndpoint: Endpoint = {
         },
         stories: pending.stories,
         sections: pending.sections,
+        tags: pending.tags,
         frontPage: pending.frontPage,
         settings: pending.settings,
+        banner: pending.banner,
         deploys: { used: await deploysThisMonth(req.payload, req), limit: ISSUE_DEPLOY_LIMIT },
         checked: (
           await req.payload.find({
@@ -359,9 +380,9 @@ export const issuePublishEndpoint: Endpoint = {
           409,
         )
       }
-      const hasStructure = pending.sections.length > 0 || pending.frontPage || pending.settings
+      const hasStructure = hasStructureChanges(pending)
       if (hasStructure && !body.structureChecked) {
-        return json({ message: 'Confirm the section, front page and settings changes too.' }, 409)
+        return json({ message: 'Confirm the other changes going live too.' }, 409)
       }
       if (pending.stories.length === 0 && !hasStructure && (issue.stories ?? []).length === 0) {
         return json({ message: 'There is nothing to publish.' }, 409)
@@ -420,6 +441,16 @@ export const issuePublishEndpoint: Endpoint = {
             context,
           })
         }
+        for (const tag of pending.tags) {
+          await req.payload.update({
+            collection: 'tags',
+            id: tag.id,
+            data: { _status: 'published' },
+            req,
+            overrideAccess: true,
+            context,
+          })
+        }
         if (pending.frontPage) {
           await req.payload.updateGlobal({
             slug: 'front-page',
@@ -429,9 +460,10 @@ export const issuePublishEndpoint: Endpoint = {
             context,
           })
         }
-        if (pending.settings) {
+        for (const slug of ['settings', 'banner'] as const) {
+          if (!pending[slug]) continue
           await req.payload.updateGlobal({
-            slug: 'settings',
+            slug,
             data: { _status: 'published' },
             req,
             overrideAccess: true,

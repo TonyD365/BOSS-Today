@@ -7,6 +7,7 @@ import * as migration_20261014_160633_password_sign_in from './20261014_160633_p
 import * as migration_20261014_185527_issue_publishing from './20261014_185527_issue_publishing'
 import * as migration_20261014_192539_rebuild_progress from './20261014_192539_rebuild_progress'
 import * as migration_20261014_200000_backfill_section_versions from './20261014_200000_backfill_section_versions'
+import * as migration_20261014_231138_batch1_tags_corrections_banner from './20261014_231138_batch1_tags_corrections_banner'
 
 export const migrations = [
   {
@@ -53,5 +54,10 @@ export const migrations = [
     up: migration_20261014_200000_backfill_section_versions.up,
     down: migration_20261014_200000_backfill_section_versions.down,
     name: '20261014_200000_backfill_section_versions',
+  },
+  {
+    up: migration_20261014_231138_batch1_tags_corrections_banner.up,
+    down: migration_20261014_231138_batch1_tags_corrections_banner.down,
+    name: '20261014_231138_batch1_tags_corrections_banner',
   },
 ]

@@ -15,6 +15,7 @@ import {
   type ExportIssue,
   type ExportMeta,
   type ExportSection,
+  type ExportTag,
   type frontPageLayout,
 } from './model'
 
@@ -25,6 +26,25 @@ export type PageMeta = {
   image?: string | null
   type?: 'website' | 'article'
   noindex?: boolean
+  /** An RSS feed for this page, besides the site-wide one. */
+  feed?: { title: string; path: string }
+}
+
+/** Runs before the page paints, so a reader's chosen theme never flashes. */
+const THEME_SCRIPT =
+  "try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}"
+
+function SiteBanner({ banner }: { banner: ExportMeta['banner'] }) {
+  if (!banner) return null
+  return (
+    <div
+      className={`site-banner site-banner--${banner.style}`}
+      role="status"
+      data-expires={banner.expiresAt ?? undefined}
+    >
+      {banner.link ? <a href={banner.link}>{banner.text}</a> : banner.text}
+    </div>
+  )
 }
 
 const FONTS =
@@ -61,6 +81,22 @@ export function Shell({
         <meta property="og:url" content={canonical} />
         {meta.image && <meta property="og:image" content={meta.image} />}
         <meta name="twitter:card" content={meta.image ? 'summary_large_image' : 'summary'} />
+        <meta name="color-scheme" content="light dark" />
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title={site.settings.siteName}
+          href="/feed.xml"
+        />
+        {meta.feed && (
+          <link
+            rel="alternate"
+            type="application/rss+xml"
+            title={`${meta.feed.title} — ${site.settings.siteName}`}
+            href={meta.feed.path}
+          />
+        )}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link rel="stylesheet" href={FONTS} />
@@ -68,6 +104,7 @@ export function Shell({
         <script src="/assets/site.js" defer />
       </head>
       <body>
+        <SiteBanner banner={site.banner} />
         <div className="site">
           <Header sections={site.sections} settings={site.settings} />
           <main>{children}</main>
@@ -75,6 +112,10 @@ export function Shell({
             sections={site.sections}
             settings={{ ...site.settings, about: site.settings.about as never }}
             staffUrl={`${site.cmsUrl}/admin`}
+            links={[
+              ...(site.tags.length > 0 ? [{ label: 'Topics', href: '/tags/' }] : []),
+              { label: 'RSS', href: '/feed.xml' },
+            ]}
           />
         </div>
       </body>
@@ -166,8 +207,56 @@ export function SectionView({
   )
 }
 
-export function ArticlePage({ article }: { article: ExportArticle }) {
-  return <ArticleView article={asArticle(article)} />
+export function ArticlePage({ article, shareUrl }: { article: ExportArticle; shareUrl?: string }) {
+  return <ArticleView article={asArticle(article)} shareUrl={shareUrl} />
+}
+
+export function TagView({ tag, articles }: { tag: ExportTag; articles: ExportArticle[] }) {
+  return (
+    <div className="listing">
+      <header className="listing__header">
+        <p className="kicker">Topic</p>
+        <h1>{tag.name}</h1>
+        {tag.description && <p>{tag.description}</p>}
+        <p className="listing__feed">
+          <a href={`/tags/${tag.slug}/feed.xml`}>RSS feed for this topic</a>
+        </p>
+      </header>
+      {tag.image && (
+        <Picture
+          media={tag.image}
+          sizes="(min-width: 900px) 860px, 100vw"
+          className="listing__image"
+        />
+      )}
+      {articles.length === 0 && <p className="listing__empty">No stories here yet.</p>}
+      {articles.map((article) => (
+        <StoryCard key={article.id} article={asArticle(article)} variant="row" showSection />
+      ))}
+    </div>
+  )
+}
+
+export function TagsView({ tags }: { tags: { tag: ExportTag; count: number }[] }) {
+  return (
+    <div className="listing">
+      <header className="listing__header">
+        <h1>Topics</h1>
+        <p>Stories that belong together, across every section.</p>
+      </header>
+      {tags.length === 0 && <p className="listing__empty">No topics yet.</p>}
+      <ul className="tag-list">
+        {tags.map(({ tag, count }) => (
+          <li key={tag.id}>
+            <a href={`/tags/${tag.slug}/`}>{tag.name}</a>
+            <span>
+              {count} {count === 1 ? 'story' : 'stories'}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
 
 export function AuthorView({
