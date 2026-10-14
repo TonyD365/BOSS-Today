@@ -18,13 +18,6 @@ export type ExportTag = {
   image: Media | null
 }
 
-export type ExportBanner = {
-  text: string
-  link: string | null
-  style: 'info' | 'urgent'
-  expiresAt: string | null
-}
-
 export type ExportIssue = {
   id: number
   title: string
@@ -46,7 +39,6 @@ export type ExportMeta = {
     footerNote: string
   }
   frontPage: { lead: number | null; featured: number[] }
-  banner: ExportBanner | null
   tags: ExportTag[]
   sections: ExportSection[]
   issues: ExportIssue[]

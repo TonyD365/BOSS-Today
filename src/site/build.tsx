@@ -84,10 +84,6 @@ const write = async (file: string, contents: string) => {
 
 const main = async () => {
   const site = await fetchExport<ExportMeta>('part=meta')
-  // A banner that has already expired isn't worth sending to readers at all.
-  if (site.banner?.expiresAt && new Date(site.banner.expiresAt).getTime() <= Date.now()) {
-    site.banner = null
-  }
   const articles: ExportArticle[] = []
   for (let page = 1; ; page++) {
     const batch = await fetchExport<{ docs: ExportArticle[]; totalPages: number }>(

@@ -3,8 +3,6 @@
 import { Button, useAuth, useFormModified } from '@payloadcms/ui'
 import React, { useState } from 'react'
 
-import { DeployProgress } from './DeployProgress'
-
 type SidebarUser = { role?: string; isSuperAdmin?: boolean; permissions?: string[] }
 
 /** Banner sidebar: publish the saved banner on its own, without waiting for an issue. */
@@ -15,7 +13,6 @@ export function PublishBannerNow() {
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
-  const [deploymentId, setDeploymentId] = useState<number | null>(null)
 
   const canIssue =
     Boolean(user?.isSuperAdmin) ||
@@ -36,7 +33,7 @@ export function PublishBannerNow() {
     })
     const result = (await response.json().catch(() => ({}))) as {
       message?: string
-      deploy?: { id?: number; status?: string; used?: number; limit?: number }
+      resent?: boolean
     }
     setBusy(false)
     if (!response.ok) {
@@ -45,24 +42,18 @@ export function PublishBannerNow() {
     }
     setOpen(false)
     setReason('')
-    const deploy = result.deploy
-    if (deploy?.status === 'triggered' && deploy.id) {
-      setDeploymentId(deploy.id)
-      setMessage(`The website is rebuilding (${deploy.used}/${deploy.limit} rebuilds this month).`)
-    } else {
-      setMessage(
-        deploy?.status === 'not-configured'
-          ? 'The banner is published, but the Cloudflare deploy hook is not set up, so the website was not rebuilt.'
-          : 'The banner is published, but the rebuild request failed. Use “Rebuild site” on the dashboard.',
-      )
-    }
+    setMessage(
+      result.resent
+        ? 'Sent the published banner to the website again. Readers see it within a minute.'
+        : 'Published. Readers see the change within a minute.',
+    )
   }
 
   return (
     <div style={{ display: 'grid', gap: 10, marginBottom: 24 }}>
       <p style={hint}>
         Saved changes go live with the next issue. If it can’t wait, publish the banner on its own.
-        This uses one of this month’s site rebuilds.
+        This doesn’t rebuild the website or use any of the monthly rebuilds.
       </p>
       {!open ? (
         <Button
@@ -89,7 +80,7 @@ export function PublishBannerNow() {
               disabled={busy || !reason.trim()}
               onClick={publish}
             >
-              Publish and rebuild
+              Publish banner
             </Button>
             <Button
               buttonStyle="secondary"
@@ -104,7 +95,6 @@ export function PublishBannerNow() {
       )}
       {modified && <p style={hint}>Save the banner first.</p>}
       {message && <p style={hint}>{message}</p>}
-      {deploymentId && <DeployProgress deploymentId={deploymentId} />}
     </div>
   )
 }

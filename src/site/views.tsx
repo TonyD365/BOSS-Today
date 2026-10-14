@@ -34,19 +34,6 @@ export type PageMeta = {
 const THEME_SCRIPT =
   "try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}"
 
-function SiteBanner({ banner }: { banner: ExportMeta['banner'] }) {
-  if (!banner) return null
-  return (
-    <div
-      className={`site-banner site-banner--${banner.style}`}
-      role="status"
-      data-expires={banner.expiresAt ?? undefined}
-    >
-      {banner.link ? <a href={banner.link}>{banner.text}</a> : banner.text}
-    </div>
-  )
-}
-
 const FONTS =
   'https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Manufacturing+Consent&family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&display=swap'
 
@@ -104,7 +91,8 @@ export function Shell({
         <script src="/assets/site.js" defer />
       </head>
       <body>
-        <SiteBanner banner={site.banner} />
+        {/* Filled in by site.js from /api/banner, so the banner never needs a rebuild. */}
+        <div id="site-banner" hidden />
         <div className="site">
           <Header sections={site.sections} settings={site.settings} />
           <main>{children}</main>

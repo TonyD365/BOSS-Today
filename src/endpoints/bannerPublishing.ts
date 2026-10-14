@@ -2,15 +2,16 @@ import { APIError, type Endpoint } from 'payload'
 
 import { canPublishIssues } from '../access'
 import { audit } from '../hooks/audit'
-import { assertDeployBudget, triggerDeploy } from '../publishing/deploy'
+import { publicBanner, storeBanner } from '../publishing/banner'
 
 const json = (body: unknown, status = 200) => Response.json(body, { status })
 
 /**
  * POST /api/globals/banner/publish-now  { reason }
  *
- * Puts the saved banner on the website straight away. Only the banner goes
- * live: waiting stories and other drafts still wait for the next issue.
+ * Puts the saved banner on the website straight away. It is stored in
+ * Cloudflare KV, so no rebuild is needed and none is counted. Waiting stories
+ * and other drafts still wait for the next issue.
  */
 export const publishBannerNowEndpoint: Endpoint = {
   path: '/publish-now',
@@ -29,25 +30,28 @@ export const publishBannerNowEndpoint: Endpoint = {
         overrideAccess: true,
         req,
       })
-      if (draft._status !== 'draft') {
-        return json({ message: 'The banner on the website is already up to date.' }, 409)
+      // With no unpublished change this sends the published banner again, which
+      // repairs the website's copy if an earlier attempt didn't get through.
+      const resend = draft._status !== 'draft'
+
+      // Readers' copy first: if Cloudflare refuses it, nothing is marked as published.
+      await storeBanner(publicBanner(draft))
+      if (!resend) {
+        await req.payload.updateGlobal({
+          slug: 'banner',
+          data: { _status: 'published' },
+          req,
+          overrideAccess: true,
+          context: { issuePublish: true },
+        })
       }
-
-      await assertDeployBudget(req.payload, 'issue', req)
-      await req.payload.updateGlobal({
-        slug: 'banner',
-        data: { _status: 'published' },
-        req,
-        overrideAccess: true,
-        context: { issuePublish: true },
+      const text = draft.text?.trim()
+      await audit(req, {
+        action: 'publish',
+        summary: `${resend ? 'Re-sent' : text ? 'Published' : 'Removed'} the banner${text ? ` “${text}”` : ''} straight away: ${reason}`,
+        target: 'global:banner',
       })
-      const summary = draft.text?.trim()
-        ? `Published the banner “${draft.text.trim()}” straight away: ${reason}`
-        : `Removed the banner straight away: ${reason}`
-      await audit(req, { action: 'publish', summary, target: 'global:banner' })
-
-      const deploy = await triggerDeploy(req, { reason: 'banner', note: reason })
-      return json({ ok: true, deploy })
+      return json({ ok: true, resent: resend })
     } catch (error) {
       return json(
         { message: error instanceof Error ? error.message : 'Something went wrong.' },

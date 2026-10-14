@@ -435,7 +435,7 @@ export interface IssueCheck {
   createdAt: string;
 }
 /**
- * Each publish, withdrawal or urgent banner rebuilds the public site on Cloudflare Pages. Publishing stops at 400 rebuilds a month; withdrawals may use up to 490.
+ * Each publish or withdrawal rebuilds the public site on Cloudflare Pages. Publishing stops at 400 rebuilds a month; withdrawals may use up to 490.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "deployments".
@@ -838,7 +838,7 @@ export interface FrontPage {
   createdAt?: string | null;
 }
 /**
- * A notice across the top of every page, such as a school closure. It goes live with the next issue, or use “Publish banner now” for something urgent. Leave the text empty to show no banner.
+ * A notice across the top of every page, such as a school closure. It goes live with the next issue, or use “Publish banner now” for something urgent; neither rebuilds the website. Leave the text empty to show no banner.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "banner".

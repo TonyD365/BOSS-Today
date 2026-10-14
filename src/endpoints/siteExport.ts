@@ -119,10 +119,9 @@ export const siteExportEndpoint: Endpoint = {
       return json(absolutize({ page, totalPages: result.totalPages, docs }, origin))
     }
 
-    const [settings, frontPage, banner, sections, tags, issues] = await Promise.all([
+    const [settings, frontPage, sections, tags, issues] = await Promise.all([
       payload.findGlobal({ slug: 'settings', depth: 1, overrideAccess: true }),
       payload.findGlobal({ slug: 'front-page', depth: 0, overrideAccess: true }),
-      payload.findGlobal({ slug: 'banner', depth: 0, overrideAccess: true }),
       payload.find({
         collection: 'sections',
         where: published,
@@ -170,15 +169,6 @@ export const siteExportEndpoint: Endpoint = {
               typeof item === 'object' ? item.id : item,
             ),
           },
-          banner:
-            banner._status === 'published' && banner.text?.trim()
-              ? {
-                  text: banner.text.trim(),
-                  link: banner.link || null,
-                  style: banner.style === 'urgent' ? 'urgent' : 'info',
-                  expiresAt: banner.expiresAt ?? null,
-                }
-              : null,
           tags: tags.docs.map(({ id, name, slug, description, image }) => ({
             id,
             name,

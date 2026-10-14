@@ -16,6 +16,7 @@ import {
   ISSUE_DEPLOY_LIMIT,
   triggerDeploy,
 } from '../publishing/deploy'
+import { bannerStoreConfigured, publicBanner, storeBanner } from '../publishing/banner'
 import { getProgress } from '../publishing/progress'
 import { describeProblems, publishingProblems } from '../publishing/readiness'
 
@@ -415,7 +416,19 @@ export const issuePublishEndpoint: Endpoint = {
         )
       }
 
+      if (pending.banner && !bannerStoreConfigured()) {
+        return json(
+          {
+            message:
+              'Nothing was published. A banner change is waiting, but the banner store (Cloudflare KV) is not set up yet. Ask the super admin to set it up.',
+          },
+          409,
+        )
+      }
+
       await assertDeployBudget(req.payload, 'issue', req)
+
+      let bannerToStore: ReturnType<typeof publicBanner> | undefined
 
       // All of the changes below succeed together or not at all.
       const ownsTransaction = await initTransaction(req)
@@ -460,16 +473,24 @@ export const issuePublishEndpoint: Endpoint = {
             context,
           })
         }
-        for (const slug of ['settings', 'banner'] as const) {
-          if (!pending[slug]) continue
+        if (pending.settings) {
           await req.payload.updateGlobal({
-            slug,
+            slug: 'settings',
             data: { _status: 'published' },
             req,
             overrideAccess: true,
             context,
           })
         }
+        const banner = pending.banner
+          ? await req.payload.updateGlobal({
+              slug: 'banner',
+              data: { _status: 'published' },
+              req,
+              overrideAccess: true,
+              context,
+            })
+          : null
 
         // The print edition keeps only stories that are now live.
         const live = await req.payload.find({
@@ -525,6 +546,7 @@ export const issuePublishEndpoint: Endpoint = {
           target: `issue:${issue.id}`,
         })
         if (ownsTransaction) await commitTransaction(req)
+        if (banner) bannerToStore = publicBanner(banner)
       } catch (error) {
         await killTransaction(req)
         throw new APIError(
@@ -535,8 +557,18 @@ export const issuePublishEndpoint: Endpoint = {
         )
       }
 
+      // The banner isn't part of the static pages; it goes to Cloudflare KV.
+      let bannerWarning: string | undefined
+      if (bannerToStore !== undefined) {
+        try {
+          await storeBanner(bannerToStore)
+        } catch (error) {
+          bannerWarning = `The banner didn’t reach the website: ${error instanceof Error ? error.message : 'unknown error'} Open the banner and click “Publish banner now” to try again.`
+        }
+      }
+
       const deploy = await triggerDeploy(req, { reason: 'issue', issue: issue.id })
-      return json({ ok: true, published: pending.stories.length, deploy })
+      return json({ ok: true, published: pending.stories.length, deploy, bannerWarning })
     } catch (error) {
       return errorResponse(error)
     }

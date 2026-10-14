@@ -45,6 +45,7 @@ Rebuilds are counted in **Site rebuilds**: publishing stops at 400 a month and w
 | `SITE_EXPORT_TOKEN`                        | Another `openssl rand -hex 32`; also set on Cloudflare              |
 | `PUBLIC_SITE_URL`                          | The Cloudflare Pages address, once it exists                        |
 | `CLOUDFLARE_DEPLOY_HOOK_URL`               | From Cloudflare (step 2)                                            |
+| `CLOUDFLARE_KV_NAMESPACE_ID`               | From Cloudflare (step 2.8); where the site banner is stored         |
 | `SITE_URL`                                 | Optional. This host's address, e.g. `https://bosstoday.vercel.app`  |
 | `ALLOWED_EMAIL_DOMAINS`                    | Optional. Limits Google sign-in to these domains                    |
 
@@ -57,6 +58,12 @@ Rebuilds are counted in **Site rebuilds**: publishing stops at 400 a month and w
 5. Settings → Builds → **Deploy hooks** → add one for the `main` branch and copy its URL into Vercel's `CLOUDFLARE_DEPLOY_HOOK_URL`. Treat it like a password.
 6. Set `PUBLIC_SITE_URL` on Vercel too and redeploy Vercel, so old reader links redirect to Pages.
 7. Optional, to see rebuild progress in the newsroom: Cloudflare → My Profile → API Tokens → Create token → custom token with **Account → Cloudflare Pages → Read**. On Vercel set `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` (shown on the Workers & Pages overview) and `CLOUDFLARE_PAGES_PROJECT` (the project name), then redeploy.
+
+8. **Banner** (needed before anyone publishes one). The banner isn't built into the pages; a small Pages Function (`functions/api/banner.js`) serves it from Workers KV, so changing it never rebuilds the site.
+   1. Workers & Pages → **KV** → Create a namespace, e.g. `boss-today-banner`. Copy its **ID**.
+   2. The Pages project → Settings → **Bindings** → Add → KV namespace: variable name `BANNER`, the namespace above. Redeploy Pages once so the binding takes effect.
+   3. Edit the API token from step 7 (or create one) to also have **Account → Workers KV Storage → Edit**.
+   4. On Vercel set `CLOUDFLARE_KV_NAMESPACE_ID` (the ID), plus `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` if not already set, then redeploy.
 
 To try the static build locally: `CMS_URL=http://localhost:3000 SITE_EXPORT_TOKEN=… npm run build:site`, then serve `site-dist`.
 

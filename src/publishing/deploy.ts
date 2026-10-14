@@ -7,7 +7,7 @@ export const ISSUE_DEPLOY_LIMIT = 400
 /** Emergency withdrawals may dip into the reserve between 400 and this. */
 export const WITHDRAWAL_DEPLOY_LIMIT = 490
 
-export type DeployReason = 'issue' | 'withdrawal' | 'rebuild' | 'banner'
+export type DeployReason = 'issue' | 'withdrawal' | 'rebuild'
 
 const TIME_ZONE = 'America/Toronto'
 

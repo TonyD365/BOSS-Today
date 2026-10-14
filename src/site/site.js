@@ -6,16 +6,37 @@
     el.textContent = today
   })
 
-  // The banner hides itself when it expires, so no rebuild is needed to take it down.
-  document.querySelectorAll('[data-expires]').forEach(function (el) {
-    var expires = new Date(el.getAttribute('data-expires')).getTime()
-    var hide = function () {
-      el.hidden = true
-    }
-    var left = expires - Date.now()
-    if (!(left > 0)) hide()
-    else if (left < 2147483647) setTimeout(hide, left)
-  })
+  // The banner comes from Cloudflare KV (functions/api/banner.js), not from the
+  // built pages, so it can change without a rebuild. It hides itself on expiry.
+  var bannerBox = document.getElementById('site-banner')
+  if (bannerBox && window.fetch) {
+    fetch('/api/banner')
+      .then(function (response) {
+        return response.ok ? response.json() : null
+      })
+      .then(function (banner) {
+        if (!banner || !banner.text) return
+        var left = banner.expiresAt ? new Date(banner.expiresAt).getTime() - Date.now() : Infinity
+        if (!(left > 0)) return
+        bannerBox.className =
+          'site-banner site-banner--' + (banner.style === 'urgent' ? 'urgent' : 'info')
+        bannerBox.setAttribute('role', 'status')
+        var holder = bannerBox
+        if (banner.link && /^(https?:\/\/|\/)/.test(banner.link)) {
+          holder = document.createElement('a')
+          holder.href = banner.link
+          bannerBox.appendChild(holder)
+        }
+        holder.textContent = banner.text
+        bannerBox.hidden = false
+        if (left < 2147483647) {
+          setTimeout(function () {
+            bannerBox.hidden = true
+          }, left)
+        }
+      })
+      .catch(function () {})
+  }
 
   // Theme: follow the device, or the reader's own choice.
   var root = document.documentElement

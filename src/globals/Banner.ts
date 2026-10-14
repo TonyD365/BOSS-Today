@@ -8,6 +8,8 @@ import { guardGlobalPublishing } from '../hooks/publishing'
 /**
  * A notice across the top of every page. It goes live with the next issue, or
  * straight away when someone with the Issue permission publishes it on its own.
+ * Readers get it from Cloudflare KV (see src/publishing/banner.ts), never from
+ * the built pages, so it costs no rebuilds.
  */
 export const Banner: GlobalConfig = {
   slug: 'banner',
@@ -15,7 +17,7 @@ export const Banner: GlobalConfig = {
   admin: {
     group: 'Site',
     description:
-      'A notice across the top of every page, such as a school closure. It goes live with the next issue, or use “Publish banner now” for something urgent. Leave the text empty to show no banner.',
+      'A notice across the top of every page, such as a school closure. It goes live with the next issue, or use “Publish banner now” for something urgent; neither rebuilds the website. Leave the text empty to show no banner.',
     components: {
       elements: {
         PublishButton: '@/components/admin/Hidden#Hidden',
