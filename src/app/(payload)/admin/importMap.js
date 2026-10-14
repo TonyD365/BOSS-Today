@@ -23,6 +23,7 @@ import { UnderlineFeatureClient as UnderlineFeatureClient_e70f5e05f09f93e00b997e
 import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { WorkflowPanel as WorkflowPanel_9168d7f4a9a9ae1abb1fc28b012db3f0 } from '@/components/admin/WorkflowPanel'
+import { StoryRowLabel as StoryRowLabel_8b2a60b2d92bff4132c96c6748202029 } from '@/components/admin/StoryRowLabel'
 import { PrintEditionLink as PrintEditionLink_444df7a4575e6b37272975c680a7085d } from '@/components/admin/PrintEditionLink'
 import { Icon as Icon_066c562e10ad4e70ff0de1a39f9b91f6 } from '@/components/admin/Brand'
 import { Logo as Logo_066c562e10ad4e70ff0de1a39f9b91f6 } from '@/components/admin/Brand'
@@ -82,6 +83,7 @@ export const importMap = {
   '@payloadcms/richtext-lexical/client#ItalicFeatureClient':
     ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   '@/components/admin/WorkflowPanel#WorkflowPanel': WorkflowPanel_9168d7f4a9a9ae1abb1fc28b012db3f0,
+  '@/components/admin/StoryRowLabel#StoryRowLabel': StoryRowLabel_8b2a60b2d92bff4132c96c6748202029,
   '@/components/admin/PrintEditionLink#PrintEditionLink':
     PrintEditionLink_444df7a4575e6b37272975c680a7085d,
   '@/components/admin/Brand#Icon': Icon_066c562e10ad4e70ff0de1a39f9b91f6,

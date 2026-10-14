@@ -1,10 +1,12 @@
 import type { CollectionConfig } from 'payload'
 
 import { atLeast, withPermission } from '../access'
+import { auditDelete } from '../hooks/audit'
 
 export const Media: CollectionConfig = {
   slug: 'media',
   admin: { useAsTitle: 'alt', group: 'Newsroom' },
+  hooks: { afterDelete: [auditDelete('image')] },
   access: {
     read: () => true,
     create: atLeast('reporter'),

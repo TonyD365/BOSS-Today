@@ -72,6 +72,7 @@ export interface Config {
     sections: Section
     media: Media
     users: User
+    'audit-log': AuditLog
     'payload-kv': PayloadKv
     'payload-locked-documents': PayloadLockedDocument
     'payload-preferences': PayloadPreference
@@ -84,6 +85,7 @@ export interface Config {
     sections: SectionsSelect<false> | SectionsSelect<true>
     media: MediaSelect<false> | MediaSelect<true>
     users: UsersSelect<false> | UsersSelect<true>
+    'audit-log': AuditLogSelect<false> | AuditLogSelect<true>
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>
     'payload-locked-documents':
       PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>
@@ -96,9 +98,11 @@ export interface Config {
   fallbackLocale: null
   globals: {
     'front-page': FrontPage
+    settings: Setting
   }
   globalsSelect: {
     'front-page': FrontPageSelect<false> | FrontPageSelect<true>
+    settings: SettingsSelect<false> | SettingsSelect<true>
   }
   locale: null
   widgets: {
@@ -308,14 +312,41 @@ export interface Issue {
   number: number
   date: string
   /**
-   * Drag to reorder. The first story becomes the front-page lead of the print edition.
+   * Drag to reorder. The first story is the front-page lead of the print edition. Width and image only affect the print edition.
    */
-  articles: (number | Article)[]
+  stories: {
+    article: number | Article
+    width: 'full' | 'twoThirds' | 'half' | 'column'
+    showImage?: boolean | null
+    id?: string | null
+  }[]
+  /**
+   * Optional notice boxed on the front page of the print edition.
+   */
+  announcement?: string | null
   printEdition?: boolean | null
   paperSize?: ('letter' | 'tabloid' | 'a4' | 'a3') | null
+  showContents?: boolean | null
+  showStaffBox?: boolean | null
   updatedAt: string
   createdAt: string
   _status?: ('draft' | 'published') | null
+}
+/**
+ * Every publish, withdrawal, deletion and staff change. Visible to the super admin only.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-log".
+ */
+export interface AuditLog {
+  id: number
+  summary: string
+  action:
+    'publish' | 'withdraw' | 'delete' | 'invite' | 'role' | 'deactivate' | 'reactivate' | 'settings'
+  actor?: (number | null) | User
+  target?: string | null
+  updatedAt: string
+  createdAt: string
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -360,6 +391,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'users'
         value: number | User
+      } | null)
+    | ({
+        relationTo: 'audit-log'
+        value: number | AuditLog
       } | null)
   globalSlug?: string | null
   user: {
@@ -440,9 +475,19 @@ export interface IssuesSelect<T extends boolean = true> {
   volume?: T
   number?: T
   date?: T
-  articles?: T
+  stories?:
+    | T
+    | {
+        article?: T
+        width?: T
+        showImage?: T
+        id?: T
+      }
+  announcement?: T
   printEdition?: T
   paperSize?: T
+  showContents?: T
+  showStaffBox?: T
   updatedAt?: T
   createdAt?: T
   _status?: T
@@ -536,6 +581,18 @@ export interface UsersSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-log_select".
+ */
+export interface AuditLogSelect<T extends boolean = true> {
+  summary?: T
+  action?: T
+  actor?: T
+  target?: T
+  updatedAt?: T
+  createdAt?: T
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
@@ -592,11 +649,68 @@ export interface FrontPage {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "settings".
+ */
+export interface Setting {
+  id: number
+  siteName: string
+  tagline?: string | null
+  /**
+   * Shown at /about. Leave empty to hide the page.
+   */
+  about?: {
+    root: {
+      type: string
+      children: {
+        type: any
+        version: number
+        [k: string]: unknown
+      }[]
+      direction: ('ltr' | 'rtl') | null
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | ''
+      indent: number
+      version: number
+    }
+    [k: string]: unknown
+  } | null
+  socialLinks?:
+    | {
+        label: string
+        url: string
+        id?: string | null
+      }[]
+    | null
+  footerNote?: string | null
+  updatedAt?: string | null
+  createdAt?: string | null
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "front-page_select".
  */
 export interface FrontPageSelect<T extends boolean = true> {
   lead?: T
   featured?: T
+  updatedAt?: T
+  createdAt?: T
+  globalType?: T
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "settings_select".
+ */
+export interface SettingsSelect<T extends boolean = true> {
+  siteName?: T
+  tagline?: T
+  about?: T
+  socialLinks?:
+    | T
+    | {
+        label?: T
+        url?: T
+        id?: T
+      }
+  footerNote?: T
   updatedAt?: T
   createdAt?: T
   globalType?: T

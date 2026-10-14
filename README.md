@@ -52,6 +52,10 @@ Reader → Reporter → Editor → Exec → Super admin. Execs get any of four p
 
 Stories move through Draft → In review → Changes requested → Published → Withdrawn using the panel in each story's sidebar.
 
+## Print editions
+
+Open an issue, tick **Print edition**, pick a paper size and set each story's width. `/issues/<vol>-<no>/print` shows the typeset pages and `/issues/<vol>-<no>/pdf` downloads them as a PDF (rendered with headless Chromium; locally it uses your installed Chrome, or set `CHROME_PATH`).
+
 ## Images on GitHub
 
 Uploads are converted to WebP (at most 2400px wide) and, when `GITHUB_IMAGES_REPO` and `GITHUB_IMAGES_TOKEN` are set, committed to that repository and served from GitHub Pages. Without them, Vercel Blob is used; locally, files go to `./media`.

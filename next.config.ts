@@ -7,6 +7,11 @@ const __filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(__filename)
 
 const nextConfig: NextConfig = {
+  // Headless Chromium for PDF export is loaded at runtime, never bundled.
+  serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
+  outputFileTracingIncludes: {
+    '/issues/*/pdf': ['./node_modules/@sparticuz/chromium/bin/**'],
+  },
   images: {
     localPatterns: [
       {

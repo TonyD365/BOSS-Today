@@ -9,12 +9,14 @@ import { fileURLToPath } from 'url'
 
 import { YouTube } from './blocks/YouTube'
 import { Articles } from './collections/Articles'
+import { AuditLog } from './collections/AuditLog'
 import { Issues } from './collections/Issues'
 import { Media } from './collections/Media'
 import { Sections } from './collections/Sections'
 import { Users } from './collections/Users'
 import { githubAdapter, githubStorageConfig } from './storage/github'
 import { FrontPage } from './globals/FrontPage'
+import { Settings } from './globals/Settings'
 
 const github = githubStorageConfig()
 
@@ -43,8 +45,8 @@ export default buildConfig({
       ],
     },
   },
-  collections: [Articles, Issues, Sections, Media, Users],
-  globals: [FrontPage],
+  collections: [Articles, Issues, Sections, Media, Users, AuditLog],
+  globals: [FrontPage, Settings],
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => [...defaultFeatures, BlocksFeature({ blocks: [YouTube] })],
   }),

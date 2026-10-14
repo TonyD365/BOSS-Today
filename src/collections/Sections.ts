@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { withPermission } from '../access'
+import { auditDelete } from '../hooks/audit'
 import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 import { slugFrom } from '../hooks/slug'
 
@@ -17,7 +18,7 @@ export const Sections: CollectionConfig = {
   hooks: {
     beforeValidate: [slugFrom('name')],
     afterChange: [revalidateAfterChange],
-    afterDelete: [revalidateAfterDelete],
+    afterDelete: [revalidateAfterDelete, auditDelete('section')],
   },
   fields: [
     { name: 'name', type: 'text', required: true },

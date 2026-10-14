@@ -17,6 +17,7 @@ import {
   superAdminOnlyField,
 } from '../access'
 import { googleSessionStrategy, SESSION_SECONDS } from '../auth/session'
+import { auditDelete, auditPeople } from '../hooks/audit'
 import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 import { slugFrom } from '../hooks/slug'
 
@@ -137,8 +138,8 @@ export const Users: CollectionConfig = {
       },
     ],
     beforeChange: [enforceRoleRules],
-    afterChange: [revalidateAfterChange],
-    afterDelete: [revalidateAfterDelete],
+    afterChange: [revalidateAfterChange, auditPeople],
+    afterDelete: [revalidateAfterDelete, auditDelete('person')],
   },
   fields: [
     {

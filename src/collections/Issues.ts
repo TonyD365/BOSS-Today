@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { publishedOrStaff, withPermission } from '../access'
+import { auditDelete, auditPublishing } from '../hooks/audit'
 import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 
 /**
@@ -25,8 +26,8 @@ export const Issues: CollectionConfig = {
     delete: withPermission('print'),
   },
   hooks: {
-    afterChange: [revalidateAfterChange],
-    afterDelete: [revalidateAfterDelete],
+    afterChange: [revalidateAfterChange, auditPublishing('issue')],
+    afterDelete: [revalidateAfterDelete, auditDelete('issue')],
   },
   fields: [
     {
@@ -44,15 +45,43 @@ export const Issues: CollectionConfig = {
       ],
     },
     {
-      name: 'articles',
-      type: 'relationship',
-      relationTo: 'articles',
-      hasMany: true,
+      name: 'stories',
+      type: 'array',
       required: true,
-      label: 'Stories',
+      minRows: 1,
+      labels: { singular: 'Story', plural: 'Stories' },
       admin: {
         description:
-          'Drag to reorder. The first story becomes the front-page lead of the print edition.',
+          'Drag to reorder. The first story is the front-page lead of the print edition. Width and image only affect the print edition.',
+        components: { RowLabel: '@/components/admin/StoryRowLabel#StoryRowLabel' },
+      },
+      fields: [
+        { name: 'article', type: 'relationship', relationTo: 'articles', required: true },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'width',
+              type: 'select',
+              required: true,
+              defaultValue: 'full',
+              options: [
+                { label: 'Full page width', value: 'full' },
+                { label: 'Two-thirds', value: 'twoThirds' },
+                { label: 'Half', value: 'half' },
+                { label: 'One column', value: 'column' },
+              ],
+            },
+            { name: 'showImage', type: 'checkbox', defaultValue: true, label: 'Show lead image' },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'announcement',
+      type: 'textarea',
+      admin: {
+        description: 'Optional notice boxed on the front page of the print edition.',
       },
     },
     {
@@ -77,6 +106,20 @@ export const Issues: CollectionConfig = {
         position: 'sidebar',
         condition: (data) => Boolean(data?.printEdition),
       },
+    },
+    {
+      name: 'showContents',
+      type: 'checkbox',
+      defaultValue: true,
+      label: 'Table of contents on the front page',
+      admin: { position: 'sidebar', condition: (data) => Boolean(data?.printEdition) },
+    },
+    {
+      name: 'showStaffBox',
+      type: 'checkbox',
+      defaultValue: true,
+      label: 'Staff box on the last page',
+      admin: { position: 'sidebar', condition: (data) => Boolean(data?.printEdition) },
     },
     {
       name: 'printLink',

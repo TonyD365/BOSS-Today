@@ -1,11 +1,25 @@
 import config from '@payload-config'
 import { getPayload, type Where } from 'payload'
 
-import type { Article, Issue, Media, Section, User } from '@/payload-types'
+import type { Article, Issue, Section } from '@/payload-types'
+
+import { toAuthor } from './author'
 
 const published: Where = { _status: { equals: 'published' } }
 
 const client = () => getPayload({ config })
+
+export const getSettings = async () => {
+  const payload = await client()
+  const settings = await payload.findGlobal({ slug: 'settings', depth: 0 })
+  return {
+    ...settings,
+    siteName: settings.siteName || 'BOSS Today',
+    tagline: settings.tagline || 'The student newspaper of Bur Oak Secondary School.',
+  }
+}
+
+export type SiteSettings = Awaited<ReturnType<typeof getSettings>>
 
 export const getSections = async (): Promise<Section[]> => {
   const payload = await client()
@@ -88,23 +102,6 @@ export const getSection = async (slug: string, page = 1) => {
   return { section, articles }
 }
 
-/** Only the public parts of a staff profile ever leave the server. */
-export type Author = Pick<User, 'id' | 'name' | 'title' | 'bio' | 'slug'> & {
-  photo?: Media | null
-}
-
-export const toAuthor = (user: User | number): Author | undefined => {
-  if (typeof user === 'number') return undefined
-  return {
-    id: user.id,
-    name: user.name,
-    title: user.title,
-    bio: user.bio,
-    slug: user.slug,
-    photo: user.photo && typeof user.photo === 'object' ? user.photo : null,
-  }
-}
-
 export const getAuthor = async (slug: string) => {
   const payload = await client()
   const { docs } = await payload.find({
@@ -166,9 +163,42 @@ export const getIssue = async (
   return docs[0]
 }
 
+export type IssueStory = {
+  article: Article
+  width: 'full' | 'twoThirds' | 'half' | 'column'
+  showImage: boolean
+}
+
 /** The stories of an issue, in order. Readers never see unpublished ones. */
+export const issueStories = (issue: Issue, includeDrafts = false): IssueStory[] =>
+  (issue.stories ?? []).flatMap((story) => {
+    const article = story.article
+    if (typeof article !== 'object' || !article) return []
+    if (!includeDrafts && article._status !== 'published') return []
+    return [{ article, width: story.width ?? 'full', showImage: story.showImage !== false }]
+  })
+
 export const issueArticles = (issue: Issue, includeDrafts = false): Article[] =>
-  (issue.articles ?? []).filter(
-    (article): article is Article =>
-      typeof article === 'object' && (includeDrafts || article._status === 'published'),
-  )
+  issueStories(issue, includeDrafts).map((story) => story.article)
+
+/** Active staff with a title, for the print edition's staff box. */
+export const getStaffBox = async () => {
+  const payload = await client()
+  const { docs } = await payload.find({
+    collection: 'users',
+    where: {
+      and: [
+        { active: { not_equals: false } },
+        { role: { not_equals: 'reader' } },
+        { title: { exists: true } },
+      ],
+    },
+    sort: 'name',
+    limit: 200,
+    depth: 0,
+    select: { name: true, title: true },
+  })
+  return docs
+    .filter((person) => person.title)
+    .map((person) => ({ name: person.name, title: person.title as string }))
+}

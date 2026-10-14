@@ -1,6 +1,6 @@
 import type { Article, Media, Section } from '@/payload-types'
 
-import { toAuthor, type Author } from './data'
+import { toAuthor, type Author } from './author'
 
 const TIME_ZONE = 'America/Toronto'
 

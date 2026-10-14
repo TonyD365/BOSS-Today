@@ -97,9 +97,9 @@ export async function Dashboard({ payload, user }: Props) {
 }
 
 function IssueCard({ issue }: { issue: Issue }) {
-  const stories = (issue.articles ?? []).filter(
-    (article): article is Article => typeof article === 'object',
-  )
+  const stories = (issue.stories ?? [])
+    .map((story) => story.article)
+    .filter((article): article is Article => typeof article === 'object' && article !== null)
   const ready = stories.filter((story) => story._status === 'published').length
 
   return (

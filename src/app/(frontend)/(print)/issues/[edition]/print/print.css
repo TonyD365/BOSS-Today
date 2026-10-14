@@ -4,6 +4,16 @@ body:has(.paper) {
   background: #e9e7e2;
 }
 
+.print-toolbar__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.button--secondary {
+  background: #fff;
+  color: var(--ink);
+}
+
 .print-toolbar {
   position: sticky;
   top: 0;
@@ -66,14 +76,74 @@ body:has(.paper) {
   font-style: italic;
 }
 
+.paper__grid {
+  display: grid;
+  grid-template-columns: repeat(var(--columns, 3), minmax(0, 1fr));
+  gap: 12pt 16pt;
+  align-items: start;
+}
+
 .paper__story {
   padding-bottom: 12pt;
-  margin-bottom: 12pt;
   border-bottom: 1px solid #000;
 }
 
-.paper__story:last-child {
-  border-bottom: 0;
+.paper__sidebar,
+.paper__staff {
+  display: grid;
+  gap: 10pt;
+  font:
+    8.5pt/1.35 var(--font-sans),
+    sans-serif;
+  break-inside: avoid;
+}
+
+.paper__sidebar h2,
+.paper__staff h2 {
+  margin: 0 0 4pt;
+  padding-bottom: 3pt;
+  border-bottom: 2px solid #000;
+  font:
+    700 8pt/1.2 var(--font-sans),
+    sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.paper__notice {
+  padding: 6pt 8pt;
+  border: 1.5pt solid #000;
+}
+
+.paper__notice p {
+  margin: 0;
+}
+
+.paper__contents ol,
+.paper__staff ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.paper__contents li {
+  padding: 3pt 0;
+  border-bottom: 0.5pt solid #999;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 9pt;
+}
+
+.paper__contents li span {
+  display: block;
+  font:
+    700 6.5pt/1.3 var(--font-sans),
+    sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.paper__staff li {
+  margin-bottom: 2pt;
 }
 
 .paper__story h2 {
@@ -116,7 +186,7 @@ body:has(.paper) {
 }
 
 .paper__columns {
-  column-count: var(--columns, 3);
+  column-count: var(--span, 1);
   column-gap: 16pt;
   column-rule: 0.5pt solid #999;
   text-align: justify;
@@ -200,6 +270,14 @@ body:has(.paper) {
     box-shadow: none;
   }
 
+  .paper__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .paper__grid > * {
+    grid-column: auto !important;
+  }
+
   .paper__columns {
     column-count: 1;
   }
@@ -216,6 +294,16 @@ body:has(.paper) {
 @media print {
   body:has(.paper) {
     background: #fff;
+  }
+
+  .print-toolbar__actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .button--secondary {
+    background: #fff;
+    color: var(--ink);
   }
 
   .print-toolbar {

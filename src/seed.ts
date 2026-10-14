@@ -160,7 +160,13 @@ const run = async () => {
         volume: 1,
         number: 1,
         date: new Date().toISOString(),
-        articles: articleIds.slice(0, 8),
+        stories: articleIds.slice(0, 8).map((article, index) => ({
+          article,
+          width:
+            index === 0 ? ('full' as const) : index < 3 ? ('half' as const) : ('column' as const),
+          showImage: index < 4,
+        })),
+        announcement: 'Placeholder notice: club fair is next Thursday in the cafeteria.',
         printEdition: true,
         paperSize: 'letter',
         _status: 'published',

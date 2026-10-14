@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import React from 'react'
 
+import type { SiteSettings } from '@/lib/data'
 import type { Section } from '@/payload-types'
 
 import { Today } from './Today'
 
-export function Header({ sections }: { sections: Section[] }) {
+export function Header({ sections, settings }: { sections: Section[]; settings: SiteSettings }) {
   return (
     <header className="site-header">
       <div className="site-header__top">
@@ -13,8 +14,8 @@ export function Header({ sections }: { sections: Section[] }) {
           <Today />
           <span>Bur Oak Secondary School</span>
         </div>
-        <Link className="masthead" href="/" aria-label="BOSS Today — home">
-          BOSS Today
+        <Link className="masthead" href="/" aria-label={`${settings.siteName} — home`}>
+          {settings.siteName}
         </Link>
         <form className="site-header__search" action="/search" role="search">
           <label className="visually-hidden" htmlFor="site-search">

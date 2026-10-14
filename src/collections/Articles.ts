@@ -11,6 +11,7 @@ import {
   WORKFLOW_STATES,
   type WorkflowState,
 } from '../endpoints/articleWorkflow'
+import { auditDelete, auditPublishing } from '../hooks/audit'
 import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 import { slugFrom } from '../hooks/slug'
 
@@ -99,8 +100,8 @@ export const Articles: CollectionConfig = {
   hooks: {
     beforeValidate: [slugFrom('title')],
     beforeChange: [syncWorkflow],
-    afterChange: [revalidateAfterChange],
-    afterDelete: [revalidateAfterDelete],
+    afterChange: [revalidateAfterChange, auditPublishing('story')],
+    afterDelete: [revalidateAfterDelete, auditDelete('story')],
   },
   fields: [
     { name: 'title', type: 'text', required: true, label: 'Headline' },

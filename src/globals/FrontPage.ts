@@ -1,6 +1,7 @@
 import type { GlobalConfig } from 'payload'
 
 import { withPermission } from '../access'
+import { auditGlobal } from '../hooks/audit'
 
 const revalidate = async () => {
   try {
@@ -19,13 +20,12 @@ export const FrontPage: GlobalConfig = {
     group: 'Site',
     description:
       'Choose the lead story and the stories beside it. Drag to reorder. Anything left empty is filled with the newest stories.',
-    livePreview: { url: '/' },
   },
   access: {
     read: () => true,
     update: withPermission('frontPage'),
   },
-  hooks: { afterChange: [revalidate] },
+  hooks: { afterChange: [revalidate, auditGlobal('the front page')] },
   fields: [
     {
       name: 'lead',

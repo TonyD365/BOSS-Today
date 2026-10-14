@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import React from 'react'
 
-import type { Author } from '@/lib/data'
+import type { Author } from '@/lib/author'
 
 export function Byline({ authors, linked = true }: { authors: Author[]; linked?: boolean }) {
   if (authors.length === 0) return null

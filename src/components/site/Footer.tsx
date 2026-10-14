@@ -1,13 +1,14 @@
 import Link from 'next/link'
 import React from 'react'
 
+import type { SiteSettings } from '@/lib/data'
 import type { Section } from '@/payload-types'
 
-export function Footer({ sections }: { sections: Section[] }) {
+export function Footer({ sections, settings }: { sections: Section[]; settings: SiteSettings }) {
   return (
     <footer className="site-footer">
       <Link className="masthead masthead--small" href="/">
-        BOSS Today
+        {settings.siteName}
       </Link>
       <ul>
         {sections.map((section) => (
@@ -18,11 +19,25 @@ export function Footer({ sections }: { sections: Section[] }) {
         <li>
           <Link href="/issues">Issues</Link>
         </li>
+        {settings.about && (
+          <li>
+            <Link href="/about">About</Link>
+          </li>
+        )}
+        {(settings.socialLinks ?? []).map((link) => (
+          <li key={link.id ?? link.url}>
+            <a href={link.url} rel="noreferrer" target="_blank">
+              {link.label}
+            </a>
+          </li>
+        ))}
         <li>
           <Link href="/admin">Staff sign-in</Link>
         </li>
       </ul>
-      <p>The student newspaper of Bur Oak Secondary School. Written and edited by students.</p>
+      <p>
+        {settings.tagline} {settings.footerNote}
+      </p>
     </footer>
   )
 }
