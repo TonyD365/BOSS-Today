@@ -23,10 +23,28 @@ export const Media: CollectionConfig = {
   ],
   upload: {
     mimeTypes: ['image/*'],
+    // Store WebP no wider than 2400px: sharp enough for print, small enough for the image repo.
+    resizeOptions: { width: 2400, withoutEnlargement: true },
+    formatOptions: { format: 'webp', options: { quality: 82 } },
     imageSizes: [
-      { name: 'thumb', width: 400, withoutEnlargement: true },
-      { name: 'card', width: 800, withoutEnlargement: true },
-      { name: 'hero', width: 1600, withoutEnlargement: true },
+      {
+        name: 'thumb',
+        formatOptions: { format: 'webp', options: { quality: 78 } },
+        width: 400,
+        withoutEnlargement: true,
+      },
+      {
+        name: 'card',
+        formatOptions: { format: 'webp', options: { quality: 78 } },
+        width: 800,
+        withoutEnlargement: true,
+      },
+      {
+        name: 'hero',
+        formatOptions: { format: 'webp', options: { quality: 78 } },
+        width: 1600,
+        withoutEnlargement: true,
+      },
     ],
   },
 }

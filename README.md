@@ -52,6 +52,17 @@ Reader → Reporter → Editor → Exec → Super admin. Execs get any of four p
 
 Stories move through Draft → In review → Changes requested → Published → Withdrawn using the panel in each story's sidebar.
 
+## Images on GitHub
+
+Uploads are converted to WebP (at most 2400px wide) and, when `GITHUB_IMAGES_REPO` and `GITHUB_IMAGES_TOKEN` are set, committed to that repository and served from GitHub Pages. Without them, Vercel Blob is used; locally, files go to `./media`.
+
+1. Create a **public** repository for images, e.g. `boss-today-images`, with a `.nojekyll` file at the root.
+2. Settings → Pages → Deploy from branch → `main`, folder `/ (root)`.
+3. Create a fine-grained personal access token limited to that repository with **Contents: Read and write**.
+4. Set `GITHUB_IMAGES_REPO` (`owner/repo`) and `GITHUB_IMAGES_TOKEN` on Vercel and redeploy.
+
+Limits to keep in mind: new images take about a minute to appear while Pages rebuilds; GitHub recommends keeping a repository under 1 GB (roughly 4,000 photos after compression), so start a new repository each school year if needed; on Vercel a single upload must be under 4.5 MB when using GitHub storage.
+
 ## Changing the data model
 
 After editing anything in `src/collections`, run `npm run migrate:create -- <name>` and commit the new files in `src/migrations`.

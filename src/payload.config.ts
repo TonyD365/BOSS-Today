@@ -1,5 +1,6 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { BlocksFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
+import { cloudStoragePlugin } from '@payloadcms/plugin-cloud-storage'
 import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 import path from 'path'
 import { buildConfig } from 'payload'
@@ -12,7 +13,10 @@ import { Issues } from './collections/Issues'
 import { Media } from './collections/Media'
 import { Sections } from './collections/Sections'
 import { Users } from './collections/Users'
+import { githubAdapter, githubStorageConfig } from './storage/github'
 import { FrontPage } from './globals/FrontPage'
+
+const github = githubStorageConfig()
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -56,12 +60,28 @@ export default buildConfig({
   }),
   sharp,
   plugins: [
-    // Images live in Vercel Blob in production and in ./media during local development.
-    vercelBlobStorage({
-      enabled: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
-      collections: { media: true },
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-      clientUploads: true,
-    }),
+    // Images go to the GitHub image repository when it is configured, otherwise
+    // to Vercel Blob, otherwise to ./media during local development. Exactly one
+    // storage plugin is registered, and it always adds its fields, so the database
+    // schema is the same whichever storage is in use.
+    github
+      ? cloudStoragePlugin({
+          alwaysInsertFields: true,
+          collections: {
+            media: {
+              adapter: githubAdapter(github),
+              disableLocalStorage: true,
+              disablePayloadAccessControl: true,
+              prefix: 'media',
+            },
+          },
+        })
+      : vercelBlobStorage({
+          enabled: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
+          alwaysInsertFields: true,
+          collections: { media: true },
+          token: process.env.BLOB_READ_WRITE_TOKEN,
+          clientUploads: true,
+        }),
   ],
 })

@@ -192,6 +192,8 @@ export interface Media {
    * Photographer or source.
    */
   credit?: string | null
+  prefix?: string | null
+  _objectKey?: string | null
   updatedAt: string
   createdAt: string
   url?: string | null
@@ -465,6 +467,8 @@ export interface MediaSelect<T extends boolean = true> {
   alt?: T
   caption?: T
   credit?: T
+  prefix?: T
+  _objectKey?: T
   updatedAt?: T
   createdAt?: T
   url?: T
