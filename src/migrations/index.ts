@@ -5,6 +5,7 @@ import * as migration_20261014_151605_print_settings_audit from './20261014_1516
 import * as migration_20261014_154757_email_sign_in from './20261014_154757_email_sign_in';
 import * as migration_20261014_160633_password_sign_in from './20261014_160633_password_sign_in';
 import * as migration_20261014_185527_issue_publishing from './20261014_185527_issue_publishing';
+import * as migration_20261014_200000_backfill_section_versions from './20261014_200000_backfill_section_versions';
 
 export const migrations = [
   {
@@ -41,5 +42,10 @@ export const migrations = [
     up: migration_20261014_185527_issue_publishing.up,
     down: migration_20261014_185527_issue_publishing.down,
     name: '20261014_185527_issue_publishing'
+  },
+  {
+    up: migration_20261014_200000_backfill_section_versions.up,
+    down: migration_20261014_200000_backfill_section_versions.down,
+    name: '20261014_200000_backfill_section_versions',
   },
 ];
