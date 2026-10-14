@@ -37,7 +37,7 @@ type PanelUser = {
 
 /** The review workflow, shown in the sidebar of every story. */
 export function WorkflowPanel() {
-  const { id, hasPublishedDoc } = useDocumentInfo()
+  const { id, hasPublishedDoc, unpublishedVersionCount } = useDocumentInfo()
   const { user } = useAuth<PanelUser>()
   const state = (useFormFields(([fields]) => fields.workflow?.value) ?? 'draft') as State
   const modified = useFormModified()
@@ -137,16 +137,20 @@ export function WorkflowPanel() {
         </Button>
       )}
 
-      {isEditor && state !== 'approved' && (
-        <Button
-          buttonStyle="primary"
-          size="small"
-          disabled={busy || modified}
-          onClick={() => act('approve')}
-        >
-          Approve for the next issue
-        </Button>
-      )}
+      {isEditor &&
+        state !== 'approved' &&
+        (state !== 'published' || unpublishedVersionCount > 0) && (
+          <Button
+            buttonStyle="primary"
+            size="small"
+            disabled={busy || modified}
+            onClick={() => act('approve')}
+          >
+            {state === 'published'
+              ? 'Approve changes for the next issue'
+              : 'Approve for the next issue'}
+          </Button>
+        )}
 
       {isEditor && ['review', 'approved'].includes(state) && mode !== 'return' && (
         <Button
@@ -239,6 +243,7 @@ function Panel({ state, children }: { state: State; children: React.ReactNode })
         border: '1px solid var(--theme-elevation-150)',
         borderRadius: 4,
       }}
+      className="workflow-panel"
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600 }}>
         <span style={{ width: 10, height: 10, borderRadius: '50%', background: COLORS[state] }} />

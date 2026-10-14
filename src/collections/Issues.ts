@@ -78,7 +78,14 @@ export const Issues: CollectionConfig = {
         components: { RowLabel: '@/components/admin/StoryRowLabel#StoryRowLabel' },
       },
       fields: [
-        { name: 'article', type: 'relationship', relationTo: 'articles', required: true },
+        {
+          name: 'article',
+          type: 'relationship',
+          relationTo: 'articles',
+          required: true,
+          // Stories are written under Articles, not from inside an issue.
+          admin: { allowCreate: false },
+        },
         {
           type: 'row',
           fields: [

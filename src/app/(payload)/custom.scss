@@ -1,1 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Manufacturing+Consent&display=swap');
+
+/* Buttons in the story workflow panel sit in a grid with its own spacing. */
+.workflow-panel .btn {
+  margin: 0;
+}
