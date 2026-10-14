@@ -1,4 +1,12 @@
-import { APIError, type Endpoint, type Payload, type PayloadRequest } from 'payload'
+import {
+  APIError,
+  commitTransaction,
+  type Endpoint,
+  initTransaction,
+  killTransaction,
+  type Payload,
+  type PayloadRequest,
+} from 'payload'
 
 import { canPublishIssues, hasPermission } from '../access'
 import { audit } from '../hooks/audit'
@@ -9,6 +17,7 @@ import {
   triggerDeploy,
 } from '../publishing/deploy'
 import { getProgress } from '../publishing/progress'
+import { describeProblems, publishingProblems } from '../publishing/readiness'
 
 const json = (body: unknown, status = 200) => Response.json(body, { status })
 
@@ -30,6 +39,8 @@ type WaitingStory = {
   updatedAt: string
   inIssue: boolean
   live: boolean
+  /** Why it can't be published yet, if anything. */
+  problems: string[]
 }
 
 /** Everything that the next issue will put on the public site. */
@@ -48,7 +59,15 @@ export const pendingChanges = async (
       sort: 'updatedAt',
       overrideAccess: true,
       req,
-      select: { title: true, section: true, authors: true, updatedAt: true, _status: true },
+      select: {
+        title: true,
+        summary: true,
+        content: true,
+        section: true,
+        authors: true,
+        updatedAt: true,
+        _status: true,
+      },
     }),
     payload.find({
       collection: 'sections',
@@ -88,6 +107,7 @@ export const pendingChanges = async (
     updatedAt: article.updatedAt,
     inIssue: inIssue.has(String(article.id)),
     live: article._status === 'published',
+    problems: publishingProblems(article),
   }))
 
   return {
@@ -227,6 +247,14 @@ export const issueCheckEndpoint: Endpoint = {
         return json({ message: 'This issue is already published.' }, 409)
       const story = pending.stories.find((item) => String(item.id) === String(body.article))
       if (!story) return json({ message: 'That story is no longer waiting for this issue.' }, 409)
+      if (body.action !== 'sent-back' && story.problems.length > 0) {
+        return json(
+          {
+            message: `“${story.title}” can’t be published yet: ${describeProblems(story.problems)} Send it back or fix it first.`,
+          },
+          409,
+        )
+      }
       if (story.updatedAt !== body.updatedAt) {
         return json(
           { message: 'This story changed since you opened the list. Reload and read it again.' },
@@ -343,101 +371,138 @@ export const issuePublishEndpoint: Endpoint = {
         return json({ message: 'Agree to the publisher’s declaration before publishing.' }, 409)
       }
 
+      // Check everything before changing anything, so an issue never half-publishes.
+      const notReady = pending.stories.filter((story) => story.problems.length > 0)
+      if (notReady.length > 0) {
+        return json(
+          {
+            message: `Nothing was published. Fix or send back: ${notReady
+              .map((story) => `“${story.title}” (${describeProblems(story.problems)})`)
+              .join(' ')}`,
+          },
+          409,
+        )
+      }
+
+      if (issue.printEdition && (issue.stories ?? []).length === 0) {
+        return json(
+          {
+            message:
+              'Nothing was published. The print edition has no stories: open the issue and click “Add all waiting stories”, or untick “Print edition” for a web-only issue.',
+          },
+          409,
+        )
+      }
+
       await assertDeployBudget(req.payload, 'issue', req)
 
-      const context = { issuePublish: true }
-      for (const story of pending.stories) {
-        await req.payload.update({
+      // All of the changes below succeed together or not at all.
+      const ownsTransaction = await initTransaction(req)
+      try {
+        const context = { issuePublish: true }
+        for (const story of pending.stories) {
+          await req.payload.update({
+            collection: 'articles',
+            id: story.id,
+            data: { _status: 'published' },
+            req,
+            overrideAccess: true,
+            context,
+          })
+        }
+        for (const section of pending.sections) {
+          await req.payload.update({
+            collection: 'sections',
+            id: section.id,
+            data: { _status: 'published' },
+            req,
+            overrideAccess: true,
+            context,
+          })
+        }
+        if (pending.frontPage) {
+          await req.payload.updateGlobal({
+            slug: 'front-page',
+            data: { _status: 'published' },
+            req,
+            overrideAccess: true,
+            context,
+          })
+        }
+        if (pending.settings) {
+          await req.payload.updateGlobal({
+            slug: 'settings',
+            data: { _status: 'published' },
+            req,
+            overrideAccess: true,
+            context,
+          })
+        }
+
+        // The print edition keeps only stories that are now live.
+        const live = await req.payload.find({
           collection: 'articles',
-          id: story.id,
-          data: { _status: 'published' },
-          req,
+          where: { _status: { equals: 'published' } },
+          depth: 0,
+          limit: 0,
+          pagination: false,
           overrideAccess: true,
-          context,
+          req,
+          select: { title: true },
         })
-      }
-      for (const section of pending.sections) {
+        const liveIds = new Set(live.docs.map((doc) => String(doc.id)))
         await req.payload.update({
-          collection: 'sections',
-          id: section.id,
-          data: { _status: 'published' },
+          collection: 'issues',
+          id: issue.id,
           req,
           overrideAccess: true,
           context,
+          data: {
+            _status: 'published',
+            publishedBy: Number(req.user!.id),
+            publishedAt: new Date().toISOString(),
+            stories: (issue.stories ?? [])
+              .map((story) => ({
+                ...story,
+                article: typeof story.article === 'object' ? story.article?.id : story.article,
+              }))
+              .filter((story) => story.article && liveIds.has(String(story.article))),
+          },
         })
-      }
-      if (pending.frontPage) {
-        await req.payload.updateGlobal({
-          slug: 'front-page',
-          data: { _status: 'published' },
+
+        await req.payload.create({
+          collection: 'issue-checks',
           req,
           overrideAccess: true,
-          context,
+          data: {
+            kind: 'published',
+            summary: `Published “${issue.title}” (${pending.stories.length} stories)`,
+            issue: issue.id,
+            checkedBy: Number(req.user!.id),
+            declaration: DECLARATION,
+            note:
+              pending.stories
+                .map((story) => `#${story.id} ${story.title} @ ${story.updatedAt}`)
+                .join('\n') || null,
+          },
         })
-      }
-      if (pending.settings) {
-        await req.payload.updateGlobal({
-          slug: 'settings',
-          data: { _status: 'published' },
-          req,
-          overrideAccess: true,
-          context,
+
+        await audit(req, {
+          action: 'publish',
+          summary: `Published issue “${issue.title}” with ${pending.stories.length} new or updated stories`,
+          target: `issue:${issue.id}`,
         })
+        if (ownsTransaction) await commitTransaction(req)
+      } catch (error) {
+        await killTransaction(req)
+        throw new APIError(
+          `Nothing was published. ${error instanceof Error ? error.message : 'Something went wrong.'}`,
+          error instanceof APIError ? error.status : 400,
+          undefined,
+          true,
+        )
       }
 
-      // The print edition keeps only stories that are now live.
-      const live = await req.payload.find({
-        collection: 'articles',
-        where: { _status: { equals: 'published' } },
-        depth: 0,
-        limit: 0,
-        pagination: false,
-        overrideAccess: true,
-        req,
-        select: { title: true },
-      })
-      const liveIds = new Set(live.docs.map((doc) => String(doc.id)))
-      await req.payload.update({
-        collection: 'issues',
-        id: issue.id,
-        req,
-        overrideAccess: true,
-        context,
-        data: {
-          _status: 'published',
-          publishedBy: Number(req.user!.id),
-          publishedAt: new Date().toISOString(),
-          stories: (issue.stories ?? [])
-            .map((story) => ({
-              ...story,
-              article: typeof story.article === 'object' ? story.article?.id : story.article,
-            }))
-            .filter((story) => story.article && liveIds.has(String(story.article))),
-        },
-      })
-
-      await req.payload.create({
-        collection: 'issue-checks',
-        req,
-        overrideAccess: true,
-        data: {
-          kind: 'published',
-          summary: `Published “${issue.title}” (${pending.stories.length} stories)`,
-          issue: issue.id,
-          checkedBy: Number(req.user!.id),
-          declaration: DECLARATION,
-          note:
-            pending.stories
-              .map((story) => `#${story.id} ${story.title} @ ${story.updatedAt}`)
-              .join('\n') || null,
-        },
-      })
-
-      await audit(req, {
-        action: 'publish',
-        summary: `Published issue “${issue.title}” with ${pending.stories.length} new or updated stories`,
-        target: `issue:${issue.id}`,
-      })
       const deploy = await triggerDeploy(req, { reason: 'issue', issue: issue.id })
       return json({ ok: true, published: pending.stories.length, deploy })
     } catch (error) {

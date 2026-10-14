@@ -335,12 +335,14 @@ export interface Issue {
   /**
    * Which stories the print edition carries, in order; the first is the front-page lead. "Add all waiting stories" in the sidebar fills this in. The website gets every waiting story either way.
    */
-  stories: {
-    article: number | Article;
-    width: 'full' | 'twoThirds' | 'half' | 'column';
-    showImage?: boolean | null;
-    id?: string | null;
-  }[];
+  stories?:
+    | {
+        article: number | Article;
+        width: 'full' | 'twoThirds' | 'half' | 'column';
+        showImage?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
   /**
    * Optional notice boxed on the front page of the print edition.
    */

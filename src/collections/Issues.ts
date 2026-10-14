@@ -69,8 +69,6 @@ export const Issues: CollectionConfig = {
     {
       name: 'stories',
       type: 'array',
-      required: true,
-      minRows: 1,
       labels: { singular: 'Story', plural: 'Stories' },
       admin: {
         description:

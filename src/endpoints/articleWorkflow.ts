@@ -3,6 +3,7 @@ import { APIError, type Endpoint } from 'payload'
 import { canPublishIssues, RANK, rankOf } from '../access'
 import { audit } from '../hooks/audit'
 import { assertDeployBudget, triggerDeploy } from '../publishing/deploy'
+import { describeProblems, publishingProblems } from '../publishing/readiness'
 
 export const WORKFLOW_STATES = [
   'draft',
@@ -104,6 +105,12 @@ export const articleWorkflowEndpoint: Endpoint = {
         if (!isEditor) return json({ message: 'Only editors can approve stories.' }, 403)
         if (state === 'approved')
           return json({ message: 'Already waiting for the next issue.' }, 409)
+        {
+          const problems = publishingProblems(latest)
+          if (problems.length > 0) {
+            return json({ message: `Can’t approve yet: ${describeProblems(problems)}` }, 400)
+          }
+        }
         return saveDraft({ workflow: 'approved', reviewNotes: null })
 
       case 'withdraw': {

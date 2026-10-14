@@ -13,6 +13,7 @@ type Story = {
   updatedAt: string
   inIssue: boolean
   live: boolean
+  problems: string[]
 }
 
 type Review = {
@@ -213,7 +214,8 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
         {stories.length === 0 && <p style={{ margin: 0, opacity: 0.7 }}>No stories are waiting.</p>}
         {stories.map((story) => {
           const checked = isChecked(story)
-          const canTick = opened.has(story.id) && !checked
+          const blocked = story.problems.length > 0
+          const canTick = opened.has(story.id) && !checked && !blocked
           return (
             <div
               key={story.id}
@@ -221,7 +223,7 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
                 display: 'grid',
                 gap: 8,
                 padding: 14,
-                border: `1px solid ${checked ? 'var(--theme-success-500)' : 'var(--theme-elevation-150)'}`,
+                border: `1px solid ${checked ? 'var(--theme-success-500)' : blocked ? 'var(--theme-error-500)' : 'var(--theme-elevation-150)'}`,
                 borderRadius: 4,
               }}
             >
@@ -250,6 +252,19 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
                   Read the full story ↗
                 </a>
               </div>
+              {blocked && (
+                <p style={{ margin: 0, fontSize: 13, color: 'var(--theme-error-500)' }}>
+                  Can’t be published yet: {story.problems.join('; ')}.{' '}
+                  <a
+                    href={`/admin/collections/articles/${story.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Fix the story ↗
+                  </a>{' '}
+                  or send it back.
+                </p>
+              )}
               <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                 <label
                   style={{
@@ -267,9 +282,11 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
                   />
                   {checked
                     ? `Checked by you, ${when(checkedAt(story)!)}`
-                    : opened.has(story.id)
-                      ? 'I have read this story in full and it is fit to publish'
-                      : 'Open and read the story first'}
+                    : blocked
+                      ? 'Fix the problem above first'
+                      : opened.has(story.id)
+                        ? 'I have read this story in full and it is fit to publish'
+                        : 'Open and read the story first'}
                 </label>
                 {!checked && sendBack?.id !== story.id && (
                   <Button
