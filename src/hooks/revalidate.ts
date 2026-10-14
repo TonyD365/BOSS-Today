@@ -10,8 +10,8 @@ const revalidateSite = async () => {
   }
 }
 
-export const revalidateAfterChange: CollectionAfterChangeHook = async ({ doc }) => {
-  await revalidateSite()
+export const revalidateAfterChange: CollectionAfterChangeHook = async ({ doc, context }) => {
+  if (!context.skipRevalidate) await revalidateSite()
   return doc
 }
 

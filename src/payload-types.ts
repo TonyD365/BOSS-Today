@@ -291,6 +291,10 @@ export interface User {
    * Used in the author page address.
    */
   slug?: string | null
+  loginCodeHash?: string | null
+  loginCodeExpiresAt?: string | null
+  loginCodeAttempts?: number | null
+  loginCodeSentAt?: string | null
   googleId?: string | null
   updatedAt: string
   createdAt: string
@@ -575,6 +579,10 @@ export interface UsersSelect<T extends boolean = true> {
   bio?: T
   photo?: T
   slug?: T
+  loginCodeHash?: T
+  loginCodeExpiresAt?: T
+  loginCodeAttempts?: T
+  loginCodeSentAt?: T
   googleId?: T
   updatedAt?: T
   createdAt?: T

@@ -27,7 +27,7 @@ import { StoryRowLabel as StoryRowLabel_8b2a60b2d92bff4132c96c6748202029 } from 
 import { PrintEditionLink as PrintEditionLink_444df7a4575e6b37272975c680a7085d } from '@/components/admin/PrintEditionLink'
 import { Icon as Icon_066c562e10ad4e70ff0de1a39f9b91f6 } from '@/components/admin/Brand'
 import { Logo as Logo_066c562e10ad4e70ff0de1a39f9b91f6 } from '@/components/admin/Brand'
-import { GoogleSignIn as GoogleSignIn_3622291b1bfa74ec382150aa8aa4a666 } from '@/components/admin/GoogleSignIn'
+import { SignIn as SignIn_c0c1f60db6522e831c3edb4dc0680df2 } from '@/components/admin/SignIn'
 import { Dashboard as Dashboard_0e7b23c75ea046975e1784ba01f82886 } from '@/components/admin/Dashboard'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 import { VercelBlobClientUploadHandler as VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e } from '@payloadcms/storage-vercel-blob/client'
@@ -88,7 +88,7 @@ export const importMap = {
     PrintEditionLink_444df7a4575e6b37272975c680a7085d,
   '@/components/admin/Brand#Icon': Icon_066c562e10ad4e70ff0de1a39f9b91f6,
   '@/components/admin/Brand#Logo': Logo_066c562e10ad4e70ff0de1a39f9b91f6,
-  '@/components/admin/GoogleSignIn#GoogleSignIn': GoogleSignIn_3622291b1bfa74ec382150aa8aa4a666,
+  '@/components/admin/SignIn#SignIn': SignIn_c0c1f60db6522e831c3edb4dc0680df2,
   '@/components/admin/Dashboard#Dashboard': Dashboard_0e7b23c75ea046975e1784ba01f82886,
   '@payloadcms/next/rsc#CollectionCards': CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1,
   '@payloadcms/storage-vercel-blob/client#VercelBlobClientUploadHandler':

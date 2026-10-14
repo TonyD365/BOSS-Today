@@ -2,6 +2,7 @@ import * as migration_20261014_010817_initial from './20261014_010817_initial'
 import * as migration_20261014_115215_roles_workflow_front_page from './20261014_115215_roles_workflow_front_page'
 import * as migration_20261014_151041_storage_fields from './20261014_151041_storage_fields'
 import * as migration_20261014_151605_print_settings_audit from './20261014_151605_print_settings_audit'
+import * as migration_20261014_154757_email_sign_in from './20261014_154757_email_sign_in'
 
 export const migrations = [
   {
@@ -23,5 +24,10 @@ export const migrations = [
     up: migration_20261014_151605_print_settings_audit.up,
     down: migration_20261014_151605_print_settings_audit.down,
     name: '20261014_151605_print_settings_audit',
+  },
+  {
+    up: migration_20261014_154757_email_sign_in.up,
+    down: migration_20261014_154757_email_sign_in.down,
+    name: '20261014_154757_email_sign_in',
   },
 ]

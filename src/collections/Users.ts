@@ -2,6 +2,7 @@ import {
   APIError,
   type CollectionBeforeChangeHook,
   type CollectionConfig,
+  type Field,
   type Where,
 } from 'payload'
 
@@ -230,6 +231,20 @@ export const Users: CollectionConfig = {
       index: true,
       admin: { position: 'sidebar', description: 'Used in the author page address.' },
     },
+    // One-time email sign-in codes (see app/(frontend)/auth/email). Server-only.
+    ...((
+      [
+        ['loginCodeHash', 'text'],
+        ['loginCodeExpiresAt', 'date'],
+        ['loginCodeAttempts', 'number'],
+        ['loginCodeSentAt', 'date'],
+      ] as const
+    ).map(([name, type]) => ({
+      name,
+      type,
+      hidden: true,
+      access: { read: () => false, create: () => false, update: () => false },
+    })) as Field[]),
     {
       name: 'googleId',
       type: 'text',
