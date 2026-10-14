@@ -3,7 +3,12 @@ import { APIError, type Endpoint } from 'payload'
 import { canPublishIssues, RANK, rankOf } from '../access'
 import { audit } from '../hooks/audit'
 import { assertDeployBudget, triggerDeploy } from '../publishing/deploy'
-import { describeProblems, publishingProblems } from '../publishing/readiness'
+import {
+  commentProblem,
+  describeProblems,
+  publishingProblems,
+  unresolvedComments,
+} from '../publishing/readiness'
 
 export const WORKFLOW_STATES = [
   'draft',
@@ -98,8 +103,22 @@ export const articleWorkflowEndpoint: Endpoint = {
             409,
           )
         }
-        if (!note) return json({ message: 'Add a note so the reporter knows what to change.' }, 400)
-        return saveDraft({ workflow: 'changes', reviewNotes: note })
+        {
+          // Comments on the text can stand in for a note.
+          const open = (await unresolvedComments(req.payload, [id], req)).get(String(id)) ?? 0
+          if (!note && open === 0) {
+            return json(
+              {
+                message: 'Add a note or comment on the text so the reporter knows what to change.',
+              },
+              400,
+            )
+          }
+          return saveDraft({
+            workflow: 'changes',
+            reviewNotes: note || 'See the comments on the story.',
+          })
+        }
 
       case 'approve':
         if (!isEditor) return json({ message: 'Only editors can approve stories.' }, 403)
@@ -107,6 +126,8 @@ export const articleWorkflowEndpoint: Endpoint = {
           return json({ message: 'Already waiting for the next issue.' }, 409)
         {
           const problems = publishingProblems(latest)
+          const open = (await unresolvedComments(req.payload, [id], req)).get(String(id)) ?? 0
+          if (open > 0) problems.push(commentProblem(open))
           if (problems.length > 0) {
             return json({ message: `Can’t approve yet: ${describeProblems(problems)}` }, 400)
           }

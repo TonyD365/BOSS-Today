@@ -9,13 +9,16 @@ import { fileURLToPath } from 'url'
 
 import { YouTube } from './blocks/YouTube'
 import { Articles } from './collections/Articles'
+import { Assignments } from './collections/Assignments'
 import { AuditLog } from './collections/AuditLog'
+import { Comments } from './collections/Comments'
 import { Deployments } from './collections/Deployments'
 import { IssueChecks } from './collections/IssueChecks'
 import { Issues } from './collections/Issues'
 import { Media } from './collections/Media'
 import { Sections } from './collections/Sections'
 import { Tags } from './collections/Tags'
+import { Templates } from './collections/Templates'
 import { Users } from './collections/Users'
 import { githubAdapter, githubStorageConfig } from './storage/github'
 import { siteExportEndpoint } from './endpoints/siteExport'
@@ -37,14 +40,26 @@ export default buildConfig({
     meta: { titleSuffix: ' — BOSS Today' },
     components: {
       afterLogin: ['@/components/admin/SignIn#SignIn'],
+      afterNavLinks: ['@/components/admin/NavLinks#NavLinks'],
       views: {
         dashboard: { Component: '@/components/admin/DashboardView#DashboardView' },
         // No email is sent from this site, so password help means asking an exec,
         // and the first account comes from a super admin's Google sign-in.
         forgot: { Component: '@/components/admin/AccessHelp#PasswordHelp', path: '/forgot' },
+        assignmentBoard: {
+          Component: '@/components/admin/AssignmentBoardView#AssignmentBoardView',
+          path: '/assignment-board',
+          meta: { title: 'Assignment board' },
+        },
+        newStory: {
+          Component: '@/components/admin/NewStoryView#NewStoryView',
+          path: '/new-story',
+          meta: { title: 'New story' },
+        },
         publishIssue: {
           Component: '@/components/admin/PublishIssue#PublishIssue',
           path: '/publish-issue',
+          meta: { title: 'Review & publish' },
         },
         createFirstUser: {
           Component: '@/components/admin/AccessHelp#FirstSignIn',
@@ -63,7 +78,20 @@ export default buildConfig({
       ],
     },
   },
-  collections: [Articles, Issues, Sections, Tags, Media, Users, AuditLog, IssueChecks, Deployments],
+  collections: [
+    Articles,
+    Assignments,
+    Comments,
+    Templates,
+    Issues,
+    Sections,
+    Tags,
+    Media,
+    Users,
+    AuditLog,
+    IssueChecks,
+    Deployments,
+  ],
   globals: [FrontPage, Banner, Settings],
   endpoints: [siteExportEndpoint],
   editor: lexicalEditor({

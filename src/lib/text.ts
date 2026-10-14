@@ -24,3 +24,11 @@ export const WORDS_PER_MINUTE = 230
 
 export const readingMinutes = (content: unknown): number =>
   Math.max(1, Math.round(wordCount(content) / WORDS_PER_MINUTE))
+
+/**
+ * "TK" ("to come") is the newsroom mark for something still missing. Templates
+ * use it for their prompts, so a story still containing it isn't finished.
+ */
+export const PLACEHOLDER = /\bTK\b/
+
+export const hasPlaceholders = (content: unknown): boolean => PLACEHOLDER.test(plainText(content))

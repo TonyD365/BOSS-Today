@@ -8,6 +8,8 @@ import * as migration_20261014_185527_issue_publishing from './20261014_185527_i
 import * as migration_20261014_192539_rebuild_progress from './20261014_192539_rebuild_progress'
 import * as migration_20261014_200000_backfill_section_versions from './20261014_200000_backfill_section_versions'
 import * as migration_20261014_231138_batch1_tags_corrections_banner from './20261014_231138_batch1_tags_corrections_banner'
+import * as migration_20261014_233311_batch2_assignments_templates_comments from './20261014_233311_batch2_assignments_templates_comments'
+import * as migration_20261014_233400_seed_story_templates from './20261014_233400_seed_story_templates'
 
 export const migrations = [
   {
@@ -59,5 +61,15 @@ export const migrations = [
     up: migration_20261014_231138_batch1_tags_corrections_banner.up,
     down: migration_20261014_231138_batch1_tags_corrections_banner.down,
     name: '20261014_231138_batch1_tags_corrections_banner',
+  },
+  {
+    up: migration_20261014_233311_batch2_assignments_templates_comments.up,
+    down: migration_20261014_233311_batch2_assignments_templates_comments.down,
+    name: '20261014_233311_batch2_assignments_templates_comments',
+  },
+  {
+    up: migration_20261014_233400_seed_story_templates.up,
+    down: migration_20261014_233400_seed_story_templates.down,
+    name: '20261014_233400_seed_story_templates',
   },
 ]

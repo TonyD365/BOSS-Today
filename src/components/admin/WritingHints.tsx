@@ -3,7 +3,7 @@
 import { useFormFields } from '@payloadcms/ui'
 import React, { useEffect, useMemo, useState } from 'react'
 
-import { readingMinutes, wordCount } from '@/lib/text'
+import { hasPlaceholders, readingMinutes, wordCount } from '@/lib/text'
 
 const HEADLINE_LIMIT = 70
 const SUMMARY_LIMIT = 240
@@ -105,6 +105,9 @@ export function WritingHints() {
     notes.push({
       text: `${vagueAlt === 1 ? 'An image needs' : `${vagueAlt} images need`} a better description (alt text) for readers who can’t see it.`,
     })
+  }
+  if (hasPlaceholders(content)) {
+    notes.push({ text: 'Replace every “TK” note from the template.', strong: true })
   }
   if (!section) notes.push({ text: 'Choose a section.', strong: true })
   if (!authors || authors.length === 0)

@@ -24,6 +24,7 @@ import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { WorkflowPanel as WorkflowPanel_9168d7f4a9a9ae1abb1fc28b012db3f0 } from '@/components/admin/WorkflowPanel'
 import { WritingHints as WritingHints_ec2ad09aefe1f8058eb3d2127384f8c2 } from '@/components/admin/WritingHints'
+import { CommentsPanel as CommentsPanel_967efd053979d822fa47254ca73e25c0 } from '@/components/admin/CommentsPanel'
 import { Hidden as Hidden_41307c565f8fce656d97d4772c57ad1c } from '@/components/admin/Hidden'
 import { StoryRowLabel as StoryRowLabel_8b2a60b2d92bff4132c96c6748202029 } from '@/components/admin/StoryRowLabel'
 import { PrintEditionLink as PrintEditionLink_444df7a4575e6b37272975c680a7085d } from '@/components/admin/PrintEditionLink'
@@ -31,8 +32,11 @@ import { PublishBannerNow as PublishBannerNow_74ff678f58701ea20c1043e171f0a8b5 }
 import { Icon as Icon_066c562e10ad4e70ff0de1a39f9b91f6 } from '@/components/admin/Brand'
 import { Logo as Logo_066c562e10ad4e70ff0de1a39f9b91f6 } from '@/components/admin/Brand'
 import { SignIn as SignIn_c0c1f60db6522e831c3edb4dc0680df2 } from '@/components/admin/SignIn'
+import { NavLinks as NavLinks_efcc7fec2af44371f7fed5d0104659dd } from '@/components/admin/NavLinks'
 import { DashboardView as DashboardView_8d5ccf53266e3797f61e9453e2f2d431 } from '@/components/admin/DashboardView'
 import { PasswordHelp as PasswordHelp_4e68073b0c98bae6fb0309aaf0d14949 } from '@/components/admin/AccessHelp'
+import { AssignmentBoardView as AssignmentBoardView_1382e08392d4d6cb0cd0dfcd9e4925de } from '@/components/admin/AssignmentBoardView'
+import { NewStoryView as NewStoryView_a6492cb6335d8f066386b3fa4e9eaf8d } from '@/components/admin/NewStoryView'
 import { PublishIssue as PublishIssue_0352ad6b925961598622ddff39fc2a3e } from '@/components/admin/PublishIssue'
 import { FirstSignIn as FirstSignIn_4e68073b0c98bae6fb0309aaf0d14949 } from '@/components/admin/AccessHelp'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
@@ -90,6 +94,7 @@ export const importMap = {
     ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   '@/components/admin/WorkflowPanel#WorkflowPanel': WorkflowPanel_9168d7f4a9a9ae1abb1fc28b012db3f0,
   '@/components/admin/WritingHints#WritingHints': WritingHints_ec2ad09aefe1f8058eb3d2127384f8c2,
+  '@/components/admin/CommentsPanel#CommentsPanel': CommentsPanel_967efd053979d822fa47254ca73e25c0,
   '@/components/admin/Hidden#Hidden': Hidden_41307c565f8fce656d97d4772c57ad1c,
   '@/components/admin/StoryRowLabel#StoryRowLabel': StoryRowLabel_8b2a60b2d92bff4132c96c6748202029,
   '@/components/admin/PrintEditionLink#PrintEditionLink':
@@ -99,8 +104,12 @@ export const importMap = {
   '@/components/admin/Brand#Icon': Icon_066c562e10ad4e70ff0de1a39f9b91f6,
   '@/components/admin/Brand#Logo': Logo_066c562e10ad4e70ff0de1a39f9b91f6,
   '@/components/admin/SignIn#SignIn': SignIn_c0c1f60db6522e831c3edb4dc0680df2,
+  '@/components/admin/NavLinks#NavLinks': NavLinks_efcc7fec2af44371f7fed5d0104659dd,
   '@/components/admin/DashboardView#DashboardView': DashboardView_8d5ccf53266e3797f61e9453e2f2d431,
   '@/components/admin/AccessHelp#PasswordHelp': PasswordHelp_4e68073b0c98bae6fb0309aaf0d14949,
+  '@/components/admin/AssignmentBoardView#AssignmentBoardView':
+    AssignmentBoardView_1382e08392d4d6cb0cd0dfcd9e4925de,
+  '@/components/admin/NewStoryView#NewStoryView': NewStoryView_a6492cb6335d8f066386b3fa4e9eaf8d,
   '@/components/admin/PublishIssue#PublishIssue': PublishIssue_0352ad6b925961598622ddff39fc2a3e,
   '@/components/admin/AccessHelp#FirstSignIn': FirstSignIn_4e68073b0c98bae6fb0309aaf0d14949,
   '@payloadcms/next/rsc#CollectionCards': CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1,

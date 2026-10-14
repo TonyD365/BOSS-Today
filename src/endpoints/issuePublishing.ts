@@ -18,7 +18,12 @@ import {
 } from '../publishing/deploy'
 import { bannerStoreConfigured, publicBanner, storeBanner } from '../publishing/banner'
 import { getProgress } from '../publishing/progress'
-import { describeProblems, publishingProblems } from '../publishing/readiness'
+import {
+  commentProblem,
+  describeProblems,
+  publishingProblems,
+  unresolvedComments,
+} from '../publishing/readiness'
 
 const json = (body: unknown, status = 200) => Response.json(body, { status })
 
@@ -107,6 +112,12 @@ export const pendingChanges = async (
     ),
   )
 
+  const openComments = await unresolvedComments(
+    payload,
+    articles.docs.map((article) => article.id),
+    req,
+  )
+
   const stories: WaitingStory[] = articles.docs.map((article) => ({
     id: article.id,
     title: article.title,
@@ -117,7 +128,12 @@ export const pendingChanges = async (
     updatedAt: article.updatedAt,
     inIssue: inIssue.has(String(article.id)),
     live: article._status === 'published',
-    problems: publishingProblems(article),
+    problems: [
+      ...publishingProblems(article),
+      ...(openComments.get(String(article.id))
+        ? [commentProblem(openComments.get(String(article.id))!)]
+        : []),
+    ],
   }))
 
   return {

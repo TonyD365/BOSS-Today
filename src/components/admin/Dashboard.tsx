@@ -4,7 +4,7 @@ import React from 'react'
 
 import { canPublishIssues, hasPermission, RANK, rankOf } from '@/access'
 import { deploysThisMonth, ISSUE_DEPLOY_LIMIT } from '@/publishing/deploy'
-import type { Article, Issue } from '@/payload-types'
+import type { Article, Assignment, Issue } from '@/payload-types'
 
 import { RebuildButton } from './RebuildButton'
 
@@ -66,6 +66,20 @@ export async function Dashboard({ payload, user }: Props) {
     ],
   )
 
+  const assignments = (
+    await payload.find({
+      collection: 'assignments',
+      where: { reporters: { in: [user.id] } },
+      sort: 'deadline',
+      depth: 1,
+      limit: 20,
+      overrideAccess: true,
+    })
+  ).docs.filter((assignment) => {
+    const story = assignment.article
+    return !(story && typeof story === 'object' && story.workflow === 'published')
+  })
+
   const name = (user as { name?: string }).name?.split(' ')[0]
 
   return (
@@ -86,12 +100,24 @@ export async function Dashboard({ payload, user }: Props) {
             <StoryList stories={waiting} showState={false} />
           </Card>
         )}
+        {rank >= RANK.reporter && (
+          <Card
+            title="Your assignments"
+            count={assignments.length}
+            empty="Nothing assigned to you."
+          >
+            <AssignmentList assignments={assignments} />
+            <Link href="/admin/assignment-board" style={link}>
+              Open the assignment board
+            </Link>
+          </Card>
+        )}
         <Card title="Sent back to you" count={returned.length} empty="Nothing sent back.">
           <StoryList stories={returned} showState={false} />
         </Card>
         <Card title="Your drafts" count={drafts.length} empty="No drafts in progress.">
           <StoryList stories={drafts} />
-          <Link href="/admin/collections/articles/create" style={link}>
+          <Link href="/admin/new-story" style={link}>
             + Write a new story
           </Link>
         </Card>
@@ -147,6 +173,31 @@ function IssueCard({ issue }: { issue: Issue }) {
         Open issue
       </a>
     </Card>
+  )
+}
+
+function AssignmentList({ assignments }: { assignments: Assignment[] }) {
+  if (assignments.length === 0) return null
+  return (
+    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: 8 }}>
+      {assignments.map((assignment) => {
+        const story = typeof assignment.article === 'object' ? assignment.article : null
+        return (
+          <li key={assignment.id}>
+            <a
+              href={story ? `/admin/collections/articles/${story.id}` : '/admin/assignment-board'}
+              style={{ fontWeight: 600 }}
+            >
+              {assignment.title}
+            </a>
+            <div style={{ fontSize: 12, opacity: 0.7 }}>
+              Due {when(assignment.deadline)}
+              {story ? ` · ${STATE_LABELS[story.workflow ?? 'draft']}` : ' · not started'}
+            </div>
+          </li>
+        )
+      })}
+    </ul>
   )
 }
 

@@ -1,3 +1,6 @@
+import type { Payload, PayloadRequest } from 'payload'
+
+import { hasPlaceholders } from '../lib/text'
 import type { Article } from '../payload-types'
 
 const SUMMARY_LIMIT = 240
@@ -31,6 +34,9 @@ export const publishingProblems = (
     problems.push(`the summary is ${summary.length} characters (the limit is ${SUMMARY_LIMIT})`)
   }
   if (!hasBody(article.content)) problems.push('the story body is empty')
+  else if (hasPlaceholders(article.content)) {
+    problems.push('the story still has “TK” notes from the template')
+  }
   if (!article.section) problems.push('no section is chosen')
   if (!article.authors || article.authors.length === 0) problems.push('no author is set')
   return problems
@@ -40,3 +46,37 @@ export const describeProblems = (problems: string[]) =>
   problems.length === 0
     ? ''
     : `${problems[0][0].toUpperCase()}${problems[0].slice(1)}${problems.length > 1 ? `; ${problems.slice(1).join('; ')}` : ''}.`
+
+/** Open comment threads on each story, for stories that have any. */
+export const unresolvedComments = async (
+  payload: Payload,
+  articleIds: (number | string)[],
+  req?: PayloadRequest,
+): Promise<Map<string, number>> => {
+  const counts = new Map<string, number>()
+  if (articleIds.length === 0) return counts
+  const { docs } = await payload.find({
+    collection: 'comments',
+    where: {
+      and: [
+        { article: { in: articleIds } },
+        { parent: { exists: false } },
+        { resolved: { not_equals: true } },
+      ],
+    },
+    depth: 0,
+    limit: 0,
+    pagination: false,
+    overrideAccess: true,
+    req,
+    select: { article: true },
+  })
+  for (const doc of docs) {
+    const key = String(typeof doc.article === 'object' ? doc.article?.id : doc.article)
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  return counts
+}
+
+export const commentProblem = (count: number) =>
+  count === 1 ? '1 comment is unresolved' : `${count} comments are unresolved`

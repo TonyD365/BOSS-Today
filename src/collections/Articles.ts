@@ -11,10 +11,11 @@ import {
   WORKFLOW_STATES,
   type WorkflowState,
 } from '../endpoints/articleWorkflow'
+import { newStoryEndpoint } from '../endpoints/newStory'
 import { auditDelete, auditPublishing } from '../hooks/audit'
 import { guardPublishing } from '../hooks/publishing'
 import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
-import { slugFrom } from '../hooks/slug'
+import { storySlug } from '../hooks/slug'
 
 type HistoryEntry = { status: WorkflowState; by?: number | null; at: string; note?: string | null }
 
@@ -126,7 +127,7 @@ export const Articles: CollectionConfig = {
   },
   defaultSort: '-updatedAt',
   versions: { drafts: true, maxPerDoc: 10 },
-  endpoints: [articleWorkflowEndpoint],
+  endpoints: [articleWorkflowEndpoint, newStoryEndpoint],
   access: {
     read: publishedOrStaff,
     create: atLeast('reporter'),
@@ -143,7 +144,7 @@ export const Articles: CollectionConfig = {
     delete: atLeast('exec'),
   },
   hooks: {
-    beforeValidate: [slugFrom('title')],
+    beforeValidate: [storySlug],
     beforeChange: [guardPublishing('A story'), syncWorkflow, keepPublishedCorrections],
     afterChange: [revalidateAfterChange, auditPublishing('story')],
     afterDelete: [revalidateAfterDelete, auditDelete('story')],
@@ -213,6 +214,14 @@ export const Articles: CollectionConfig = {
       admin: {
         position: 'sidebar',
         components: { Field: '@/components/admin/WritingHints#WritingHints' },
+      },
+    },
+    {
+      name: 'commentsPanel',
+      type: 'ui',
+      admin: {
+        position: 'sidebar',
+        components: { Field: '@/components/admin/CommentsPanel#CommentsPanel' },
       },
     },
     {
