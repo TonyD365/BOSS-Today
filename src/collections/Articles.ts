@@ -80,7 +80,7 @@ export const Articles: CollectionConfig = {
     },
   },
   defaultSort: '-updatedAt',
-  versions: { drafts: true, maxPerDoc: 25 },
+  versions: { drafts: true, maxPerDoc: 10 },
   endpoints: [articleWorkflowEndpoint],
   access: {
     read: publishedOrStaff,
