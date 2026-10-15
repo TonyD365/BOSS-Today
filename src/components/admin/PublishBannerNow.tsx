@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, useAuth, useFormModified } from '@payloadcms/ui'
+import { Button, useAuth, useFormFields, useFormModified } from '@payloadcms/ui'
 import React, { useState } from 'react'
 
 type SidebarUser = { role?: string; isSuperAdmin?: boolean; permissions?: string[] }
@@ -9,6 +9,11 @@ type SidebarUser = { role?: string; isSuperAdmin?: boolean; permissions?: string
 export function PublishBannerNow() {
   const { user } = useAuth<SidebarUser>()
   const modified = useFormModified()
+  const expiresAt = useFormFields(([fields]) => fields.expiresAt?.value) as string | undefined
+  const text = useFormFields(([fields]) => fields.text?.value) as string | undefined
+  // Checked when the page loads and whenever the time is changed.
+  const [now] = useState(() => Date.now())
+  const expired = Boolean(text?.trim() && expiresAt && new Date(expiresAt).getTime() <= now)
   const [open, setOpen] = useState(false)
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
@@ -18,8 +23,20 @@ export function PublishBannerNow() {
     Boolean(user?.isSuperAdmin) ||
     (['editor', 'exec'].includes(user?.role ?? '') && Boolean(user?.permissions?.includes('issue')))
 
+  const warning = expired ? (
+    <p style={{ ...hint, color: 'var(--theme-error-500)', opacity: 1 }}>
+      “Hide after” has already passed, so readers would never see this banner. Choose a later time
+      or clear it, then save.
+    </p>
+  ) : null
+
   if (!canIssue) {
-    return <p style={hint}>Saved changes go live with the next issue.</p>
+    return (
+      <div style={{ display: 'grid', gap: 10, marginBottom: 24 }}>
+        {warning}
+        <p style={hint}>Saved changes go live with the next issue.</p>
+      </div>
+    )
   }
 
   const publish = async () => {
@@ -59,7 +76,7 @@ export function PublishBannerNow() {
         <Button
           buttonStyle="secondary"
           size="small"
-          disabled={busy || modified}
+          disabled={busy || modified || expired}
           onClick={() => setOpen(true)}
         >
           Publish banner now
@@ -93,6 +110,7 @@ export function PublishBannerNow() {
           </div>
         </div>
       )}
+      {warning}
       {modified && <p style={hint}>Save the banner first.</p>}
       {message && <p style={hint}>{message}</p>}
     </div>

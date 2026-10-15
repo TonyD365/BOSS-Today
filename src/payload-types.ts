@@ -1121,7 +1121,7 @@ export interface Banner {
   link?: string | null;
   style?: ('info' | 'urgent') | null;
   /**
-   * Readers’ browsers hide the banner at this time by themselves, without a rebuild.
+   * Readers’ browsers hide the banner at this time by themselves, without a rebuild. Leave empty to keep it up until you remove it.
    */
   expiresAt?: string | null;
   _status?: ('draft' | 'published') | null;

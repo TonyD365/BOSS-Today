@@ -30,6 +30,20 @@ export const publishBannerNowEndpoint: Endpoint = {
         overrideAccess: true,
         req,
       })
+      if (
+        draft.text?.trim() &&
+        draft.expiresAt &&
+        new Date(draft.expiresAt).getTime() <= Date.now()
+      ) {
+        return json(
+          {
+            message:
+              'This banner’s “Hide after” time has already passed, so readers would never see it. Change or clear that time, save, and publish again.',
+          },
+          409,
+        )
+      }
+
       // With no unpublished change this sends the published banner again, which
       // repairs the website's copy if an earlier attempt didn't get through.
       const resend = draft._status !== 'draft'
