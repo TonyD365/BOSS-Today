@@ -6,36 +6,136 @@
     el.textContent = today
   })
 
-  // The banner comes from Cloudflare KV (functions/api/banner.js), not from the
-  // built pages, so it can change without a rebuild. It hides itself on expiry.
+  // The banner and Most read come from Cloudflare KV through /api/live
+  // (functions/api/live.js), not from the built pages, so they change without a
+  // rebuild. The banner hides itself when it expires.
   var bannerBox = document.getElementById('site-banner')
-  if (bannerBox && window.fetch) {
-    fetch('/api/banner')
+  var mostRead = document.getElementById('most-read')
+  var showBanner = function (banner) {
+    if (!bannerBox || !banner || !banner.text) return
+    var left = banner.expiresAt ? new Date(banner.expiresAt).getTime() - Date.now() : Infinity
+    if (!(left > 0)) return
+    bannerBox.className =
+      'site-banner site-banner--' + (banner.style === 'urgent' ? 'urgent' : 'info')
+    bannerBox.setAttribute('role', 'status')
+    var holder = bannerBox
+    if (banner.link && /^(https?:\/\/|\/)/.test(banner.link)) {
+      holder = document.createElement('a')
+      holder.href = banner.link
+      bannerBox.appendChild(holder)
+    }
+    holder.textContent = banner.text
+    bannerBox.hidden = false
+    if (left < 2147483647) {
+      setTimeout(function () {
+        bannerBox.hidden = true
+      }, left)
+    }
+  }
+  var showMostRead = function (stories) {
+    if (!mostRead || !Array.isArray(stories) || stories.length === 0) return
+    var list = mostRead.querySelector('ol')
+    stories.slice(0, 5).forEach(function (story) {
+      if (!story || !story.title || !/^\/article\//.test(story.url || '')) return
+      var item = document.createElement('li')
+      if (story.section) {
+        var kicker = document.createElement('span')
+        kicker.className = 'kicker'
+        kicker.textContent = story.section
+        item.appendChild(kicker)
+      }
+      var link = document.createElement('a')
+      link.href = story.url
+      link.textContent = story.title
+      item.appendChild(link)
+      list.appendChild(item)
+    })
+    if (list.children.length > 0) mostRead.hidden = false
+  }
+  if ((bannerBox || mostRead) && window.fetch) {
+    fetch('/api/live')
       .then(function (response) {
         return response.ok ? response.json() : null
       })
-      .then(function (banner) {
-        if (!banner || !banner.text) return
-        var left = banner.expiresAt ? new Date(banner.expiresAt).getTime() - Date.now() : Infinity
-        if (!(left > 0)) return
-        bannerBox.className =
-          'site-banner site-banner--' + (banner.style === 'urgent' ? 'urgent' : 'info')
-        bannerBox.setAttribute('role', 'status')
-        var holder = bannerBox
-        if (banner.link && /^(https?:\/\/|\/)/.test(banner.link)) {
-          holder = document.createElement('a')
-          holder.href = banner.link
-          bannerBox.appendChild(holder)
-        }
-        holder.textContent = banner.text
-        bannerBox.hidden = false
-        if (left < 2147483647) {
-          setTimeout(function () {
-            bannerBox.hidden = true
-          }, left)
-        }
+      .then(function (live) {
+        if (!live) return
+        showBanner(live.banner)
+        showMostRead(live.mostRead)
       })
       .catch(function () {})
+  }
+
+  // Contact form: posts to the newsroom as plain text, so no extra request is needed first.
+  var form = document.querySelector('.contact__form')
+  if (form) {
+    var params = new URLSearchParams(window.location.search)
+    var type = params.get('type')
+    var article = params.get('article') || ''
+    if (['letter', 'tip', 'correction'].indexOf(type) !== -1) {
+      var choice = form.querySelector('input[name="kind"][value="' + type + '"]')
+      if (choice) choice.checked = true
+    }
+    var about = form.querySelector('.contact__about')
+    if (article && about) {
+      about.textContent = 'About the story: /article/' + article + '/'
+      about.hidden = false
+    }
+    var body = form.querySelector('textarea[name="body"]')
+    var count = form.querySelector('.contact__count')
+    var status = form.querySelector('.contact__status')
+    var button = form.querySelector('button[type="submit"]')
+    body.addEventListener('input', function () {
+      count.textContent = body.value.length + ' / 3000'
+    })
+    form.addEventListener('submit', function (event) {
+      event.preventDefault()
+      var data = new FormData(form)
+      var kind = form.querySelector('input[name="kind"]:checked')
+      status.className = 'contact__status'
+      status.textContent = 'Sending…'
+      button.disabled = true
+      fetch(form.getAttribute('data-endpoint'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: JSON.stringify({
+          kind: kind ? kind.value : '',
+          body: data.get('body'),
+          name: data.get('name'),
+          email: data.get('email'),
+          affiliation: data.get('affiliation'),
+          website: data.get('website'),
+          consent: form.querySelector('input[name="consent"]').checked,
+          article: article,
+          token: data.get('cf-turnstile-response') || '',
+        }),
+      })
+        .then(function (response) {
+          return response.json().then(function (result) {
+            return { ok: response.ok, result: result }
+          })
+        })
+        .then(function (reply) {
+          if (reply.ok) {
+            form.reset()
+            count.textContent = '0 / 3000'
+            status.className = 'contact__status contact__status--ok'
+            status.textContent =
+              'Thank you. Your message reached the newsroom. If we plan to publish it, an editor will email you first.'
+          } else {
+            status.className = 'contact__status contact__status--error'
+            status.textContent = reply.result.message || 'Something went wrong. Please try again.'
+          }
+        })
+        .catch(function () {
+          status.className = 'contact__status contact__status--error'
+          status.textContent =
+            'We couldn’t reach the newsroom. Check your connection and try again.'
+        })
+        .then(function () {
+          button.disabled = false
+          if (window.turnstile) window.turnstile.reset()
+        })
+    })
   }
 
   // Theme: follow the device, or the reader's own choice.

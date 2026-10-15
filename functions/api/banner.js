@@ -1,9 +1,7 @@
 /**
  * Cloudflare Pages Function: GET /api/banner
  *
- * Returns the site banner from the BANNER KV namespace (bound in the Pages
- * project settings). The newsroom writes it; nothing here needs a rebuild.
- * Without the binding, or on any error, readers simply see no banner.
+ * Kept for pages built before /api/live existed. New pages use /api/live.
  */
 export async function onRequestGet({ env }) {
   let value = null

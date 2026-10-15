@@ -16,11 +16,14 @@ import { Deployments } from './collections/Deployments'
 import { IssueChecks } from './collections/IssueChecks'
 import { Issues } from './collections/Issues'
 import { Media } from './collections/Media'
+import { PageViews } from './collections/PageViews'
 import { Sections } from './collections/Sections'
+import { Submissions } from './collections/Submissions'
 import { Tags } from './collections/Tags'
 import { Templates } from './collections/Templates'
 import { Users } from './collections/Users'
 import { githubAdapter, githubStorageConfig } from './storage/github'
+import { dailyCronEndpoint } from './endpoints/readership'
 import { siteExportEndpoint } from './endpoints/siteExport'
 import { Banner } from './globals/Banner'
 import { FrontPage } from './globals/FrontPage'
@@ -83,6 +86,7 @@ export default buildConfig({
     Assignments,
     Comments,
     Templates,
+    Submissions,
     Issues,
     Sections,
     Tags,
@@ -91,9 +95,10 @@ export default buildConfig({
     AuditLog,
     IssueChecks,
     Deployments,
+    PageViews,
   ],
   globals: [FrontPage, Banner, Settings],
-  endpoints: [siteExportEndpoint],
+  endpoints: [siteExportEndpoint, dailyCronEndpoint],
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => [...defaultFeatures, BlocksFeature({ blocks: [YouTube] })],
   }),

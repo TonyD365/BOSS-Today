@@ -50,6 +50,15 @@ export const Settings: GlobalConfig = {
       admin: { description: 'Shown at /about. Leave empty to hide the page.' },
     },
     {
+      name: 'joinUs',
+      type: 'richText',
+      label: 'Join us',
+      admin: {
+        description:
+          'Shown at the bottom of the Our Staff page: how to join the newsroom. Leave empty to hide it.',
+      },
+    },
+    {
       name: 'socialLinks',
       type: 'array',
       labels: { singular: 'Link', plural: 'Social links' },

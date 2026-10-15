@@ -10,6 +10,8 @@ export type ExportSection = {
   order: number
 }
 
+export type ExportStaff = Author & { photo: Media | null; role: 'reporter' | 'editor' | 'exec' }
+
 export type ExportTag = {
   id: number
   name: string
@@ -37,9 +39,11 @@ export type ExportMeta = {
     about: unknown
     socialLinks: { label: string; url: string }[]
     footerNote: string
+    joinUs: unknown
   }
   frontPage: { lead: number | null; featured: number[] }
   tags: ExportTag[]
+  staff: ExportStaff[]
   sections: ExportSection[]
   issues: ExportIssue[]
 }

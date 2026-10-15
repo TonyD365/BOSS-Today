@@ -1,14 +1,10 @@
-import { APIError } from 'payload'
-
 import type { Banner } from '../payload-types'
+import { liveStoreConfigured, putLive } from './liveStore'
 
 /**
  * The banner lives in Cloudflare KV, not in the static pages, so putting it up
- * or taking it down never rebuilds the site. A Pages Function
- * (functions/api/banner.js) serves it to readers' browsers.
+ * or taking it down never rebuilds the site (see liveStore.ts).
  */
-export const BANNER_KEY = 'banner'
-
 export type PublicBanner = {
   text: string
   link: string | null
@@ -29,49 +25,7 @@ export const publicBanner = (doc: Partial<Banner>): PublicBanner | null =>
       }
     : null
 
-const kv = () => {
-  const token = process.env.CLOUDFLARE_API_TOKEN?.trim()
-  const account = process.env.CLOUDFLARE_ACCOUNT_ID?.trim()
-  const namespace = process.env.CLOUDFLARE_KV_NAMESPACE_ID?.trim()
-  if (!token || !account || !namespace) return null
-  const base = (
-    process.env.CLOUDFLARE_API_BASE?.trim() || 'https://api.cloudflare.com/client/v4'
-  ).replace(/\/$/, '')
-  return {
-    url: `${base}/accounts/${account}/storage/kv/namespaces/${namespace}/values/${BANNER_KEY}`,
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-  }
-}
-
-export const bannerStoreConfigured = () => kv() !== null
+export const bannerStoreConfigured = liveStoreConfigured
 
 /** Writes the banner readers see. Throws if Cloudflare can't be reached. */
-export const storeBanner = async (banner: PublicBanner | null) => {
-  const api = kv()
-  if (!api) {
-    throw new APIError(
-      'The banner store is not set up: CLOUDFLARE_KV_NAMESPACE_ID, CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are needed on Vercel.',
-      503,
-      undefined,
-      true,
-    )
-  }
-  let status = 0
-  try {
-    const response = await fetch(api.url, {
-      method: 'PUT',
-      headers: api.headers,
-      body: JSON.stringify(banner ?? {}),
-    })
-    status = response.status
-    if (response.ok) return
-  } catch {
-    // Reported below.
-  }
-  throw new APIError(
-    `Cloudflare didn’t accept the banner${status ? ` (${status})` : ''}. Check that the API token can edit Workers KV.`,
-    502,
-    undefined,
-    true,
-  )
-}
+export const storeBanner = (banner: PublicBanner | null) => putLive('banner', banner ?? {})

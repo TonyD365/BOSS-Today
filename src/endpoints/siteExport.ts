@@ -108,7 +108,19 @@ export const siteExportEndpoint: Endpoint = {
           article.section && typeof article.section === 'object'
             ? { id: article.section.id, name: article.section.name, slug: article.section.slug }
             : null,
-        authors: (article.authors ?? []).map(publicAuthor).filter(Boolean),
+        // A letter or guest piece is credited to its writer, not the staff who handled it.
+        authors: article.guestByline?.trim()
+          ? [
+              {
+                id: 0,
+                name: article.guestByline.trim(),
+                title: null,
+                bio: null,
+                slug: null,
+                photo: null,
+              },
+            ]
+          : (article.authors ?? []).map(publicAuthor).filter(Boolean),
         // Only tags that have themselves gone live.
         tags: (article.tags ?? [])
           .map((tag) => tagsById.get(idOf(tag)))
@@ -119,7 +131,7 @@ export const siteExportEndpoint: Endpoint = {
       return json(absolutize({ page, totalPages: result.totalPages, docs }, origin))
     }
 
-    const [settings, frontPage, sections, tags, issues] = await Promise.all([
+    const [settings, frontPage, sections, tags, issues, staff] = await Promise.all([
       payload.findGlobal({ slug: 'settings', depth: 1, overrideAccess: true }),
       payload.findGlobal({ slug: 'front-page', depth: 0, overrideAccess: true }),
       payload.find({
@@ -146,6 +158,20 @@ export const siteExportEndpoint: Endpoint = {
         limit: 500,
         overrideAccess: true,
       }),
+      payload.find({
+        collection: 'users',
+        where: {
+          and: [
+            { role: { in: ['reporter', 'editor', 'exec'] } },
+            { active: { not_equals: false } },
+            { showOnStaffPage: { not_equals: false } },
+          ],
+        },
+        sort: 'name',
+        limit: 500,
+        depth: 1,
+        overrideAccess: true,
+      }),
     ])
 
     return json(
@@ -159,6 +185,7 @@ export const siteExportEndpoint: Endpoint = {
             about: settings.about ?? null,
             socialLinks: (settings.socialLinks ?? []).map(({ label, url }) => ({ label, url })),
             footerNote: settings.footerNote ?? '',
+            joinUs: settings.joinUs ?? null,
           },
           frontPage: {
             lead:
@@ -169,6 +196,8 @@ export const siteExportEndpoint: Endpoint = {
               typeof item === 'object' ? item.id : item,
             ),
           },
+          // Public profile fields only, grouped on the Our Staff page by role.
+          staff: staff.docs.map((user) => ({ ...publicAuthor(user)!, role: user.role })),
           tags: tags.docs.map(({ id, name, slug, description, image }) => ({
             id,
             name,

@@ -10,6 +10,7 @@ import * as migration_20261014_200000_backfill_section_versions from './20261014
 import * as migration_20261014_231138_batch1_tags_corrections_banner from './20261014_231138_batch1_tags_corrections_banner'
 import * as migration_20261014_233311_batch2_assignments_templates_comments from './20261014_233311_batch2_assignments_templates_comments'
 import * as migration_20261014_233400_seed_story_templates from './20261014_233400_seed_story_templates'
+import * as migration_20261015_153301_batch3_submissions_readership_staff from './20261015_153301_batch3_submissions_readership_staff'
 
 export const migrations = [
   {
@@ -71,5 +72,10 @@ export const migrations = [
     up: migration_20261014_233400_seed_story_templates.up,
     down: migration_20261014_233400_seed_story_templates.down,
     name: '20261014_233400_seed_story_templates',
+  },
+  {
+    up: migration_20261015_153301_batch3_submissions_readership_staff.up,
+    down: migration_20261015_153301_batch3_submissions_readership_staff.down,
+    name: '20261015_153301_batch3_submissions_readership_staff',
   },
 ]

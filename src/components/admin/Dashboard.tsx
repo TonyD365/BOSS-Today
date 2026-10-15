@@ -1,9 +1,11 @@
 import type { Payload, TypedUser, Where } from 'payload'
 import Link from 'next/link'
+import { after } from 'next/server'
 import React from 'react'
 
 import { canPublishIssues, hasPermission, RANK, rankOf } from '@/access'
 import { deploysThisMonth, ISSUE_DEPLOY_LIMIT } from '@/publishing/deploy'
+import { readershipSummary, syncReadership } from '@/publishing/readership'
 import type { Article, Assignment, Issue } from '@/payload-types'
 
 import { RebuildButton } from './RebuildButton'
@@ -80,6 +82,22 @@ export async function Dashboard({ payload, user }: Props) {
     return !(story && typeof story === 'object' && story.workflow === 'published')
   })
 
+  const isEditor = rank >= RANK.editor
+  const [readership, newSubmissions] = isEditor
+    ? await Promise.all([
+        readershipSummary(payload),
+        payload.count({
+          collection: 'submissions',
+          where: { status: { equals: 'new' } },
+          overrideAccess: true,
+        }),
+      ])
+    : [null, null]
+  // Keep readership fresh without making anyone wait: at most hourly, after the page is sent.
+  if (isEditor && readership?.configured) {
+    after(() => syncReadership(payload).then(() => undefined))
+  }
+
   const name = (user as { name?: string }).name?.split(' ')[0]
 
   return (
@@ -133,6 +151,19 @@ export async function Dashboard({ payload, user }: Props) {
             <StoryList stories={recent} showState={false} />
           </Card>
         )}
+        {newSubmissions && (
+          <Card title="Reader submissions">
+            <p style={{ margin: 0 }}>
+              {newSubmissions.totalDocs === 0
+                ? 'Nothing new from readers.'
+                : `${newSubmissions.totalDocs} new ${newSubmissions.totalDocs === 1 ? 'message' : 'messages'} from readers.`}
+            </p>
+            <Link href="/admin/collections/submissions" style={link}>
+              Open reader submissions
+            </Link>
+          </Card>
+        )}
+        {readership && <ReadershipCard data={readership} />}
         {issue && <IssueCard issue={issue} />}
         {deploys !== undefined && (
           <Card title="Public website">
@@ -150,6 +181,63 @@ export async function Dashboard({ payload, user }: Props) {
         )}
       </div>
     </div>
+  )
+}
+
+const number = (value: number) => value.toLocaleString('en-CA')
+
+function ReadershipCard({ data }: { data: Awaited<ReturnType<typeof readershipSummary>> }) {
+  if (!data.configured) {
+    return (
+      <Card title="Readership">
+        <p style={{ margin: 0, opacity: 0.75 }}>
+          Not set up yet. Turn on Cloudflare Web Analytics and set CLOUDFLARE_ANALYTICS_SITE_TAG on
+          Vercel (see the README).
+        </p>
+      </Card>
+    )
+  }
+  return (
+    <Card title="Readership">
+      <p style={{ margin: 0 }}>
+        <b>{number(data.week.views)}</b> page views this week · {number(data.month.views)} in 30
+        days
+      </p>
+      {data.topWeek.length > 0 && (
+        <div style={{ display: 'grid', gap: 4 }}>
+          <strong style={{ fontSize: 13 }}>Most read this week</strong>
+          <ol style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 4, fontSize: 13 }}>
+            {data.topWeek.map((story) => (
+              <li key={story.id}>
+                <a href={`/admin/collections/articles/${story.id}`}>{story.title}</a>{' '}
+                <span style={{ opacity: 0.7 }}>· {number(story.views)}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+      {data.sections.length > 0 && (
+        <p style={{ margin: 0, fontSize: 13 }}>
+          <strong>By section (30 days): </strong>
+          {data.sections.map(([name, views]) => `${name} ${number(views)}`).join(' · ')}
+        </p>
+      )}
+      {data.referrers.length > 0 && (
+        <p style={{ margin: 0, fontSize: 13 }}>
+          <strong>Readers came from: </strong>
+          {data.referrers.map(([host, views]) => `${host} ${number(views)}`).join(' · ')}
+        </p>
+      )}
+      <p style={{ margin: 0, fontSize: 12, opacity: 0.7 }}>
+        {data.lastSync ? `Updated ${when(data.lastSync)}. ` : 'Not updated yet. '}
+        Refreshes hourly while editors use the newsroom, and daily on its own.
+      </p>
+      {data.lastError && (
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--theme-error-500)' }}>
+          Last update failed: {data.lastError.message}
+        </p>
+      )}
+    </Card>
   )
 }
 

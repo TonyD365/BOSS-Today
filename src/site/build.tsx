@@ -27,6 +27,7 @@ import {
   AboutView,
   ArticlePage,
   AuthorView,
+  ContactView,
   HomeView,
   IssuesView,
   IssueView,
@@ -35,6 +36,8 @@ import {
   SearchView,
   SectionView,
   Shell,
+  type SiteLinks,
+  StaffView,
   TagsView,
   TagView,
 } from './views'
@@ -54,6 +57,9 @@ const TOKEN = required('SITE_EXPORT_TOKEN')
 const PUBLIC_URL = (process.env.PUBLIC_SITE_URL ?? '').replace(/\/$/, '')
 /** Feeds and share links need a full address; Cloudflare provides one if PUBLIC_SITE_URL is unset. */
 const SITE_URL = (PUBLIC_URL || process.env.CF_PAGES_URL || '').replace(/\/$/, '')
+/** Turnstile's public key; without it the Contact page isn't built. */
+const TURNSTILE_SITE_KEY = process.env.TURNSTILE_SITE_KEY?.trim() ?? ''
+const TURNSTILE_SCRIPT = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
 
 const fetchExport = async <T,>(query: string): Promise<T> => {
   const response = await fetch(`${CMS_URL}/api/site-export?${query}`, {
@@ -97,10 +103,11 @@ const main = async () => {
   await fs.rm(OUT, { recursive: true, force: true })
   await fs.mkdir(OUT, { recursive: true })
 
+  const links: SiteLinks = { staff: site.staff.length > 0, contact: Boolean(TURNSTILE_SITE_KEY) }
   const urls: string[] = []
   const page = async (file: string, meta: PageMeta, body: React.ReactNode) => {
     const html = renderToStaticMarkup(
-      <Shell meta={meta} site={site} publicUrl={PUBLIC_URL}>
+      <Shell meta={meta} site={site} publicUrl={PUBLIC_URL} links={links}>
         {body}
       </Shell>,
     )
@@ -149,6 +156,7 @@ const main = async () => {
       <ArticlePage
         article={article}
         shareUrl={SITE_URL ? `${SITE_URL}/article/${article.slug}/` : undefined}
+        contact={links.contact}
       />,
     )
   }
@@ -245,6 +253,38 @@ const main = async () => {
         path: `/issues/${editionSlug(issue)}/`,
       },
       <IssueView issue={issue} articles={inIssue} cmsUrl={site.cmsUrl} />,
+    )
+  }
+
+  if (links.staff) {
+    await page(
+      'staff/index.html',
+      {
+        title: 'Our Staff',
+        description: `The students who make ${siteName}.`,
+        path: '/staff/',
+      },
+      <StaffView
+        staff={site.staff}
+        authorPages={new Set(authors.keys())}
+        joinUs={site.settings.joinUs}
+        contact={links.contact}
+      />,
+    )
+  }
+  if (links.contact) {
+    await page(
+      'contact/index.html',
+      {
+        title: 'Contact the newsroom',
+        description: `Letters, tips and corrections for ${siteName}.`,
+        path: '/contact/',
+        scripts: [TURNSTILE_SCRIPT],
+      },
+      <ContactView
+        endpoint={`${site.cmsUrl}/api/submissions/submit`}
+        siteKey={TURNSTILE_SITE_KEY}
+      />,
     )
   }
 

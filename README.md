@@ -45,7 +45,10 @@ Rebuilds are counted in **Site rebuilds**: publishing stops at 400 a month and w
 | `SITE_EXPORT_TOKEN`                        | Another `openssl rand -hex 32`; also set on Cloudflare              |
 | `PUBLIC_SITE_URL`                          | The Cloudflare Pages address, once it exists                        |
 | `CLOUDFLARE_DEPLOY_HOOK_URL`               | From Cloudflare (step 2)                                            |
-| `CLOUDFLARE_KV_NAMESPACE_ID`               | From Cloudflare (step 2.8); where the site banner is stored         |
+| `CLOUDFLARE_KV_NAMESPACE_ID`               | From Cloudflare (step 2.8); where the banner and Most read are kept |
+| `TURNSTILE_SECRET_KEY`                     | From Cloudflare Turnstile (step 2.9); checks Contact page senders   |
+| `CLOUDFLARE_ANALYTICS_SITE_TAG`            | From Cloudflare Web Analytics (step 2.10)                           |
+| `CRON_SECRET`                              | Another `openssl rand -hex 32`; protects the daily job              |
 | `SITE_URL`                                 | Optional. This host's address, e.g. `https://bosstoday.vercel.app`  |
 | `ALLOWED_EMAIL_DOMAINS`                    | Optional. Limits Google sign-in to these domains                    |
 
@@ -59,11 +62,14 @@ Rebuilds are counted in **Site rebuilds**: publishing stops at 400 a month and w
 6. Set `PUBLIC_SITE_URL` on Vercel too and redeploy Vercel, so old reader links redirect to Pages.
 7. Optional, to see rebuild progress in the newsroom: Cloudflare → My Profile → API Tokens → Create token → custom token with **Account → Cloudflare Pages → Read**. On Vercel set `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` (shown on the Workers & Pages overview) and `CLOUDFLARE_PAGES_PROJECT` (the project name), then redeploy.
 
-8. **Banner** (needed before anyone publishes one). The banner isn't built into the pages; a small Pages Function (`functions/api/banner.js`) serves it from Workers KV, so changing it never rebuilds the site.
+8. **Banner and Most read** (needed before anyone publishes a banner). These aren't built into the pages; a small Pages Function (`functions/api/live.js`) serves them from Workers KV, so changing them never rebuilds the site.
    1. Workers & Pages → **KV** → Create a namespace, e.g. `boss-today-banner`. Copy its **ID**.
    2. The Pages project → Settings → **Bindings** → Add → KV namespace: variable name `BANNER`, the namespace above. Redeploy Pages once so the binding takes effect.
    3. Edit the API token from step 7 (or create one) to also have **Account → Workers KV Storage → Edit**.
    4. On Vercel set `CLOUDFLARE_KV_NAMESPACE_ID` (the ID), plus `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` if not already set, then redeploy.
+
+9. **Contact page.** Cloudflare → Turnstile → Add widget, with the Pages address (and any custom domain) as hostnames, mode Managed. Put the **site key** in the Pages environment as `TURNSTILE_SITE_KEY` and the **secret key** on Vercel as `TURNSTILE_SECRET_KEY`. Without the site key the Contact page isn't built. Submissions go straight to the newsroom and don't rebuild the site.
+10. **Readership.** The Pages project → Metrics → enable **Web Analytics**. Then open Analytics & Logs → Web Analytics → the site's metrics; the page address contains `siteTag~in=…`. Copy that value into Vercel as `CLOUDFLARE_ANALYTICS_SITE_TAG`. Add **Account → Account Analytics → Read** to the API token. Set `CRON_SECRET` on Vercel: Vercel Cron calls `/api/cron/daily` each morning (vercel.json), and the dashboard also refreshes readership hourly while editors use it.
 
 To try the static build locally: `CMS_URL=http://localhost:3000 SITE_EXPORT_TOKEN=… npm run build:site`, then serve `site-dist`.
 

@@ -12,6 +12,7 @@ import {
   type WorkflowState,
 } from '../endpoints/articleWorkflow'
 import { newStoryEndpoint } from '../endpoints/newStory'
+import { storyViewsEndpoint } from '../endpoints/readership'
 import { auditDelete, auditPublishing } from '../hooks/audit'
 import { guardPublishing } from '../hooks/publishing'
 import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
@@ -127,7 +128,7 @@ export const Articles: CollectionConfig = {
   },
   defaultSort: '-updatedAt',
   versions: { drafts: true, maxPerDoc: 10 },
-  endpoints: [articleWorkflowEndpoint, newStoryEndpoint],
+  endpoints: [articleWorkflowEndpoint, newStoryEndpoint, storyViewsEndpoint],
   access: {
     read: publishedOrStaff,
     create: atLeast('reporter'),
@@ -217,6 +218,14 @@ export const Articles: CollectionConfig = {
       },
     },
     {
+      name: 'storyViews',
+      type: 'ui',
+      admin: {
+        position: 'sidebar',
+        components: { Field: '@/components/admin/StoryViews#StoryViews' },
+      },
+    },
+    {
       name: 'commentsPanel',
       type: 'ui',
       admin: {
@@ -271,6 +280,17 @@ export const Articles: CollectionConfig = {
       filterOptions: { role: { not_equals: 'reader' } },
       // People are added under People, never from a story.
       admin: { position: 'sidebar', allowCreate: false },
+    },
+    {
+      name: 'guestByline',
+      type: 'text',
+      label: 'Guest byline',
+      access: { update: atLeastField('editor') },
+      admin: {
+        position: 'sidebar',
+        description:
+          'For letters and guest writers, e.g. “Jane Doe, Grade 11”. Shown on the website instead of the authors above, who stay on record as responsible for the story.',
+      },
     },
     {
       name: 'tags',

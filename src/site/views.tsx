@@ -15,6 +15,7 @@ import {
   type ExportIssue,
   type ExportMeta,
   type ExportSection,
+  type ExportStaff,
   type ExportTag,
   type frontPageLayout,
 } from './model'
@@ -28,7 +29,12 @@ export type PageMeta = {
   noindex?: boolean
   /** An RSS feed for this page, besides the site-wide one. */
   feed?: { title: string; path: string }
+  /** Extra scripts this page alone needs. */
+  scripts?: string[]
 }
+
+/** Footer links that depend on what the site has. */
+export type SiteLinks = { staff: boolean; contact: boolean }
 
 /** Runs before the page paints, so a reader's chosen theme never flashes. */
 const THEME_SCRIPT =
@@ -42,11 +48,13 @@ export function Shell({
   meta,
   site,
   publicUrl,
+  links,
   children,
 }: {
   meta: PageMeta
   site: ExportMeta
   publicUrl: string
+  links: SiteLinks
   children: React.ReactNode
 }) {
   const fullTitle =
@@ -89,6 +97,9 @@ export function Shell({
         <link rel="stylesheet" href={FONTS} />
         <link rel="stylesheet" href="/assets/styles.css" />
         <script src="/assets/site.js" defer />
+        {(meta.scripts ?? []).map((src) => (
+          <script key={src} src={src} async defer />
+        ))}
       </head>
       <body>
         {/* Filled in by site.js from /api/banner, so the banner never needs a rebuild. */}
@@ -102,6 +113,8 @@ export function Shell({
             staffUrl={`${site.cmsUrl}/admin`}
             links={[
               ...(site.tags.length > 0 ? [{ label: 'Topics', href: '/tags/' }] : []),
+              ...(links.staff ? [{ label: 'Our Staff', href: '/staff/' }] : []),
+              ...(links.contact ? [{ label: 'Contact us', href: '/contact/' }] : []),
               { label: 'RSS', href: '/feed.xml' },
             ]}
           />
@@ -134,19 +147,26 @@ export function HomeView({ layout }: { layout: ReturnType<typeof frontPageLayout
             </div>
           )}
         </div>
-        {latest.length > 0 && (
-          <aside className="front__rail" aria-label="Latest">
-            <h2 className="rail-title">Latest</h2>
-            {latest.map((article) => (
-              <StoryCard
-                key={article.id}
-                article={asArticle(article)}
-                variant="compact"
-                showSection
-              />
-            ))}
-          </aside>
-        )}
+        <aside className="front__rail" aria-label="Latest and most read">
+          {latest.length > 0 && (
+            <>
+              <h2 className="rail-title">Latest</h2>
+              {latest.map((article) => (
+                <StoryCard
+                  key={article.id}
+                  article={asArticle(article)}
+                  variant="compact"
+                  showSection
+                />
+              ))}
+            </>
+          )}
+          {/* Filled in by site.js from /api/live; updated hourly without a rebuild. */}
+          <section id="most-read" className="most-read" aria-label="Most read this week" hidden>
+            <h2 className="rail-title">Most read this week</h2>
+            <ol />
+          </section>
+        </aside>
       </section>
       {bySection.map(({ section, articles }) => (
         <section className="section-block" key={section.id} aria-label={section.name}>
@@ -195,8 +215,177 @@ export function SectionView({
   )
 }
 
-export function ArticlePage({ article, shareUrl }: { article: ExportArticle; shareUrl?: string }) {
-  return <ArticleView article={asArticle(article)} shareUrl={shareUrl} />
+export function ArticlePage({
+  article,
+  shareUrl,
+  contact,
+}: {
+  article: ExportArticle
+  shareUrl?: string
+  contact: boolean
+}) {
+  return (
+    <>
+      <ArticleView article={asArticle(article)} shareUrl={shareUrl} />
+      {contact && (
+        <p className="article__report">
+          Spotted a mistake?{' '}
+          <a href={`/contact/?type=correction&article=${encodeURIComponent(article.slug)}`}>
+            Tell us
+          </a>
+          .
+        </p>
+      )}
+    </>
+  )
+}
+
+const STAFF_GROUPS: { role: ExportStaff['role']; title: string }[] = [
+  { role: 'exec', title: 'Editorial board' },
+  { role: 'editor', title: 'Editors' },
+  { role: 'reporter', title: 'Reporters and writers' },
+]
+
+export function StaffView({
+  staff,
+  authorPages,
+  joinUs,
+  contact,
+}: {
+  staff: ExportStaff[]
+  /** Staff with an author page (anyone with a published story). */
+  authorPages: Set<number>
+  joinUs: unknown
+  contact: boolean
+}) {
+  return (
+    <div className="listing">
+      <header className="listing__header">
+        <h1>Our Staff</h1>
+        <p>The students who report, edit and publish BOSS Today.</p>
+      </header>
+      {STAFF_GROUPS.map(({ role, title }) => {
+        const people = staff.filter((person) => person.role === role)
+        if (people.length === 0) return null
+        return (
+          <section key={role} className="staff-group" aria-label={title}>
+            <h2 className="section-block__title">{title}</h2>
+            <ul className="staff-list">
+              {people.map((person) => (
+                <li key={person.id}>
+                  {person.photo ? (
+                    <Picture media={person.photo} sizes="72px" className="avatar" />
+                  ) : (
+                    <span className="avatar avatar--empty" aria-hidden="true">
+                      {person.name.slice(0, 1)}
+                    </span>
+                  )}
+                  <div>
+                    <h3>
+                      {authorPages.has(person.id) && person.slug ? (
+                        <a href={`/author/${person.slug}/`}>{person.name}</a>
+                      ) : (
+                        person.name
+                      )}
+                    </h3>
+                    {person.title && <p className="kicker">{person.title}</p>}
+                    {person.bio && <p>{person.bio}</p>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      })}
+      {(Boolean(joinUs) || contact) && (
+        <section className="join-us" aria-label="Join us">
+          <h2 className="section-block__title">Join us</h2>
+          {Boolean(joinUs) && <ArticleBody className="article__body" content={joinUs} />}
+          {contact && (
+            <p>
+              Have a story idea? <a href="/contact/?type=tip">Send us a tip</a>.
+            </p>
+          )}
+        </section>
+      )}
+    </div>
+  )
+}
+
+export function ContactView({ endpoint, siteKey }: { endpoint: string; siteKey: string }) {
+  return (
+    <div className="listing contact">
+      <header className="listing__header">
+        <h1>Contact the newsroom</h1>
+        <p>
+          Write a letter to the editor, send us a news tip, or tell us about a mistake in a story.
+        </p>
+      </header>
+      <ul className="contact__rules">
+        <li>
+          Use your <b>real first and last name</b> and an email address you check. We don’t accept
+          anonymous submissions.
+        </li>
+        <li>
+          Before we publish a letter, an editor will email you to confirm it’s really from you.
+        </li>
+        <li>Letters may be edited for length, clarity and accuracy, and may not be published.</li>
+        <li>
+          Only our editors see your email address, and we delete it 180 days after dealing with your
+          message.
+        </li>
+      </ul>
+      <form className="contact__form" data-endpoint={endpoint} noValidate>
+        <fieldset>
+          <legend>What are you sending?</legend>
+          <label>
+            <input type="radio" name="kind" value="letter" defaultChecked /> A letter to the editor
+          </label>
+          <label>
+            <input type="radio" name="kind" value="tip" /> A news tip
+          </label>
+          <label>
+            <input type="radio" name="kind" value="correction" /> A correction to a story
+          </label>
+        </fieldset>
+        <p className="contact__about" hidden />
+        <label>
+          Your message
+          <textarea name="body" rows={9} maxLength={3000} required />
+          <span className="contact__count" aria-live="polite">
+            0 / 3000
+          </span>
+        </label>
+        <div className="contact__row">
+          <label>
+            First and last name
+            <input name="name" autoComplete="name" required maxLength={100} />
+          </label>
+          <label>
+            Email
+            <input name="email" type="email" autoComplete="email" required maxLength={255} />
+          </label>
+          <label>
+            Grade or role <span className="contact__optional">(e.g. Grade 11, Parent)</span>
+            <input name="affiliation" maxLength={80} />
+          </label>
+        </div>
+        <label className="contact__trap" aria-hidden="true">
+          Website
+          <input name="website" tabIndex={-1} autoComplete="off" />
+        </label>
+        <label className="contact__consent">
+          <input type="checkbox" name="consent" required /> I’m sending this under my real name. I
+          understand BOSS Today may contact me to confirm it, and may edit and publish what I send.
+        </label>
+        <div className="cf-turnstile" data-sitekey={siteKey} />
+        <button type="submit" className="button">
+          Send
+        </button>
+        <p className="contact__status" role="status" aria-live="polite" />
+      </form>
+    </div>
+  )
 }
 
 export function TagView({ tag, articles }: { tag: ExportTag; articles: ExportArticle[] }) {

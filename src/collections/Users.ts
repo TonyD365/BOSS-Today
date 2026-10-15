@@ -281,6 +281,16 @@ export const Users: CollectionConfig = {
     { name: 'bio', type: 'textarea' },
     { name: 'photo', type: 'upload', relationTo: 'media' },
     {
+      name: 'showOnStaffPage',
+      type: 'checkbox',
+      label: 'Show me on the Our Staff page',
+      defaultValue: true,
+      admin: {
+        description:
+          'Your name, title, photo and bio are listed on the public Our Staff page. Untick to leave yourself off. Takes effect when the website is next rebuilt.',
+      },
+    },
+    {
       name: 'slug',
       type: 'text',
       unique: true,
