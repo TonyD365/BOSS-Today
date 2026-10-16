@@ -18,7 +18,7 @@ import {
   superAdminOnlyField,
 } from '../access'
 import { SESSION_SECONDS } from '../auth/session'
-import { auditDelete, auditPeople } from '../hooks/audit'
+import { auditDelete, auditPeople, keepSignOffs } from '../hooks/audit'
 import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 import { slugFrom } from '../hooks/slug'
 
@@ -191,6 +191,7 @@ export const Users: CollectionConfig = {
       },
     ],
     afterChange: [revalidateAfterChange, auditPeople],
+    beforeDelete: [keepSignOffs],
     afterDelete: [revalidateAfterDelete, auditDelete('person')],
   },
   fields: [

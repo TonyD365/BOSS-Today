@@ -1,8 +1,10 @@
-import type {
-  CollectionAfterChangeHook,
-  CollectionAfterDeleteHook,
-  GlobalAfterChangeHook,
-  PayloadRequest,
+import {
+  APIError,
+  type CollectionAfterChangeHook,
+  type CollectionAfterDeleteHook,
+  type CollectionBeforeDeleteHook,
+  type GlobalAfterChangeHook,
+  type PayloadRequest,
 } from 'payload'
 
 type Entry = {
@@ -121,3 +123,31 @@ export const auditGlobal =
     if (req.user) await audit(req, { action: 'settings', summary: `Updated ${name}` })
     return doc
   }
+
+/** A story's review comments go with it (they can't exist without one). */
+export const deleteStoryComments: CollectionBeforeDeleteHook = async ({ id, req }) => {
+  await req.payload.delete({
+    collection: 'comments',
+    where: { article: { equals: id } },
+    overrideAccess: true,
+    req,
+  })
+}
+
+/** Issue sign-offs record who checked each story, so people who signed off are kept. */
+export const keepSignOffs: CollectionBeforeDeleteHook = async ({ id, req }) => {
+  const { totalDocs } = await req.payload.count({
+    collection: 'issue-checks',
+    where: { checkedBy: { equals: id } },
+    overrideAccess: true,
+    req,
+  })
+  if (totalDocs > 0) {
+    throw new APIError(
+      'This person signed off stories for an issue, and that record must be kept. Untick “Active” instead to remove their access.',
+      400,
+      undefined,
+      true,
+    )
+  }
+}
