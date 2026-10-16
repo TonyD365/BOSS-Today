@@ -78,8 +78,13 @@
   height: 100%;
 }
 
+/* Placeholders appear only in the designer; the site leaves the space empty. */
 .dc-image__empty,
 .dc-empty {
+  box-sizing: border-box;
+  padding: calc(12 * var(--u));
+  border: 1px dashed #b5b5b5;
+  text-align: center;
   display: grid;
   place-items: center;
   width: 100%;

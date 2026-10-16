@@ -306,9 +306,11 @@ function ShapeElement({ el, g }: { el: Extract<DesignElement, { type: 'shape' }>
 function ImageElement({
   el,
   data,
+  designer,
 }: {
   el: Extract<DesignElement, { type: 'image' }>
   data: DesignData
+  designer: boolean
 }) {
   const p = el.props
   const media = p.mediaId ? data.media[p.mediaId] : undefined
@@ -320,11 +322,11 @@ function ImageElement({
       loading="lazy"
       style={{ objectFit: p.fit, borderRadius: u(p.radius) }}
     />
-  ) : (
+  ) : designer ? (
     <div className="dc-image__empty" style={{ borderRadius: u(p.radius) }}>
       Choose an image
     </div>
-  )
+  ) : null
   return <div className="dc-image">{p.link && media ? <a href={p.link}>{img}</a> : img}</div>
 }
 
@@ -339,7 +341,16 @@ function StoryElement({
 }) {
   const p = el.props
   const story = resolveStory(el, data, publicOnly)
-  if (!story) return <div className="dc-empty">No story yet</div>
+  // Readers see nothing where there's no story yet; the designer says what will go there.
+  if (!story) {
+    return publicOnly ? null : (
+      <div className="dc-empty">
+        {p.source === 'pick'
+          ? 'Choose a story'
+          : `Empty for now: shows story ${p.index}${p.source === 'section' ? ' of its section' : ''} when there is one. Hidden on the website until then.`}
+      </div>
+    )
+  }
   const image = p.showImage ? story.image : null
   return (
     <a
@@ -373,9 +384,11 @@ function StoryElement({
 function ListElement({
   el,
   data,
+  designer,
 }: {
   el: Extract<DesignElement, { type: 'list' }>
   data: DesignData
+  designer: boolean
 }) {
   const p = el.props
   const style = { fontFamily: fontFamily(p.font), color: p.color }
@@ -415,7 +428,9 @@ function ListElement({
             </a>
           </li>
         ))}
-        {items.length === 0 && <li className="dc-empty">No stories yet</li>}
+        {items.length === 0 && designer && (
+          <li className="dc-empty">No stories yet. Hidden on the website until there are.</li>
+        )}
       </ul>
     </div>
   )
@@ -424,9 +439,11 @@ function ListElement({
 function WidgetElement({
   el,
   data,
+  designer,
 }: {
   el: Extract<DesignElement, { type: 'widget' }>
   data: DesignData
+  designer: boolean
 }) {
   const p = el.props
   if (p.kind === 'issue') {
@@ -438,9 +455,9 @@ function WidgetElement({
             <span className="dc-kicker">{data.issue.label}</span>
             <span className="dc-story__headline">{data.issue.title}</span>
           </a>
-        ) : (
-          <p className="dc-empty">No issue yet</p>
-        )}
+        ) : designer ? (
+          <p className="dc-empty">No issue yet. Hidden on the website until there is one.</p>
+        ) : null}
       </div>
     )
   }
@@ -489,13 +506,13 @@ export function ElementContent({
     case 'shape':
       return <ShapeElement el={el} g={g} />
     case 'image':
-      return <ImageElement el={el} data={data} />
+      return <ImageElement el={el} data={data} designer={!publicOnly} />
     case 'story':
       return <StoryElement el={el} data={data} publicOnly={publicOnly} />
     case 'list':
-      return <ListElement el={el} data={data} />
+      return <ListElement el={el} data={data} designer={!publicOnly} />
     case 'widget':
-      return <WidgetElement el={el} data={data} />
+      return <WidgetElement el={el} data={data} designer={!publicOnly} />
   }
 }
 
