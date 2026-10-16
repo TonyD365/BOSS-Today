@@ -15,6 +15,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { formatDate } from '@/lib/format'
 
 import { rssFeed } from './feed'
+import { buildPrintEditions, printStyles } from './print'
 import {
   byNewest,
   chunk,
@@ -45,6 +46,8 @@ import {
 const ROOT = process.cwd()
 const OUT = path.join(ROOT, 'site-dist')
 const SECTION_PAGE_SIZE = 20
+/** next/font sets these in the newsroom; the static site loads the same fonts from Google. */
+const FONT_VARIABLES = `:root {\n  --font-masthead: 'Manufacturing Consent';\n  --font-serif: 'Newsreader';\n  --font-sans: 'Libre Franklin';\n}`
 
 const required = (name: string) => {
   const value = process.env[name]?.trim()
@@ -82,7 +85,7 @@ const fetchExport = async <T,>(query: string): Promise<T> => {
   return (await response.json()) as T
 }
 
-const write = async (file: string, contents: string) => {
+const write = async (file: string, contents: string | Buffer) => {
   const target = path.join(OUT, file)
   await fs.mkdir(path.dirname(target), { recursive: true })
   await fs.writeFile(target, contents)
@@ -236,10 +239,18 @@ const main = async () => {
   }
 
   const byId = new Map(articles.map((article) => [article.id, article]))
+  const siteStyles = await fs.readFile(path.join(ROOT, 'src/app/(frontend)/styles.css'), 'utf8')
+  const prints = await buildPrintEditions({
+    site,
+    articles,
+    publicUrl: PUBLIC_URL,
+    styles: await printStyles(ROOT, `${FONT_VARIABLES}\n${siteStyles}`),
+    write,
+  })
   await page(
     'issues/index.html',
     { title: 'Issues', description: `Every edition of ${siteName}.`, path: '/issues/' },
-    <IssuesView issues={site.issues} cmsUrl={site.cmsUrl} />,
+    <IssuesView issues={site.issues} prints={prints} />,
   )
   for (const issue of site.issues) {
     const inIssue = issue.stories
@@ -252,7 +263,7 @@ const main = async () => {
         description: `${issue.title}, ${siteName}.`,
         path: `/issues/${editionSlug(issue)}/`,
       },
-      <IssueView issue={issue} articles={inIssue} cmsUrl={site.cmsUrl} />,
+      <IssueView issue={issue} articles={inIssue} print={prints.get(issue.id)} />,
     )
   }
 
@@ -323,13 +334,9 @@ const main = async () => {
     ),
   )
 
-  const styles = await fs.readFile(path.join(ROOT, 'src/app/(frontend)/styles.css'), 'utf8')
   // Dark mode is for the public site only; the print edition stays black on white.
   const theme = await fs.readFile(path.join(ROOT, 'src/site/theme.css'), 'utf8')
-  await write(
-    'assets/styles.css',
-    `:root {\n  --font-masthead: 'Manufacturing Consent';\n  --font-serif: 'Newsreader';\n  --font-sans: 'Libre Franklin';\n}\n\n${styles}\n${theme}`,
-  )
+  await write('assets/styles.css', `${FONT_VARIABLES}\n\n${siteStyles}\n${theme}`)
   await write('assets/site.js', await fs.readFile(path.join(ROOT, 'src/site/site.js'), 'utf8'))
   await write(
     '_headers',
@@ -338,6 +345,8 @@ const main = async () => {
       '  Cache-Control: public, max-age=3600',
       '/search-index.json',
       '  Cache-Control: public, max-age=300',
+      '/issues/*.pdf',
+      '  Cache-Control: public, max-age=86400',
       '',
     ].join('\n'),
   )

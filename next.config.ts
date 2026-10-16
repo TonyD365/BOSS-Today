@@ -23,16 +23,19 @@ const READER_PATHS = [
 const nextConfig: NextConfig = {
   async redirects() {
     if (!publicSite) return []
-    return READER_PATHS.map((source) => ({
-      source,
-      destination: `${publicSite}${source.replace(/:path\*/, ':path*')}`,
-      permanent: false,
-    }))
-  },
-  // Headless Chromium for PDF export is loaded at runtime, never bundled.
-  serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
-  outputFileTracingIncludes: {
-    '/issues/*/pdf': ['./node_modules/@sparticuz/chromium/bin/**'],
+    return [
+      ...READER_PATHS.map((source) => ({
+        source,
+        destination: `${publicSite}${source.replace(/:path\*/, ':path*')}`,
+        permanent: false,
+      })),
+      // PDFs are now made by the public site build; its issue page links to them.
+      {
+        source: '/issues/:edition/pdf',
+        destination: `${publicSite}/issues/:edition/`,
+        permanent: false,
+      },
+    ]
   },
   images: {
     localPatterns: [

@@ -1,3 +1,4 @@
+import type { PaperSize } from '@/components/print/PrintEdition'
 import type { Author } from '@/lib/author'
 import type { Article, Media } from '@/payload-types'
 
@@ -28,6 +29,13 @@ export type ExportIssue = {
   date: string
   printEdition: boolean
   stories: number[]
+  print: {
+    paperSize: PaperSize
+    showContents: boolean
+    showStaffBox: boolean
+    announcement: string | null
+    stories: { id: number; width: 'full' | 'twoThirds' | 'half' | 'column'; showImage: boolean }[]
+  } | null
 }
 
 export type ExportMeta = {

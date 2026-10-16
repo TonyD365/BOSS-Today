@@ -222,6 +222,20 @@ export const siteExportEndpoint: Endpoint = {
             stories: (issue.stories ?? []).map((story) =>
               typeof story.article === 'object' ? story.article?.id : story.article,
             ),
+            // How the print edition is laid out; the site build typesets it and makes the PDF.
+            print: issue.printEdition
+              ? {
+                  paperSize: issue.paperSize ?? 'letter',
+                  showContents: issue.showContents !== false,
+                  showStaffBox: issue.showStaffBox !== false,
+                  announcement: issue.announcement ?? null,
+                  stories: (issue.stories ?? []).map((story) => ({
+                    id: typeof story.article === 'object' ? story.article?.id : story.article,
+                    width: story.width ?? 'full',
+                    showImage: story.showImage !== false,
+                  })),
+                }
+              : null,
           })),
         },
         origin,

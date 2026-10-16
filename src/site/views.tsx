@@ -460,7 +460,10 @@ export function AuthorView({
   )
 }
 
-export function IssuesView({ issues, cmsUrl }: { issues: ExportIssue[]; cmsUrl: string }) {
+/** Where an issue's print edition is: its PDF, or the printable page if the PDF couldn't be made. */
+export type PrintLinks = Map<number, { href: string; pdf: boolean }>
+
+export function IssuesView({ issues, prints }: { issues: ExportIssue[]; prints: PrintLinks }) {
   return (
     <div className="listing">
       <header className="listing__header">
@@ -477,9 +480,9 @@ export function IssuesView({ issues, cmsUrl }: { issues: ExportIssue[]; cmsUrl: 
             <span className="issue-list__meta">
               {editionLabel(issue)} · {formatDate(issue.date)}
             </span>
-            {issue.printEdition && (
-              <a className="issue-list__print" href={`${cmsUrl}/issues/${editionSlug(issue)}/pdf`}>
-                Print edition (PDF)
+            {prints.get(issue.id) && (
+              <a className="issue-list__print" href={prints.get(issue.id)!.href}>
+                {prints.get(issue.id)!.pdf ? 'Print edition (PDF)' : 'Print edition'}
               </a>
             )}
           </li>
@@ -492,11 +495,11 @@ export function IssuesView({ issues, cmsUrl }: { issues: ExportIssue[]; cmsUrl: 
 export function IssueView({
   issue,
   articles,
-  cmsUrl,
+  print,
 }: {
   issue: ExportIssue
   articles: ExportArticle[]
-  cmsUrl: string
+  print?: { href: string; pdf: boolean }
 }) {
   return (
     <div className="listing">
@@ -505,10 +508,10 @@ export function IssueView({
           {editionLabel(issue)} · {formatDate(issue.date)}
         </p>
         <h1>{issue.title}</h1>
-        {issue.printEdition && (
+        {print && (
           <p>
-            <a className="button" href={`${cmsUrl}/issues/${editionSlug(issue)}/pdf`}>
-              Download the print edition (PDF)
+            <a className="button" href={print.href}>
+              {print.pdf ? 'Download the print edition (PDF)' : 'Open the print edition'}
             </a>
           </p>
         )}

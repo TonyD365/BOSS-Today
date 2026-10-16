@@ -99,7 +99,7 @@ Stories move through Draft → In review → Changes requested → Published →
 
 ## Print editions
 
-Open an issue, tick **Print edition**, pick a paper size and set each story's width. `/issues/<vol>-<no>/print` shows the typeset pages and `/issues/<vol>-<no>/pdf` downloads them as a PDF (rendered with headless Chromium; locally it uses your installed Chrome, or set `CHROME_PATH`).
+Open an issue, tick **Print edition**, pick a paper size and set each story's width. In the newsroom, `/issues/<vol>-<no>/print` shows the typeset pages for proofing. The PDF readers download is made when Cloudflare builds the public site (`src/site/print.tsx`, headless Chromium via `@sparticuz/chromium`; locally your installed Chrome, or set `CHROME_PATH`), so it costs the newsroom host nothing. An unchanged issue's PDF is copied from the live site instead of being made again. If Chromium can't run, the build still succeeds and the issue links to a printable page.
 
 ## Images on GitHub
 

@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import { APIError, type CollectionBeforeChangeHook, type CollectionConfig } from 'payload'
 
 import { canPublishIssues, hasPermission, publishedOrStaff } from '../access'
 import {
@@ -17,6 +17,34 @@ const canManageIssues = (user: unknown) => canPublishIssues(user) || hasPermissi
  * An issue is one edition of the paper: an ordered set of stories that is
  * published together, optionally with an automatically typeset print layout.
  */
+/** Two issues can't share a volume and number: they would share a web address. */
+const uniqueEdition: CollectionBeforeChangeHook = async ({ data, originalDoc, req }) => {
+  const volume = data.volume ?? originalDoc?.volume
+  const number = data.number ?? originalDoc?.number
+  if (!volume || !number) return data
+  const { totalDocs } = await req.payload.count({
+    collection: 'issues',
+    where: {
+      and: [
+        { volume: { equals: volume } },
+        { number: { equals: number } },
+        ...(originalDoc?.id ? [{ id: { not_equals: originalDoc.id } }] : []),
+      ],
+    },
+    overrideAccess: true,
+    req,
+  })
+  if (totalDocs > 0) {
+    throw new APIError(
+      `There is already an issue numbered Vol. ${volume}, No. ${number}. Change the volume or number.`,
+      400,
+      undefined,
+      true,
+    )
+  }
+  return data
+}
+
 export const Issues: CollectionConfig = {
   slug: 'issues',
   admin: {
@@ -47,7 +75,7 @@ export const Issues: CollectionConfig = {
     issuePublishEndpoint,
   ],
   hooks: {
-    beforeChange: [guardPublishing('An issue')],
+    beforeChange: [guardPublishing('An issue'), uniqueEdition],
     afterChange: [revalidateAfterChange, auditPublishing('issue')],
     afterDelete: [revalidateAfterDelete, auditDelete('issue')],
   },
