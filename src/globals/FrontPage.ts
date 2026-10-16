@@ -30,7 +30,7 @@ export const FrontPage: GlobalConfig = {
   },
   access: {
     read: () => true,
-    update: withPermission('frontPage'),
+    update: withPermission('design'),
   },
   versions: { drafts: true, max: 10 },
   hooks: {

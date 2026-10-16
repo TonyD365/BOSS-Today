@@ -1,5 +1,6 @@
 import type { Payload, PayloadRequest, Where } from 'payload'
 
+import { cleanDesign } from '../design/sanitize'
 import type { Article, Media, User } from '../payload-types'
 
 /**
@@ -86,6 +87,32 @@ export const exportArticles = async (payload: Payload, page: number) => {
   return { page, totalPages: result.totalPages, docs }
 }
 
+/**
+ * The published front page design, with the images it places. Null until a
+ * design with something on it has been published.
+ */
+export const exportDesign = async (payload: Payload) => {
+  const global = await payload.findGlobal({ slug: 'site-design', depth: 0, overrideAccess: true })
+  if (global._status !== 'published' || !global.design) return null
+  const design = cleanDesign(global.design)
+  if (design.desktop.elements.length === 0) return null
+  const mediaIds = design.desktop.elements.flatMap((el) =>
+    el.type === 'image' && el.props.mediaId ? [el.props.mediaId] : [],
+  )
+  const media = mediaIds.length
+    ? (
+        await payload.find({
+          collection: 'media',
+          where: { id: { in: mediaIds } },
+          limit: mediaIds.length,
+          depth: 0,
+          overrideAccess: true,
+        })
+      ).docs
+    : []
+  return { design, media }
+}
+
 /** Site settings, sections, tags, issues and staff. */
 export const exportMeta = async (payload: Payload, cmsUrl: string) => {
   const [settings, frontPage, sections, tags, issues, staff] = await Promise.all([
@@ -133,6 +160,7 @@ export const exportMeta = async (payload: Payload, cmsUrl: string) => {
 
   return {
     generatedAt: new Date().toISOString(),
+    design: await exportDesign(payload),
     cmsUrl,
     settings: {
       siteName: settings.siteName || 'BOSS Today',

@@ -13,6 +13,7 @@ import * as migration_20261014_233400_seed_story_templates from './20261014_2334
 import * as migration_20261015_153301_batch3_submissions_readership_staff from './20261015_153301_batch3_submissions_readership_staff'
 import * as migration_20261016_132138_github_media_prefix from './20261016_132138_github_media_prefix'
 import * as migration_20261016_154026_batch4_scores_calendar_live from './20261016_154026_batch4_scores_calendar_live'
+import * as migration_20261016_180154_site_designer from './20261016_180154_site_designer'
 
 export const migrations = [
   {
@@ -89,5 +90,10 @@ export const migrations = [
     up: migration_20261016_154026_batch4_scores_calendar_live.up,
     down: migration_20261016_154026_batch4_scores_calendar_live.down,
     name: '20261016_154026_batch4_scores_calendar_live',
+  },
+  {
+    up: migration_20261016_180154_site_designer.up,
+    down: migration_20261016_180154_site_designer.down,
+    name: '20261016_180154_site_designer',
   },
 ]

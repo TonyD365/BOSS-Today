@@ -1,0 +1,343 @@
+import { contrast, flatten, isColor, readableNear, representative, requiredContrast } from './color'
+import {
+  imageDefaults,
+  listDefaults,
+  shapeDefaults,
+  storyDefaults,
+  textDefaults,
+  widgetDefaults,
+} from './defaults'
+import { isFont } from './fonts'
+import { phoneLayout } from './phone'
+import { cleanParagraphs } from './richtext'
+import {
+  type Color,
+  type Design,
+  type DesignElement,
+  DESKTOP_WIDTH,
+  type Fill,
+  type Geometry,
+  PHONE_WIDTH,
+  SHAPES,
+} from './types'
+
+export const MAX_ELEMENTS = 300
+const MAX_HEIGHT = 20000
+
+const num = (value: unknown, min: number, max: number, fallback: number) =>
+  typeof value === 'number' && Number.isFinite(value)
+    ? Math.min(max, Math.max(min, value))
+    : fallback
+const bool = (value: unknown, fallback = false) => (typeof value === 'boolean' ? value : fallback)
+const color = (value: unknown, fallback: Color) => (isColor(value) ? value : fallback)
+const pick = <T extends string>(value: unknown, options: readonly T[], fallback: T): T =>
+  options.includes(value as T) ? (value as T) : fallback
+const id = (value: unknown) =>
+  typeof value === 'string' && /^[a-z0-9_-]{1,40}$/i.test(value) ? value : null
+const link = (value: unknown) =>
+  typeof value === 'string' && /^(https?:\/\/|\/)[^\s<>"']{0,500}$/.test(value) ? value : null
+const ref = (value: unknown) =>
+  typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : null
+const text = (value: unknown, max: number) => (typeof value === 'string' ? value.slice(0, max) : '')
+
+export const cleanFill = (value: unknown, fallback: Fill = { type: 'none' }): Fill => {
+  const fill = (value ?? {}) as Record<string, unknown>
+  if (fill.type === 'solid' && isColor(fill.color)) return { type: 'solid', color: fill.color }
+  if (fill.type === 'linear' && Array.isArray(fill.stops)) {
+    const stops = fill.stops
+      .slice(0, 6)
+      .map((stop) => (stop ?? {}) as Record<string, unknown>)
+      .filter((stop) => isColor(stop.color))
+      .map((stop) => ({ color: stop.color as Color, at: num(stop.at, 0, 1, 0) }))
+    if (stops.length >= 2) return { type: 'linear', angle: num(fill.angle, 0, 360, 90), stops }
+  }
+  if (fill.type === 'none') return { type: 'none' }
+  return fallback
+}
+
+const cleanProps = (type: DesignElement['type'], raw: Record<string, unknown>) => {
+  switch (type) {
+    case 'text': {
+      const d = textDefaults()
+      const shadow = raw.shadow as Record<string, unknown> | null
+      const outline = raw.outline as Record<string, unknown> | null
+      const background = raw.background as Record<string, unknown> | null
+      return {
+        paragraphs: cleanParagraphs(raw.paragraphs),
+        font: isFont(raw.font) ? raw.font : d.font,
+        size: num(raw.size, 6, 300, d.size),
+        color: color(raw.color, d.color),
+        weight: raw.weight === 400 ? 400 : 700,
+        align: pick(raw.align, ['left', 'center', 'right', 'justify'] as const, 'left'),
+        lineHeight: num(raw.lineHeight, 0.7, 3, d.lineHeight),
+        letterSpacing: num(raw.letterSpacing, -5, 30, 0),
+        transform: pick(raw.transform, ['none', 'uppercase', 'lowercase'] as const, 'none'),
+        shadow: shadow
+          ? {
+              x: num(shadow.x, -50, 50, 2),
+              y: num(shadow.y, -50, 50, 2),
+              blur: num(shadow.blur, 0, 50, 4),
+              color: color(shadow.color, '#00000066'),
+            }
+          : null,
+        outline: outline
+          ? { width: num(outline.width, 0.5, 10, 1), color: color(outline.color, '#121212') }
+          : null,
+        background: background
+          ? {
+              color: color(background.color, '#f6f1e7'),
+              padding: num(background.padding, 0, 60, 8),
+              radius: num(background.radius, 0, 60, 4),
+            }
+          : null,
+        curve: num(raw.curve, -100, 100, 0),
+        autoHeight: bool(raw.autoHeight, true),
+      }
+    }
+    case 'shape': {
+      const kind = pick(raw.kind, SHAPES, 'rect')
+      const d = shapeDefaults(kind)
+      const stroke = raw.stroke as Record<string, unknown> | null
+      return {
+        kind,
+        fill: cleanFill(raw.fill, d.fill),
+        stroke: stroke
+          ? {
+              color: color(stroke.color, '#121212'),
+              width: num(stroke.width, 0.5, 40, 2),
+              dash: pick(stroke.dash, ['solid', 'dashed', 'dotted'] as const, 'solid'),
+            }
+          : kind === 'line'
+            ? d.stroke
+            : null,
+        radius: num(raw.radius, 0, 600, 0),
+        points: Math.round(num(raw.points, 3, 12, d.points)),
+        arrowStart: bool(raw.arrowStart),
+        arrowEnd: bool(raw.arrowEnd),
+      }
+    }
+    case 'image':
+      return {
+        ...imageDefaults(),
+        mediaId: ref(raw.mediaId),
+        fit: pick(raw.fit, ['cover', 'contain'] as const, 'cover'),
+        radius: num(raw.radius, 0, 600, 0),
+        link: link(raw.link),
+      }
+    case 'story': {
+      const d = storyDefaults()
+      return {
+        source: pick(raw.source, ['pick', 'latest', 'section'] as const, 'latest'),
+        articleId: ref(raw.articleId),
+        sectionId: ref(raw.sectionId),
+        index: Math.round(num(raw.index, 1, 50, 1)),
+        showImage: bool(raw.showImage, true),
+        showKicker: bool(raw.showKicker, true),
+        showSummary: bool(raw.showSummary, true),
+        showByline: bool(raw.showByline, true),
+        imagePosition: pick(raw.imagePosition, ['top', 'left', 'right'] as const, 'top'),
+        headlineSize: num(raw.headlineSize, 10, 120, d.headlineSize),
+        font: isFont(raw.font) ? raw.font : d.font,
+        color: color(raw.color, d.color),
+      }
+    }
+    case 'list': {
+      const d = listDefaults()
+      return {
+        kind: pick(raw.kind, ['latest', 'mostread', 'section'] as const, 'latest'),
+        sectionId: ref(raw.sectionId),
+        count: Math.round(num(raw.count, 1, 12, d.count)),
+        title: text(raw.title, 80),
+        showImage: bool(raw.showImage),
+        font: isFont(raw.font) ? raw.font : d.font,
+        color: color(raw.color, d.color),
+      }
+    }
+    case 'widget': {
+      const d = widgetDefaults()
+      return {
+        kind: pick(raw.kind, ['scores', 'events', 'live', 'issue'] as const, 'scores'),
+        count: Math.round(num(raw.count, 1, 12, d.count)),
+        title: text(raw.title, 80),
+        color: color(raw.color, d.color),
+      }
+    }
+  }
+}
+
+const cleanElement = (value: unknown): DesignElement | null => {
+  const raw = (value ?? {}) as Record<string, unknown>
+  const type = pick(
+    raw.type,
+    ['text', 'shape', 'image', 'story', 'list', 'widget'] as const,
+    'text',
+  )
+  const elementId = id(raw.id)
+  if (!elementId || raw.type !== type) return null
+  return {
+    id: elementId,
+    ...(typeof raw.name === 'string' && raw.name ? { name: raw.name.slice(0, 60) } : {}),
+    type,
+    x: num(raw.x, -DESKTOP_WIDTH, DESKTOP_WIDTH * 2, 0),
+    y: num(raw.y, -1000, MAX_HEIGHT, 0),
+    w: num(raw.w, 1, DESKTOP_WIDTH * 3, 100),
+    h: num(raw.h, 1, MAX_HEIGHT, 100),
+    rotation: num(raw.rotation, -360, 360, 0),
+    flipX: bool(raw.flipX),
+    flipY: bool(raw.flipY),
+    opacity: num(raw.opacity, 0, 1, 1),
+    locked: bool(raw.locked),
+    hidden: bool(raw.hidden),
+    groupId: id(raw.groupId),
+    props: cleanProps(type, (raw.props ?? {}) as Record<string, unknown>),
+  } as DesignElement
+}
+
+const cleanGeometry = (value: unknown): (Geometry & { auto?: boolean }) | null => {
+  const raw = (value ?? {}) as Record<string, unknown>
+  if (typeof raw !== 'object') return null
+  return {
+    x: num(raw.x, -PHONE_WIDTH, PHONE_WIDTH * 2, 0),
+    y: num(raw.y, -1000, MAX_HEIGHT * 3, 0),
+    w: num(raw.w, 1, PHONE_WIDTH * 3, 100),
+    h: num(raw.h, 1, MAX_HEIGHT, 100),
+    rotation: num(raw.rotation, -360, 360, 0),
+    hidden: bool(raw.hidden),
+    ...(typeof raw.fontScale === 'number' ? { fontScale: num(raw.fontScale, 0.2, 2, 1) } : {}),
+    ...(raw.auto === true ? { auto: true } : {}),
+  }
+}
+
+/** Accepts only what the renderer understands. Anything else is dropped or reset. */
+export const cleanDesign = (value: unknown): Design => {
+  const raw = (value ?? {}) as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  const elements = (Array.isArray(raw.desktop?.elements) ? raw.desktop.elements : [])
+    .slice(0, MAX_ELEMENTS)
+    .map(cleanElement)
+    .filter((el: DesignElement | null): el is DesignElement => el !== null)
+  const seen = new Set<string>()
+  const unique = elements.filter(
+    (el: DesignElement) => !seen.has(el.id) && Boolean(seen.add(el.id)),
+  )
+  const overrides: Design['phone']['overrides'] = {}
+  for (const [key, geometry] of Object.entries(raw.phone?.overrides ?? {})) {
+    const clean = cleanGeometry(geometry)
+    if (clean && seen.has(key)) overrides[key] = clean
+  }
+  const date = (v: unknown) => (typeof v === 'string' && !Number.isNaN(Date.parse(v)) ? v : null)
+  return {
+    version: 1,
+    desktop: {
+      height: num(raw.desktop?.height, 200, MAX_HEIGHT, 1600),
+      background: cleanFill(raw.desktop?.background, { type: 'solid', color: '#ffffff' }),
+      elements: unique,
+    },
+    phone: { height: num(raw.phone?.height, 200, MAX_HEIGHT * 3, 2000), overrides },
+    desktopChangedAt: date(raw.desktopChangedAt),
+    phoneCheckedAt: date(raw.phoneCheckedAt),
+  }
+}
+
+export type ContrastProblem = {
+  id: string
+  label: string
+  view: 'desktop' | 'phone'
+  ratio: number
+  needed: number
+  color: Color
+  background: Color
+  suggestion: Color
+}
+
+const contains = (g: Geometry, x: number, y: number) =>
+  x >= g.x && x <= g.x + g.w && y >= g.y && y <= g.y + g.h
+
+/** The colour behind the middle of an element: the topmost shape there, else the page. */
+const backgroundAt = (
+  elements: DesignElement[],
+  index: number,
+  geometry: (el: DesignElement) => Geometry | null,
+  page: Color,
+): Color | 'image' => {
+  const g = geometry(elements[index])!
+  const cx = g.x + g.w / 2
+  const cy = g.y + g.h / 2
+  for (let i = index - 1; i >= 0; i--) {
+    const below = elements[i]
+    const bg = geometry(below)
+    if (!bg || below.hidden || bg.hidden || !contains(bg, cx, cy)) continue
+    if (below.type === 'image') return 'image'
+    if (below.type === 'shape' && below.props.kind !== 'line') {
+      const c = representative(below.props.fill, page)
+      if (c)
+        return below.opacity < 1
+          ? flatten(
+              `${c}${Math.round(below.opacity * 255)
+                .toString(16)
+                .padStart(2, '0')}`,
+              page,
+            )
+          : c
+    }
+  }
+  return page
+}
+
+/** Text that is hard to read against what is behind it. */
+export const contrastProblems = (design: Design): ContrastProblem[] => {
+  const page = representative(design.desktop.background) ?? '#ffffff'
+  const problems: ContrastProblem[] = []
+  const phone = phoneLayout(design)
+  const views: ['desktop' | 'phone', (el: DesignElement) => Geometry | null][] = [
+    ['desktop', (el) => el],
+    ['phone', (el) => phone.get(el.id) ?? null],
+  ]
+  const elements = design.desktop.elements
+  for (const [view, geometry] of views) {
+    elements.forEach((el, index) => {
+      const g = geometry(el)
+      if (el.hidden || !g || g.hidden) return
+      const checks: { color: Color; size: number; bold: boolean }[] = []
+      let background: Color | 'image'
+      if (el.type === 'text') {
+        background = el.props.background
+          ? flatten(el.props.background.color, page)
+          : backgroundAt(elements, index, geometry, page)
+        for (const p of el.props.paragraphs) {
+          for (const run of p.runs) {
+            if (!run.text.trim()) continue
+            checks.push({
+              color: run.color ?? el.props.color,
+              size: run.size ?? el.props.size,
+              bold: run.bold ?? el.props.weight === 700,
+            })
+          }
+        }
+        if (el.props.outline || el.props.shadow) return // Effects make contrast a judgement call.
+      } else if (el.type === 'story' || el.type === 'list' || el.type === 'widget') {
+        background = backgroundAt(elements, index, geometry, page)
+        checks.push({ color: el.props.color, size: 15, bold: false })
+      } else return
+      if (background === 'image') return
+      for (const check of checks) {
+        const fg = flatten(check.color, background)
+        const needed = requiredContrast(check.size, check.bold)
+        const ratio = contrast(fg, background)
+        if (ratio < needed) {
+          problems.push({
+            id: el.id,
+            label: el.name || el.type,
+            view,
+            ratio: Math.round(ratio * 100) / 100,
+            needed,
+            color: check.color,
+            background,
+            suggestion: readableNear(check.color, background, needed),
+          })
+          break
+        }
+      }
+    })
+  }
+  return problems
+}

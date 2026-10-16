@@ -5,7 +5,11 @@ import { superAdminEmails } from './lib/env'
 export const ROLES = ['reader', 'reporter', 'editor', 'exec'] as const
 export type Role = (typeof ROLES)[number]
 
-export const PERMISSIONS = ['issue', 'frontPage', 'print', 'staff', 'media'] as const
+/**
+ * "design" (the site designer, front page, sections and site settings) used
+ * to be called "frontPage"; the database value was renamed in place.
+ */
+export const PERMISSIONS = ['issue', 'design', 'print', 'staff', 'media'] as const
 export type Permission = (typeof PERMISSIONS)[number]
 
 /** Rank used for "only manage people below you". Super admin sits above exec. */
@@ -36,7 +40,7 @@ export const rankOf = (user: unknown): number => {
 }
 
 /** Permissions an editor may hold. Everything else is for execs only. */
-export const EDITOR_PERMISSIONS: Permission[] = ['issue']
+export const EDITOR_PERMISSIONS: Permission[] = ['issue', 'design']
 
 export const hasPermission = (user: unknown, permission: Permission): boolean => {
   if (isSuperAdminUser(user)) return true

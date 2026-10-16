@@ -1,5 +1,7 @@
 import type { PaperSize } from '@/components/print/PrintEdition'
+import type { Design } from '@/design/types'
 import type { Author } from '@/lib/author'
+import type { DArticle, DesignData } from '@/design/render'
 import type { Article, Media } from '@/payload-types'
 
 /** Shapes returned by /api/site-export (see src/endpoints/siteExport.ts). */
@@ -40,6 +42,7 @@ export type ExportIssue = {
 
 export type ExportMeta = {
   generatedAt: string
+  design: { design: Design; media: Media[] } | null
   cmsUrl: string
   settings: {
     siteName: string
@@ -121,3 +124,47 @@ export const chunk = <T>(items: T[], size: number): T[][] => {
 
 export const editionSlug = (issue: { volume: number; number: number }) =>
   `${issue.volume}-${issue.number}`
+
+/** What the design renderer needs, from the export. Only published stories. */
+export const designData = (
+  meta: ExportMeta,
+  articles: ExportArticle[],
+  issueLink: (issue: ExportIssue) => string,
+): DesignData => {
+  const image = (media: Media | null | undefined) =>
+    media?.url
+      ? {
+          url: media.sizes?.card?.url ?? media.url,
+          alt: media.alt ?? '',
+          width: media.width,
+          height: media.height,
+        }
+      : null
+  const list: DArticle[] = [...articles].sort(byNewest).map((article) => ({
+    id: article.id,
+    title: article.title,
+    slug: article.slug,
+    summary: article.summary,
+    section: article.section,
+    authors: article.authors.map((author) => author.name),
+    image: image(article.heroImage),
+  }))
+  const latest = meta.issues[0]
+  return {
+    articles: list,
+    byId: Object.fromEntries(list.map((a) => [a.id, a])),
+    media: Object.fromEntries(
+      (meta.design?.media ?? []).flatMap((m) => {
+        const img = image(m)
+        return img ? [[m.id, { ...img, url: m.sizes?.hero?.url ?? m.url ?? img.url }]] : []
+      }),
+    ),
+    issue: latest
+      ? {
+          title: latest.title,
+          label: `Vol. ${latest.volume}, No. ${latest.number}`,
+          href: issueLink(latest),
+        }
+      : null,
+  }
+}

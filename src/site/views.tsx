@@ -31,6 +31,8 @@ export type PageMeta = {
   feed?: { title: string; path: string }
   /** Extra scripts this page alone needs. */
   scripts?: string[]
+  /** Extra stylesheets (e.g. the fonts a designed front page uses). */
+  styles?: string[]
 }
 
 /** Footer links that depend on what the site has. */
@@ -96,6 +98,9 @@ export function Shell({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link rel="stylesheet" href={FONTS} />
         <link rel="stylesheet" href="/assets/styles.css" />
+        {(meta.styles ?? []).map((href) => (
+          <link key={href} rel="stylesheet" href={href} />
+        ))}
         <script src="/assets/site.js" defer />
         {(meta.scripts ?? []).map((src) => (
           <script key={src} src={src} async defer />

@@ -30,6 +30,7 @@ import { Hidden as Hidden_41307c565f8fce656d97d4772c57ad1c } from '@/components/
 import { SubmissionActions as SubmissionActions_e9ec5204f3f131255fe163ab24536795 } from '@/components/admin/SubmissionActions'
 import { StoryRowLabel as StoryRowLabel_8b2a60b2d92bff4132c96c6748202029 } from '@/components/admin/StoryRowLabel'
 import { PrintEditionLink as PrintEditionLink_444df7a4575e6b37272975c680a7085d } from '@/components/admin/PrintEditionLink'
+import { DesignSummary as DesignSummary_b65fb1509d134c4350934378b5e4a3b7 } from '@/components/admin/designer/DesignSummary'
 import { PublishBannerNow as PublishBannerNow_74ff678f58701ea20c1043e171f0a8b5 } from '@/components/admin/PublishBannerNow'
 import { Icon as Icon_066c562e10ad4e70ff0de1a39f9b91f6 } from '@/components/admin/Brand'
 import { Logo as Logo_066c562e10ad4e70ff0de1a39f9b91f6 } from '@/components/admin/Brand'
@@ -38,6 +39,7 @@ import { NavLinks as NavLinks_efcc7fec2af44371f7fed5d0104659dd } from '@/compone
 import { DashboardView as DashboardView_8d5ccf53266e3797f61e9453e2f2d431 } from '@/components/admin/DashboardView'
 import { PasswordHelp as PasswordHelp_4e68073b0c98bae6fb0309aaf0d14949 } from '@/components/admin/AccessHelp'
 import { AssignmentBoardView as AssignmentBoardView_1382e08392d4d6cb0cd0dfcd9e4925de } from '@/components/admin/AssignmentBoardView'
+import { SiteDesignerView as SiteDesignerView_f330395cce350eea3778d03db2329363 } from '@/components/admin/designer/SiteDesignerView'
 import { NewStoryView as NewStoryView_a6492cb6335d8f066386b3fa4e9eaf8d } from '@/components/admin/NewStoryView'
 import { PublishIssue as PublishIssue_0352ad6b925961598622ddff39fc2a3e } from '@/components/admin/PublishIssue'
 import { FirstSignIn as FirstSignIn_4e68073b0c98bae6fb0309aaf0d14949 } from '@/components/admin/AccessHelp'
@@ -104,6 +106,8 @@ export const importMap = {
   '@/components/admin/StoryRowLabel#StoryRowLabel': StoryRowLabel_8b2a60b2d92bff4132c96c6748202029,
   '@/components/admin/PrintEditionLink#PrintEditionLink':
     PrintEditionLink_444df7a4575e6b37272975c680a7085d,
+  '@/components/admin/designer/DesignSummary#DesignSummary':
+    DesignSummary_b65fb1509d134c4350934378b5e4a3b7,
   '@/components/admin/PublishBannerNow#PublishBannerNow':
     PublishBannerNow_74ff678f58701ea20c1043e171f0a8b5,
   '@/components/admin/Brand#Icon': Icon_066c562e10ad4e70ff0de1a39f9b91f6,
@@ -114,6 +118,8 @@ export const importMap = {
   '@/components/admin/AccessHelp#PasswordHelp': PasswordHelp_4e68073b0c98bae6fb0309aaf0d14949,
   '@/components/admin/AssignmentBoardView#AssignmentBoardView':
     AssignmentBoardView_1382e08392d4d6cb0cd0dfcd9e4925de,
+  '@/components/admin/designer/SiteDesignerView#SiteDesignerView':
+    SiteDesignerView_f330395cce350eea3778d03db2329363,
   '@/components/admin/NewStoryView#NewStoryView': NewStoryView_a6492cb6335d8f066386b3fa4e9eaf8d,
   '@/components/admin/PublishIssue#PublishIssue': PublishIssue_0352ad6b925961598622ddff39fc2a3e,
   '@/components/admin/AccessHelp#FirstSignIn': FirstSignIn_4e68073b0c98bae6fb0309aaf0d14949,

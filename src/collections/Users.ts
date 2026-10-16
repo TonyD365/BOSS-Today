@@ -247,7 +247,8 @@ export const Users: CollectionConfig = {
         label: (
           {
             issue: 'Issue — review and publish issues to the website (editors too)',
-            frontPage: 'Front page — lead stories and sections',
+            design:
+              'Design — the site designer, front page, sections and site settings (editors too)',
             print: 'Print — issues and print editions',
             staff: 'Staff — invite and manage reporters and editors',
             media: 'Media — manage and delete any image',
@@ -257,7 +258,7 @@ export const Users: CollectionConfig = {
       admin: {
         condition: (data) => data?.role === 'exec' || data?.role === 'editor',
         description:
-          'Only the super admin can change these. Editors can only hold the Issue permission.',
+          'Only the super admin can change these. Editors can only hold the Issue and Design permissions.',
       },
     },
     {

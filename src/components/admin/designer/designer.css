@@ -1,0 +1,665 @@
+/* The site designer (Designer.tsx). Canvas content itself is styled by src/design/design.css. */
+.dz {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  height: calc(100vh - 60px);
+  min-height: 600px;
+  margin: 0 calc(var(--gutter-h, 0px) * -1);
+  font: 13px/1.4 var(--font-body, system-ui, sans-serif);
+}
+
+.dz-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--theme-elevation-150);
+  background: var(--theme-elevation-0);
+}
+
+.dz-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.dz-tools__label {
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.dz-tools button,
+.dz-tools select,
+.dz-texttools button,
+.dz-texttools select,
+.dz-button {
+  padding: 4px 9px;
+  border: 1px solid var(--theme-elevation-200);
+  border-radius: 4px;
+  background: var(--theme-elevation-0);
+  color: var(--theme-elevation-800);
+  font: inherit;
+  cursor: pointer;
+}
+
+.dz-tools button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dz-on {
+  background: var(--theme-elevation-800) !important;
+  color: var(--theme-elevation-0) !important;
+}
+
+.dz-primary {
+  background: var(--theme-success-500) !important;
+  border-color: var(--theme-success-500) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+}
+
+.dz-danger {
+  color: var(--theme-error-500) !important;
+}
+
+.dz-sep {
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  background: var(--theme-elevation-200);
+}
+
+.dz-status {
+  display: inline-block;
+  max-width: 300px;
+  overflow: hidden;
+  font-size: 12px;
+  opacity: 0.8;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.dz-context {
+  display: flex;
+  flex-basis: 100%;
+  align-items: center;
+  min-height: 34px;
+  overflow-x: auto;
+}
+
+.dz-context > * {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.dz-status--error {
+  color: var(--theme-error-500);
+  opacity: 1;
+}
+
+.dz-texttools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--theme-elevation-50);
+}
+
+.dz-texttools label {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  font-weight: 700;
+}
+
+.dz-texttools input[type='color'] {
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+}
+
+.dz-banner {
+  margin: 0;
+  padding: 8px 12px;
+  background: var(--theme-warning-100, #fff4d6);
+  color: var(--theme-elevation-900);
+}
+
+.dz-banner--error {
+  background: var(--theme-error-100, #fde2e1);
+}
+
+.dz-body {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr) 290px;
+  min-height: 0;
+}
+
+.dz-layers,
+.dz-side {
+  overflow: auto;
+  padding: 10px;
+  background: var(--theme-elevation-0);
+}
+
+.dz-layers {
+  border-right: 1px solid var(--theme-elevation-150);
+}
+
+.dz-side {
+  border-left: 1px solid var(--theme-elevation-150);
+}
+
+.dz-layers h3,
+.dz-inspector h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.dz-inspector h4 {
+  margin: 12px 0 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
+.dz-layers ol {
+  display: grid;
+  gap: 2px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.dz-layers li {
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+}
+
+.dz-layers li.dz-on .dz-layer,
+.dz-layers li.dz-on .dz-icon {
+  color: inherit;
+}
+
+.dz-layer {
+  flex: 1;
+  overflow: hidden;
+  padding: 4px 6px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.dz-icon {
+  padding: 2px 4px;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.dz-stage {
+  position: relative;
+  overflow: auto;
+  padding: 24px;
+  background: var(--theme-elevation-100);
+}
+
+.dz-frame {
+  width: max-content;
+  margin: 0 auto;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.18);
+}
+
+.dz-frame--phone {
+  border: 10px solid #1d1d1f;
+  border-radius: 28px;
+  overflow: hidden;
+}
+
+.dz-addpage {
+  display: block;
+  margin: 12px auto 0;
+}
+
+.dz-canvas {
+  position: relative;
+  user-select: none;
+  touch-action: none;
+}
+
+.dz-canvas--grid::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0, 120, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 120, 255, 0.12) 1px, transparent 1px);
+  background-size: calc(10px * var(--zoom)) calc(10px * var(--zoom));
+}
+
+.dz-el {
+  cursor: move;
+}
+
+.dz-el > * {
+  pointer-events: none;
+}
+
+.dz-el--locked {
+  cursor: default;
+}
+
+.dz-el--hidden {
+  opacity: 0.25 !important;
+  outline: 1px dashed #888;
+}
+
+.dz-el--overflow {
+  outline: 2px solid #e5484d;
+  outline-offset: -1px;
+}
+
+.dz-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10000;
+}
+
+.dz-outline,
+.dz-handles,
+.dz-guide,
+.dz-marquee {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.dz-outline {
+  border: 1.5px solid #7d2ae8;
+}
+
+.dz-outline--group {
+  border-style: dashed;
+}
+
+.dz-handles {
+  pointer-events: none;
+}
+
+.dz-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border: 1.5px solid #7d2ae8;
+  border-radius: 50%;
+  background: #fff;
+  pointer-events: auto;
+}
+
+.dz-handle--nw {
+  left: 0;
+  top: 0;
+  cursor: nwse-resize;
+}
+.dz-handle--n {
+  left: 50%;
+  top: 0;
+  cursor: ns-resize;
+  border-radius: 3px;
+  width: 18px;
+  height: 8px;
+  margin: -4px 0 0 -9px;
+}
+.dz-handle--ne {
+  left: 100%;
+  top: 0;
+  cursor: nesw-resize;
+}
+.dz-handle--e {
+  left: 100%;
+  top: 50%;
+  cursor: ew-resize;
+  border-radius: 3px;
+  width: 8px;
+  height: 18px;
+  margin: -9px 0 0 -4px;
+}
+.dz-handle--se {
+  left: 100%;
+  top: 100%;
+  cursor: nwse-resize;
+}
+.dz-handle--s {
+  left: 50%;
+  top: 100%;
+  cursor: ns-resize;
+  border-radius: 3px;
+  width: 18px;
+  height: 8px;
+  margin: -4px 0 0 -9px;
+}
+.dz-handle--sw {
+  left: 0;
+  top: 100%;
+  cursor: nesw-resize;
+}
+.dz-handle--w {
+  left: 0;
+  top: 50%;
+  cursor: ew-resize;
+  border-radius: 3px;
+  width: 8px;
+  height: 18px;
+  margin: -9px 0 0 -4px;
+}
+
+.dz-handle--rotate {
+  left: 50%;
+  top: -30px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  color: #7d2ae8;
+  font-size: 14px;
+  cursor: grab;
+}
+
+.dz-size-label {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  margin-top: 14px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #1d1d1f;
+  color: #fff;
+  font-size: 11px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.dz-guide {
+  background: #e5484d;
+}
+
+.dz-marquee {
+  border: 1px solid #7d2ae8;
+  background: rgba(125, 42, 232, 0.08);
+}
+
+.dz-text-editor {
+  box-sizing: border-box;
+  outline: 2px solid #7d2ae8;
+  background: rgba(255, 255, 255, 0.6);
+  cursor: text;
+  user-select: text;
+  overflow: visible;
+  white-space: pre-wrap;
+}
+
+.dz-text-editor ul,
+.dz-text-editor ol {
+  margin: 0;
+  padding-left: 1.2em;
+}
+
+/* Inspector */
+.dz-inspector {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.dz-group {
+  display: grid;
+  gap: 6px;
+}
+
+.dz-row,
+.dz-num,
+.dz-color {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  position: relative;
+}
+
+.dz-grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.dz-label {
+  flex: 0 0 auto;
+  min-width: 64px;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.dz-num .dz-label {
+  min-width: 18px;
+}
+
+.dz-value {
+  min-width: 34px;
+  font-size: 12px;
+  text-align: right;
+}
+
+.dz-input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid var(--theme-elevation-200);
+  border-radius: 4px;
+  background: var(--theme-elevation-0);
+  color: var(--theme-elevation-800);
+  font: inherit;
+}
+
+.dz-row input[type='range'] {
+  flex: 1;
+  min-width: 0;
+}
+
+.dz-toggle {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.dz-swatch {
+  width: 26px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--theme-elevation-300);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dz-swatch--small {
+  width: 22px;
+  height: 22px;
+}
+
+.dz-swatch--inline {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  vertical-align: middle;
+  border-radius: 2px;
+}
+
+.dz-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.dz-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 20;
+  display: grid;
+  gap: 6px;
+  width: 220px;
+  padding: 10px;
+  border: 1px solid var(--theme-elevation-200);
+  border-radius: 6px;
+  background: var(--theme-elevation-0);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+.dz-hint {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.dz-warn {
+  margin: 8px 0;
+  color: var(--theme-warning-650, #9a6700);
+  font-size: 12px;
+}
+
+.dz-error {
+  margin: 0;
+  color: var(--theme-error-500);
+  font-size: 12px;
+}
+
+.dz-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.dz-thumbs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.dz-thumb {
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+}
+
+.dz-thumb img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.dz-thumb--on {
+  border-color: #7d2ae8;
+}
+
+.dz-upload {
+  padding: 6px;
+  border: 1px dashed var(--theme-elevation-300);
+  border-radius: 4px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.dz-problems {
+  display: grid;
+  gap: 8px;
+}
+
+.dz-problem {
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--theme-error-500);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* Right-click menu */
+.dz-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+.dz-menu {
+  position: fixed;
+  display: grid;
+  min-width: 220px;
+  padding: 4px;
+  border: 1px solid var(--theme-elevation-200);
+  border-radius: 6px;
+  background: var(--theme-elevation-0);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.dz-menu button {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dz-menu button:hover:not(:disabled) {
+  background: var(--theme-elevation-100);
+}
+
+.dz-menu button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dz-menu kbd {
+  font: inherit;
+  opacity: 0.6;
+}
+
+.dz-menu hr {
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--theme-elevation-150);
+}

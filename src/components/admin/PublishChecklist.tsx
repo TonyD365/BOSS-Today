@@ -31,6 +31,8 @@ type Review = {
   frontPage: boolean
   settings: boolean
   banner: boolean
+  design: boolean
+  designPhoneUnchecked: boolean
   deploys: { used: number; limit: number }
   checked: { article: number; version: string; at: string }[]
   declaration: string
@@ -187,7 +189,8 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
     review.tags.length > 0 ||
     review.frontPage ||
     review.settings ||
-    review.banner
+    review.banner ||
+    review.design
   const allChecked = stories.every(isChecked)
   const budgetLeft = review.deploys.limit - review.deploys.used
   const canPublish =
@@ -365,6 +368,20 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
             {review.settings && (
               <li>
                 <a href="/admin/globals/settings">Site settings</a>
+              </li>
+            )}
+            {review.design && (
+              <li>
+                <a href="/admin/site-designer" target="_blank" rel="noreferrer">
+                  Site design
+                </a>
+                {review.designPhoneUnchecked && (
+                  <span style={{ color: 'var(--theme-warning-650, var(--theme-warning-500))' }}>
+                    {' '}
+                    — the desktop layout changed since anyone checked the phone layout. Open the
+                    designer, look at the phone view, and mark it checked.
+                  </span>
+                )}
               </li>
             )}
             {review.banner && (

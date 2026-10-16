@@ -24,9 +24,9 @@ export const Sections: CollectionConfig = {
   defaultSort: 'order',
   access: {
     read: publishedOrStaff,
-    create: withPermission('frontPage'),
-    update: withPermission('frontPage'),
-    delete: withPermission('frontPage'),
+    create: withPermission('design'),
+    update: withPermission('design'),
+    delete: withPermission('design'),
   },
   hooks: {
     beforeValidate: [slugFrom('name')],

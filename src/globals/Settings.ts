@@ -30,7 +30,7 @@ export const Settings: GlobalConfig = {
   versions: { drafts: true, max: 10 },
   access: {
     read: () => true,
-    update: withPermission('frontPage'),
+    update: withPermission('design'),
   },
   hooks: {
     beforeChange: [guardGlobalPublishing('Site settings')],

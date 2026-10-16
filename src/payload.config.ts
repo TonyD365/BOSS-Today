@@ -29,6 +29,7 @@ import { draftsAdapter, githubImagesConfig } from './storage/github'
 import { dailyCronEndpoint } from './endpoints/readership'
 import { siteExportEndpoint } from './endpoints/siteExport'
 import { Banner } from './globals/Banner'
+import { SiteDesign } from './globals/SiteDesign'
 import { FrontPage } from './globals/FrontPage'
 import { Settings } from './globals/Settings'
 
@@ -56,6 +57,11 @@ export default buildConfig({
           Component: '@/components/admin/AssignmentBoardView#AssignmentBoardView',
           path: '/assignment-board',
           meta: { title: 'Assignment board' },
+        },
+        siteDesigner: {
+          Component: '@/components/admin/designer/SiteDesignerView#SiteDesignerView',
+          path: '/site-designer',
+          meta: { title: 'Site designer' },
         },
         newStory: {
           Component: '@/components/admin/NewStoryView#NewStoryView',
@@ -103,7 +109,7 @@ export default buildConfig({
     Deployments,
     PageViews,
   ],
-  globals: [FrontPage, Banner, Settings],
+  globals: [SiteDesign, FrontPage, Banner, Settings],
   endpoints: [siteExportEndpoint, dailyCronEndpoint],
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => [...defaultFeatures, BlocksFeature({ blocks: [YouTube] })],

@@ -17,6 +17,9 @@ export function NavLinks() {
       <a className="nav__link" href="/admin/assignment-board" style={link}>
         <span className="nav__link-label">Assignment board</span>
       </a>
+      <a className="nav__link" href="/admin/site-designer" style={link}>
+        <span className="nav__link-label">Site designer</span>
+      </a>
     </div>
   )
 }

@@ -55,7 +55,7 @@ export const pendingChanges = async (
   issueId?: number | string,
   req?: PayloadRequest,
 ) => {
-  const [articles, sections, tags, frontPage, settings, banner, issue] = await Promise.all([
+  const [articles, sections, tags, frontPage, settings, banner, design, issue] = await Promise.all([
     payload.find({
       collection: 'articles',
       draft: true,
@@ -94,6 +94,7 @@ export const pendingChanges = async (
     payload.findGlobal({ slug: 'front-page', draft: true, depth: 0, overrideAccess: true, req }),
     payload.findGlobal({ slug: 'settings', draft: true, depth: 0, overrideAccess: true, req }),
     payload.findGlobal({ slug: 'banner', draft: true, depth: 0, overrideAccess: true, req }),
+    payload.findGlobal({ slug: 'site-design', draft: true, depth: 0, overrideAccess: true, req }),
     issueId
       ? payload.findByID({
           collection: 'issues',
@@ -148,6 +149,19 @@ export const pendingChanges = async (
     frontPage: frontPage._status === 'draft',
     settings: settings._status === 'draft',
     banner: banner._status === 'draft',
+    design: design._status === 'draft',
+    /** The desktop canvas changed after someone last looked at the phone layout. */
+    designPhoneUnchecked: (() => {
+      const d = design.design as {
+        desktopChangedAt?: string | null
+        phoneCheckedAt?: string | null
+      } | null
+      return Boolean(
+        design._status === 'draft' &&
+        d?.desktopChangedAt &&
+        (!d.phoneCheckedAt || d.phoneCheckedAt < d.desktopChangedAt),
+      )
+    })(),
   }
 }
 
@@ -157,7 +171,8 @@ const hasStructureChanges = (pending: Awaited<ReturnType<typeof pendingChanges>>
   pending.tags.length > 0 ||
   pending.frontPage ||
   pending.settings ||
-  pending.banner
+  pending.banner ||
+  pending.design
 
 const canManageIssue = (user: unknown) => canPublishIssues(user) || hasPermission(user, 'print')
 
@@ -185,6 +200,8 @@ export const issueReviewEndpoint: Endpoint = {
         frontPage: pending.frontPage,
         settings: pending.settings,
         banner: pending.banner,
+        design: pending.design,
+        designPhoneUnchecked: pending.designPhoneUnchecked,
         deploys: { used: await deploysThisMonth(req.payload, req), limit: ISSUE_DEPLOY_LIMIT },
         checked: (
           await req.payload.find({
@@ -492,6 +509,15 @@ export const issuePublishEndpoint: Endpoint = {
         if (pending.settings) {
           await req.payload.updateGlobal({
             slug: 'settings',
+            data: { _status: 'published' },
+            req,
+            overrideAccess: true,
+            context,
+          })
+        }
+        if (pending.design) {
+          await req.payload.updateGlobal({
+            slug: 'site-design',
             data: { _status: 'published' },
             req,
             overrideAccess: true,

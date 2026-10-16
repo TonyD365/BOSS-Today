@@ -101,6 +101,15 @@ Stories move through Draft → In review → Changes requested → Published →
 
 Open an issue, tick **Print edition**, pick a paper size and set each story's width. In the newsroom, `/issues/<vol>-<no>/print` shows the typeset pages for proofing. The PDF readers download is made when Cloudflare builds the public site (`src/site/print.tsx`, headless Chromium via `@sparticuz/chromium`; locally your installed Chrome, or set `CHROME_PATH`), so it costs the newsroom host nothing. An unchanged issue's PDF is copied from the live site instead of being made again. If Chromium can't run, the build still succeeds and the issue links to a printable page.
 
+## Site designer
+
+`/admin/site-designer` (sidebar: **Site designer**) lays out the front page on a free canvas, like Canva: drag, resize, rotate, flip, group, align and distribute, snap to guides or a grid, layers, undo/redo, copy/paste, right-click menu and Canva's shortcuts. Text is edited in place, with bold/italic/underline/colour/size on parts of it, lists, shadow, outline, background and curved text. Shapes take colours or gradients; story cards, lists, Most read, Scores, This week, LIVE and the latest issue fill themselves from the site.
+
+- **Phones** get their own canvas. Anything not placed by hand is stacked automatically, and a coloured band keeps whatever sits on it. The issue checklist warns when the desktop changed after the phone layout was last checked.
+- **Saving** is automatic after each change, as a draft that goes live with the next issue; someone with the Issue permission can **Publish now** (one rebuild). One person edits at a time (a lock that lapses after two minutes; others can take over). Text that's hard to read is refused, with a suggested colour. Earlier designs are under Site Design → Versions.
+- The design is data (`src/design`): the server cleans every save, and the same renderer draws the designer's canvas and the static front page. Until a design is published, the site uses the classic front page.
+- The **Design** permission (formerly Front Page; holders were carried over) covers the designer, sections, the classic front page and site settings, and can be given to editors.
+
 ## Scores, calendar and live coverage
 
 Under **Live** in the newsroom: **Scores & schedule** (reporters and up), **Calendar** (editors and up) and **Live coverage** (Issue permission only, since it skips the issue sign-off). Every save rewrites the `board` key in Workers KV, and live coverage its own `live:<slug>` key; `functions/api/live.js` serves them and the browser draws the front page boxes and `/scores/`, `/calendar/` and `/live/?s=<slug>`. Nothing is rebuilt. If KV can't be reached, the save is refused with the reason, so the website never quietly falls behind. Each change is in the audit log.

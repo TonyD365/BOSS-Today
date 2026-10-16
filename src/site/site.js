@@ -33,24 +33,31 @@
     }
   }
   var showMostRead = function (stories) {
-    if (!mostRead || !Array.isArray(stories) || stories.length === 0) return
-    var list = mostRead.querySelector('ol')
-    stories.slice(0, 5).forEach(function (story) {
-      if (!story || !story.title || !/^\/article\//.test(story.url || '')) return
-      var item = document.createElement('li')
-      if (story.section) {
-        var kicker = document.createElement('span')
-        kicker.className = 'kicker'
-        kicker.textContent = story.section
-        item.appendChild(kicker)
-      }
-      var link = document.createElement('a')
-      link.href = story.url
-      link.textContent = story.title
-      item.appendChild(link)
-      list.appendChild(item)
+    if (!Array.isArray(stories) || stories.length === 0) return
+    var boxes = [].slice.call(document.querySelectorAll('[data-most-read]'))
+    if (mostRead) boxes.push(mostRead)
+    boxes.forEach(function (box) {
+      var list = box.querySelector('ol')
+      if (!list) return
+      list.textContent = ''
+      var count = Number(box.getAttribute('data-count')) || 5
+      stories.slice(0, count).forEach(function (story) {
+        if (!story || !story.title || !/^\/article\//.test(story.url || '')) return
+        var item = document.createElement('li')
+        if (story.section && box === mostRead) {
+          var kicker = document.createElement('span')
+          kicker.className = 'kicker'
+          kicker.textContent = story.section
+          item.appendChild(kicker)
+        }
+        var link = document.createElement('a')
+        link.href = story.url
+        link.textContent = story.title
+        item.appendChild(link)
+        list.appendChild(item)
+      })
+      if (box === mostRead && list.children.length > 0) mostRead.hidden = false
     })
-    if (list.children.length > 0) mostRead.hidden = false
   }
   // Scores, the calendar and live coverage (src/publishing/board.ts).
   var zone = 'America/Toronto'
@@ -138,6 +145,18 @@
     })
     box.hidden = items.length === 0
   }
+  // Boxes placed on a designed front page: always shown, filled to their own count.
+  var fillDesigned = function (kind, items, render) {
+    document.querySelectorAll('[data-board="' + kind + '"]').forEach(function (box) {
+      var list = box.querySelector('ul')
+      if (!list) return
+      list.textContent = ''
+      var count = Number(box.getAttribute('data-count')) || 5
+      items.slice(0, count).forEach(function (item) {
+        list.appendChild(render(item))
+      })
+    })
+  }
 
   var showBoard = function (board) {
     if (!board) return
@@ -160,6 +179,16 @@
       })
       strip.hidden = live.length === 0
     }
+    document.querySelectorAll('[data-board="live"]').forEach(function (box) {
+      box.textContent = ''
+      live.slice(0, 1).forEach(function (item) {
+        var link = el('a', null)
+        link.href = '/live/?s=' + encodeURIComponent(item.slug)
+        link.appendChild(el('span', 'live-badge', 'LIVE'))
+        link.appendChild(document.createTextNode(' ' + item.title))
+        box.appendChild(link)
+      })
+    })
 
     var playing = games.filter(function (g) {
       return g.status === 'live'
@@ -175,11 +204,9 @@
         return g.status === 'scheduled' && new Date(g.startsAt) > now - 3 * 3600000
       })
       .sort(byStart)
-    fill(
-      document.getElementById('scores-box'),
-      playing.concat(finals.slice(0, 3), upcoming.slice(0, 3)).slice(0, 6),
-      gameLine,
-    )
+    var scoreItems = playing.concat(finals.slice(0, 3), upcoming.slice(0, 3))
+    fill(document.getElementById('scores-box'), scoreItems.slice(0, 6), gameLine)
+    fillDesigned('scores', scoreItems, gameLine)
 
     var week = events
       .filter(function (e) {
@@ -189,6 +216,9 @@
       })
       .sort(byStart)
     fill(document.getElementById('events-box'), week.slice(0, 5), eventLine)
+    fillDesigned('events', week, function (event) {
+      return eventLine(event)
+    })
 
     var scoresPage = document.getElementById('scores-page')
     if (scoresPage) {
@@ -299,7 +329,9 @@
       loadLive().then(function (anyLive) {
         // Keep live scores fresh while a game is on.
         var showsScores =
-          document.getElementById('scores-box') || document.getElementById('scores-page')
+          document.getElementById('scores-box') ||
+          document.getElementById('scores-page') ||
+          document.querySelector('[data-board="scores"]')
         if (anyLive && showsScores) setTimeout(poll, 60000)
       })
     }

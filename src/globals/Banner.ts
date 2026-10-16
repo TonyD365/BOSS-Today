@@ -29,7 +29,7 @@ export const Banner: GlobalConfig = {
   endpoints: [publishBannerNowEndpoint],
   access: {
     read: () => true,
-    update: ({ req }) => canPublishIssues(req.user) || hasPermission(req.user, 'frontPage'),
+    update: ({ req }) => canPublishIssues(req.user) || hasPermission(req.user, 'design'),
   },
   hooks: {
     beforeChange: [guardGlobalPublishing('The banner')],

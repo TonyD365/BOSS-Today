@@ -14,11 +14,15 @@ import { renderToStaticMarkup } from 'react-dom/server'
 
 import { formatDate } from '@/lib/format'
 
+import { fontsUrl } from '@/design/fonts'
+import { designFonts, DesignedHome } from '@/design/render'
+
 import { rssFeed } from './feed'
 import { buildPrintEditions, printStyles } from './print'
 import {
   byNewest,
   chunk,
+  designData,
   editionSlug,
   type ExportArticle,
   type ExportMeta,
@@ -121,11 +125,24 @@ const main = async () => {
 
   const { siteName, tagline } = site.settings
 
-  await page(
-    'index.html',
-    { title: siteName, description: tagline, path: '/' },
-    <HomeView layout={frontPageLayout(site, articles)} />,
-  )
+  // The designed front page once one is published; the classic one until then.
+  if (site.design) {
+    const fonts = fontsUrl(designFonts(site.design.design))
+    await page(
+      'index.html',
+      { title: siteName, description: tagline, path: '/', styles: fonts ? [fonts] : [] },
+      <DesignedHome
+        design={site.design.design}
+        data={designData(site, articles, (issue) => `/issues/${editionSlug(issue)}/`)}
+      />,
+    )
+  } else {
+    await page(
+      'index.html',
+      { title: siteName, description: tagline, path: '/' },
+      <HomeView layout={frontPageLayout(site, articles)} />,
+    )
+  }
 
   for (const section of site.sections) {
     const inSection = articles.filter((article) => article.section?.id === section.id)
@@ -366,7 +383,8 @@ const main = async () => {
 
   // Dark mode is for the public site only; the print edition stays black on white.
   const theme = await fs.readFile(path.join(ROOT, 'src/site/theme.css'), 'utf8')
-  await write('assets/styles.css', `${FONT_VARIABLES}\n\n${siteStyles}\n${theme}`)
+  const designCss = await fs.readFile(path.join(ROOT, 'src/design/design.css'), 'utf8')
+  await write('assets/styles.css', `${FONT_VARIABLES}\n\n${siteStyles}\n${theme}\n${designCss}`)
   await write('assets/site.js', await fs.readFile(path.join(ROOT, 'src/site/site.js'), 'utf8'))
   await write(
     '_headers',

@@ -38,6 +38,7 @@ export const Deployments: CollectionConfig = {
         { label: 'Manual rebuild', value: 'rebuild' },
         // No longer used: the banner is stored in Cloudflare KV and needs no rebuild.
         { label: 'Banner published now', value: 'banner' },
+        { label: 'Site design published now', value: 'design' },
       ],
     },
     {
