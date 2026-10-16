@@ -745,7 +745,11 @@ export function Designed({
 
 /** The public front page. */
 export const DesignedHome = ({ design, data }: { design: Design; data: DesignData }) => (
-  <Designed design={design} data={data} />
+  <>
+    {/* Filled in by site.js while something is covered live, as on the classic front page. */}
+    <div id="live-strip" className="live-strip" hidden />
+    <Designed design={design} data={data} />
+  </>
 )
 
 /**
