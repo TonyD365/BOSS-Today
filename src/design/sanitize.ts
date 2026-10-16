@@ -12,15 +12,20 @@ import { isFont } from './fonts'
 import { phoneLayout } from './phone'
 import { cleanParagraphs } from './richtext'
 import {
+  ARTICLE_PARTS,
   type Color,
   type Design,
   type DesignElement,
   DESKTOP_WIDTH,
   type Fill,
   type Geometry,
+  type PageTemplate,
   PHONE_WIDTH,
   SHAPES,
+  SIDE_WIDTH,
   SITE_PARTS,
+  TEMPLATE_KINDS,
+  type Templates,
 } from './types'
 
 export const MAX_ELEMENTS = 300
@@ -244,6 +249,9 @@ export const cleanDesign = (value: unknown): Design => {
   return {
     version: 1,
     desktop: {
+      ...(num(raw.desktop?.width, 200, DESKTOP_WIDTH, DESKTOP_WIDTH) !== DESKTOP_WIDTH
+        ? { width: num(raw.desktop?.width, 200, DESKTOP_WIDTH, DESKTOP_WIDTH) }
+        : {}),
       height: num(raw.desktop?.height, 200, MAX_HEIGHT, 1600),
       background: cleanFill(raw.desktop?.background, { type: 'solid', color: '#ffffff' }),
       elements: unique,
@@ -387,14 +395,46 @@ export const chromeProblems = (header: Design | null, footer: Design | null): st
       'The header needs its navigation bar. You can restyle and move it, but not remove it or hide it (on desktop or phones).',
     )
   }
-  if (
-    footer &&
-    !hasPart(header, ['staff', 'links']) &&
-    !hasPart(footer, ['staff', 'links'])
-  ) {
+  if (footer && !hasPart(header, ['staff', 'links']) && !hasPart(footer, ['staff', 'links'])) {
     problems.push(
       'Keep the Staff sign-in link in the header or footer (on its own, or in the footer links).',
     )
   }
   return problems
+}
+
+/** A canvas with something on it, or null. */
+export const designedOrNull = (value: unknown): Design | null => {
+  if (!value || typeof value !== 'object') return null
+  const design = cleanDesign(value)
+  return design.desktop.elements.length > 0 ? design : null
+}
+
+export const cleanTemplate = (value: unknown): PageTemplate => {
+  const raw = (value ?? {}) as Record<string, unknown>
+  const pick = <T extends string>(v: unknown, options: readonly T[], fallback: T): T =>
+    options.includes(v as T) ? (v as T) : fallback
+  const side = designedOrNull(raw.side)
+  if (side) side.desktop.width = SIDE_WIDTH
+  return {
+    above: designedOrNull(raw.above),
+    side,
+    below: designedOrNull(raw.below),
+    sidePosition: pick(raw.sidePosition, ['right', 'left'], 'right'),
+    width: pick(raw.width, ['narrow', 'medium', 'wide'], 'medium'),
+    align: pick(raw.align, ['center', 'left'], 'center'),
+    headFont: isFont(raw.headFont) ? (raw.headFont as string) : null,
+    bodyFont: isFont(raw.bodyFont) ? (raw.bodyFont as string) : null,
+    hide: Array.isArray(raw.hide)
+      ? ARTICLE_PARTS.filter((part) => (raw.hide as unknown[]).includes(part))
+      : [],
+    imageFirst: raw.imageFirst === true,
+  }
+}
+
+export const cleanTemplates = (value: unknown): Templates => {
+  const raw = (value ?? {}) as Record<string, unknown>
+  const result: Templates = {}
+  for (const kind of TEMPLATE_KINDS) if (raw[kind]) result[kind] = cleanTemplate(raw[kind])
+  return result
 }

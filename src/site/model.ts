@@ -1,5 +1,5 @@
 import type { PaperSize } from '@/components/print/PrintEdition'
-import type { Design } from '@/design/types'
+import type { Design, Templates } from '@/design/types'
 import type { Author } from '@/lib/author'
 import type { DArticle, DesignData, SiteInfo } from '@/design/render'
 import type { Article, Media } from '@/payload-types'
@@ -57,6 +57,7 @@ export type ExportMeta = {
     design: Design | null
     header: Design | null
     footer: Design | null
+    templates: Templates
     pages: ExportPage[]
     media: Media[]
   }

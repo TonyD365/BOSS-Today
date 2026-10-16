@@ -170,7 +170,14 @@ export const pendingChanges = async (
     /** A canvas changed on desktop after someone last looked at its phone layout. */
     designPhoneUnchecked:
       (design._status === 'draft' &&
-        [design.design, design.header, design.footer].some(phoneUnchecked)) ||
+        [
+          design.design,
+          design.header,
+          design.footer,
+          ...Object.values(
+            (design.templates ?? {}) as Record<string, Record<string, unknown>>,
+          ).flatMap((t) => [t?.above, t?.side, t?.below]),
+        ].some(phoneUnchecked)) ||
       pages.docs.some((page) => phoneUnchecked(page.design)),
   }
 }

@@ -1306,7 +1306,7 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   createdAt?: T;
 }
 /**
- * The designed front page, header and footer. Open the designer to change them. Saved changes go live with the next issue. Anything not designed yet keeps its classic look.
+ * The designed front page, header, footer and page templates. Open the designer to change them. Saved changes go live with the next issue. Anything not designed yet keeps its classic look.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "site-design".
@@ -1332,6 +1332,15 @@ export interface SiteDesign {
     | boolean
     | null;
   footer?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  templates?:
     | {
         [k: string]: unknown;
       }
@@ -1449,6 +1458,7 @@ export interface SiteDesignSelect<T extends boolean = true> {
   design?: T;
   header?: T;
   footer?: T;
+  templates?: T;
   _status?: T;
   updatedAt?: T;
   createdAt?: T;

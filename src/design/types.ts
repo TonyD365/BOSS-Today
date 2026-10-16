@@ -173,9 +173,39 @@ export type Geometry = Pick<Base, 'x' | 'y' | 'w' | 'h' | 'rotation' | 'hidden'>
 
 export type Design = {
   version: 1
-  desktop: { height: number; background: Fill; elements: DesignElement[] }
+  /** width is only set for narrow canvases, like a template's sidebar (default DESKTOP_WIDTH). */
+  desktop: { width?: number; height: number; background: Fill; elements: DesignElement[] }
   /** Phone geometry per element id; elements without one are laid out automatically. */
   phone: { height: number; overrides: Record<string, Geometry & { auto?: boolean }> }
   desktopChangedAt: string | null
   phoneCheckedAt: string | null
 }
+
+/** Pages whose content is filled in automatically; each kind shares one template. */
+export const TEMPLATE_KINDS = ['article', 'section', 'tag', 'author', 'issue', 'other'] as const
+export type TemplateKind = (typeof TEMPLATE_KINDS)[number]
+export const TEMPLATE_SLOTS = ['above', 'side', 'below'] as const
+export type TemplateSlot = (typeof TEMPLATE_SLOTS)[number]
+/** Parts of a story page that can be left out. */
+export const ARTICLE_PARTS = ['summary', 'byline', 'reading', 'share', 'tags', 'authors'] as const
+export type ArticlePart = (typeof ARTICLE_PARTS)[number]
+export const SIDE_WIDTH = 300
+
+/**
+ * A page template: canvases above, beside and below content that is laid out
+ * automatically (so a long story is never cut off), and how that content looks.
+ */
+export type PageTemplate = {
+  above: Design | null
+  side: Design | null
+  below: Design | null
+  sidePosition: 'right' | 'left'
+  width: 'narrow' | 'medium' | 'wide'
+  align: 'center' | 'left'
+  headFont: string | null
+  bodyFont: string | null
+  /** Story pages only. */
+  hide: ArticlePart[]
+  imageFirst: boolean
+}
+export type Templates = Partial<Record<TemplateKind, PageTemplate>>

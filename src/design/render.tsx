@@ -8,6 +8,7 @@ import {
   type Design,
   type DesignElement,
   DESKTOP_WIDTH,
+  type PageTemplate,
   type Fill,
   type Geometry,
   type Paragraph,
@@ -658,7 +659,7 @@ export const geometryFor = (design: Design, view: View) => {
 
 export const canvasSize = (design: Design, view: View, geometry = geometryFor(design, view)) =>
   view === 'desktop'
-    ? { width: DESKTOP_WIDTH, height: design.desktop.height }
+    ? { width: design.desktop.width ?? DESKTOP_WIDTH, height: design.desktop.height }
     : { width: PHONE_WIDTH, height: phoneHeight(design, geometry) }
 
 /**
@@ -746,6 +747,55 @@ export function Designed({
 export const DesignedHome = ({ design, data }: { design: Design; data: DesignData }) => (
   <Designed design={design} data={data} />
 )
+
+/**
+ * A page made from a template: canvases above, beside and below content that
+ * is laid out automatically, so it can be any length.
+ */
+export function Templated({
+  template,
+  data,
+  children,
+}: {
+  template: PageTemplate
+  data: DesignData
+  children: React.ReactNode
+}) {
+  const classes = [
+    'tpl',
+    `tpl--${template.width}`,
+    `tpl--${template.align}`,
+    template.side ? `tpl--side-${template.sidePosition}` : '',
+    template.imageFirst ? 'tpl--image-first' : '',
+    ...template.hide.map((part) => `tpl--no-${part}`),
+  ]
+  const style: Record<string, string> = {}
+  if (template.headFont) style['--tpl-head'] = fontFamily(template.headFont)
+  if (template.bodyFont) style['--tpl-body'] = fontFamily(template.bodyFont)
+  return (
+    <div className={classes.filter(Boolean).join(' ')} style={style}>
+      {template.above && <Designed design={template.above} data={data} />}
+      <div className="tpl__main">
+        <div className="tpl__content">{children}</div>
+        {template.side && (
+          <aside className="tpl__side">
+            <Designed design={template.side} data={data} />
+          </aside>
+        )}
+      </div>
+      {template.below && <Designed design={template.below} data={data} />}
+    </div>
+  )
+}
+
+/** Fonts a template uses. */
+export const templateFonts = (template: PageTemplate | undefined) => {
+  if (!template) return new Set<string>()
+  const fonts = designFonts(template.above, template.side, template.below)
+  if (template.headFont) fonts.add(template.headFont)
+  if (template.bodyFont) fonts.add(template.bodyFont)
+  return fonts
+}
 
 /** Fonts a design uses, for loading them on the page. */
 export const designFonts = (...designs: (Design | null | undefined)[]) => {

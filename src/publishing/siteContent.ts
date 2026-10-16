@@ -1,6 +1,6 @@
 import type { Payload, PayloadRequest, Where } from 'payload'
 
-import { cleanDesign } from '../design/sanitize'
+import { cleanDesign, cleanTemplates } from '../design/sanitize'
 import type { Design } from '../design/types'
 import type { Article, Media, User } from '../payload-types'
 
@@ -115,6 +115,7 @@ export const exportDesign = async (payload: Payload) => {
   const front = live ? designed(global.design) : null
   const header = live ? designed(global.header) : null
   const footer = live ? designed(global.footer) : null
+  const templates = live ? cleanTemplates(global.templates) : {}
   const customPages = pages.docs.flatMap((page) => {
     const design = designed(page.design)
     return design
@@ -133,7 +134,13 @@ export const exportDesign = async (payload: Payload) => {
   })
   const mediaIds = [
     ...new Set(
-      [front, header, footer, ...customPages.map((p) => p.design)].flatMap((design) =>
+      [
+        front,
+        header,
+        footer,
+        ...customPages.map((p) => p.design),
+        ...Object.values(templates).flatMap((t) => [t.above, t.side, t.below]),
+      ].flatMap((design) =>
         (design?.desktop.elements ?? []).flatMap((el) =>
           el.type === 'image' && el.props.mediaId ? [el.props.mediaId] : [],
         ),
@@ -151,7 +158,7 @@ export const exportDesign = async (payload: Payload) => {
         })
       ).docs
     : []
-  return { design: front, header, footer, pages: customPages, media }
+  return { design: front, header, footer, templates, pages: customPages, media }
 }
 
 /** Site settings, sections, tags, issues and staff. */

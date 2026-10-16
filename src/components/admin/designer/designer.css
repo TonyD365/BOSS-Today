@@ -663,3 +663,22 @@
   border: 0;
   border-top: 1px solid var(--theme-elevation-150);
 }
+
+.dz-template {
+  display: grid;
+  gap: 8px;
+}
+
+.dz-template fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  flex-wrap: wrap;
+}
+
+.dz-template label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}

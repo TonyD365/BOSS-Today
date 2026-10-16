@@ -15,6 +15,7 @@ import * as migration_20261016_132138_github_media_prefix from './20261016_13213
 import * as migration_20261016_154026_batch4_scores_calendar_live from './20261016_154026_batch4_scores_calendar_live';
 import * as migration_20261016_180154_site_designer from './20261016_180154_site_designer';
 import * as migration_20261016_183434_site_chrome_pages from './20261016_183434_site_chrome_pages';
+import * as migration_20261016_184921_page_templates from './20261016_184921_page_templates';
 
 export const migrations = [
   {
@@ -100,6 +101,11 @@ export const migrations = [
   {
     up: migration_20261016_183434_site_chrome_pages.up,
     down: migration_20261016_183434_site_chrome_pages.down,
-    name: '20261016_183434_site_chrome_pages'
+    name: '20261016_183434_site_chrome_pages',
+  },
+  {
+    up: migration_20261016_184921_page_templates.up,
+    down: migration_20261016_184921_page_templates.down,
+    name: '20261016_184921_page_templates'
   },
 ];

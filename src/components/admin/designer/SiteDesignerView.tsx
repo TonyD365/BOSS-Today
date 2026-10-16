@@ -3,9 +3,22 @@ import type { AdminViewServerProps } from 'payload'
 import React from 'react'
 
 import { canPublishIssues, hasPermission, RANK, rankOf } from '@/access'
-import { classicDesign, classicFooter, classicHeader, pageStarter } from '@/design/defaults'
-import { cleanDesign } from '@/design/sanitize'
-import type { Design } from '@/design/types'
+import {
+  classicDesign,
+  classicFooter,
+  classicHeader,
+  emptyDesign,
+  pageStarter,
+} from '@/design/defaults'
+import { cleanDesign, cleanTemplate, cleanTemplates } from '@/design/sanitize'
+import {
+  type Design,
+  SIDE_WIDTH,
+  TEMPLATE_KINDS,
+  TEMPLATE_SLOTS,
+  type TemplateKind,
+  type TemplateSlot,
+} from '@/design/types'
 
 import { Designer, type Target } from './Designer'
 
@@ -32,6 +45,10 @@ export async function SiteDesignerView({
   )
   if (allowed) {
     const part = String(searchParams?.part ?? '')
+    const kind = String(searchParams?.template ?? '') as TemplateKind
+    const slot = (
+      TEMPLATE_SLOTS.includes(searchParams?.slot as TemplateSlot) ? searchParams?.slot : 'above'
+    ) as TemplateSlot
     const pageId = Number(searchParams?.page)
     const global = await req.payload.findGlobal({
       slug: 'site-design',
@@ -39,6 +56,7 @@ export async function SiteDesignerView({
       depth: 0,
       overrideAccess: true,
     })
+    const templates = cleanTemplates(global.templates)
     const header = designed(global.header)
     const footer = designed(global.footer)
     let target: Target
@@ -57,6 +75,9 @@ export async function SiteDesignerView({
       target = { kind: 'page', id: page.id, title: page.title }
       design = designed(page.design)
       published = page._status === 'published'
+    } else if (TEMPLATE_KINDS.includes(kind)) {
+      target = { kind: 'template', template: kind, slot }
+      design = templates[kind]?.[slot] ?? null
     } else if (part === 'header' || part === 'footer') {
       target = { kind: 'global', field: part }
       design = part === 'header' ? header : footer
@@ -70,7 +91,11 @@ export async function SiteDesignerView({
       if (target.kind === 'global' && target.field === 'header') design = classicHeader()
       else if (target.kind === 'global' && target.field === 'footer') design = classicFooter()
       else if (target.kind === 'page') design = pageStarter(target.title)
-      else {
+      else if (target.kind === 'template') {
+        design = emptyDesign()
+        design.desktop.height = target.slot === 'side' ? 600 : 240
+        if (target.slot === 'side') design.desktop.width = SIDE_WIDTH
+      } else {
         const sections = await req.payload.find({
           collection: 'sections',
           where: { _status: { equals: 'published' } },
@@ -84,7 +109,15 @@ export async function SiteDesignerView({
     }
     body = (
       <Designer
-        key={target.kind === 'page' ? `page-${target.id}` : target.field}
+        key={
+          target.kind === 'page'
+            ? `page-${target.id}`
+            : target.kind === 'template'
+              ? `${target.template}-${target.slot}`
+              : target.field
+        }
+        templates={templates}
+        template={target.kind === 'template' ? cleanTemplate(templates[target.template]) : null}
         target={target}
         other={other}
         initial={design}

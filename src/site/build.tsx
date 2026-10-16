@@ -15,7 +15,8 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { formatDate } from '@/lib/format'
 
 import { fontsUrl } from '@/design/fonts'
-import { Designed, designFonts, DesignedHome } from '@/design/render'
+import { Designed, designFonts, DesignedHome, Templated, templateFonts } from '@/design/render'
+import type { TemplateKind } from '@/design/types'
 import { siteInfo } from '@/design/siteInfo'
 
 import { rssFeed } from './feed'
@@ -138,9 +139,34 @@ const main = async () => {
     footer: footer ? <Designed design={footer} data={data} chrome /> : null,
     fonts: fontsUrl(designFonts(header, footer)),
   }
+  // Pages with content filled in automatically get their kind's template.
+  const templateFor = (file: string): TemplateKind | null => {
+    if (file === 'index.html' || file.startsWith('p/')) return null
+    const [first, second] = file.split('/')
+    if (first === 'article') return 'article'
+    if (first === 'section') return 'section'
+    if (first === 'author') return 'author'
+    if (first === 'tags' && second !== 'index.html') return 'tag'
+    if (first === 'issues' && second !== 'index.html') return 'issue'
+    return 'other'
+  }
   const urls: string[] = []
-  const page = async (file: string, meta: PageMeta, body: React.ReactNode) => {
-    const styles = [...(chrome.fonts ? [chrome.fonts] : []), ...(meta.styles ?? [])]
+  const page = async (file: string, meta: PageMeta, content: React.ReactNode) => {
+    const kind = templateFor(file)
+    const template = kind ? site.design.templates[kind] : undefined
+    const body = template ? (
+      <Templated template={template} data={data}>
+        {content}
+      </Templated>
+    ) : (
+      content
+    )
+    const fonts = fontsUrl(templateFonts(template))
+    const styles = [
+      ...(chrome.fonts ? [chrome.fonts] : []),
+      ...(fonts ? [fonts] : []),
+      ...(meta.styles ?? []),
+    ]
     const html = renderToStaticMarkup(
       <Shell
         meta={{ ...meta, styles }}

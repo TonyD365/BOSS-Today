@@ -14,7 +14,15 @@ import {
   type Geometry,
   SHAPES,
   type ShapeKind,
+  ARTICLE_PARTS,
+  type ArticlePart,
+  type PageTemplate,
   SITE_PARTS,
+  TEMPLATE_KINDS,
+  TEMPLATE_SLOTS,
+  type TemplateKind,
+  type TemplateSlot,
+  type Templates,
 } from '@/design/types'
 
 import { DeployProgress } from '../DeployProgress'
@@ -47,20 +55,48 @@ import './designer.css'
 export type Target =
   | { kind: 'global'; field: 'design' | 'header' | 'footer' }
   | { kind: 'page'; id: number; title: string }
+  | { kind: 'template'; template: TemplateKind; slot: TemplateSlot }
 
 const TARGET_NAMES = { design: 'Front page', header: 'Header', footer: 'Footer' } as const
+
+export const TEMPLATE_NAMES: Record<TemplateKind, string> = {
+  article: 'Story pages',
+  section: 'Section pages',
+  tag: 'Topic pages',
+  author: 'Author pages',
+  issue: 'Issue pages',
+  other: 'Other pages (search, scores, calendar…)',
+}
+const SLOT_NAMES: Record<TemplateSlot, string> = {
+  above: 'Above the content',
+  side: 'Beside the content',
+  below: 'Below the content',
+}
+const ARTICLE_PART_NAMES: Record<ArticlePart, string> = {
+  summary: 'Summary',
+  byline: 'Byline and date',
+  reading: 'Reading time',
+  share: 'Share buttons',
+  tags: 'Topics',
+  authors: 'About the author',
+}
 
 const targetUrl = (t: Target) =>
   t.kind === 'page'
     ? `/admin/site-designer?page=${t.id}`
-    : t.field === 'design'
-      ? '/admin/site-designer'
-      : `/admin/site-designer?part=${t.field}`
+    : t.kind === 'template'
+      ? `/admin/site-designer?template=${t.template}&slot=${t.slot}`
+      : t.field === 'design'
+        ? '/admin/site-designer'
+        : `/admin/site-designer?part=${t.field}`
 
 type Props = {
   target: Target
   /** Editing the header: the footer as saved (or null for the classic one), and the other way round. */
   other: Design | null
+  /** Every page template as saved, and the settings of the one being edited. */
+  templates: Templates
+  template: PageTemplate | null
   initial: Design
   published: boolean
   /** False when nothing has been saved yet and the canvas shows the classic page. */
@@ -76,6 +112,8 @@ const empty: DesignData = { articles: [], byId: {}, media: {}, issue: null }
 export function Designer({
   target,
   other,
+  templates: initialTemplates,
+  template: initialTemplate,
   initial,
   published,
   saved,
@@ -108,6 +146,8 @@ export function Designer({
   const stageBox = useRef<HTMLDivElement>(null)
   const savedJson = useRef(JSON.stringify(initial))
   const leaving = useRef(false)
+  const templates = useRef(initialTemplates)
+  const [tpl, setTpl] = useState(initialTemplate)
 
   const readOnly = !canEdit || !lock.ok
   const shown = status === 'saved' && dirty ? 'unsaved' : status
@@ -231,6 +271,21 @@ export function Designer({
     }
   }, [canEdit, claimLock])
 
+  /** All templates, with this canvas in its slot (an empty canvas clears the slot). */
+  const withSlot = useCallback(
+    (clean: Design, settings = tpl): Templates => {
+      if (target.kind !== 'template' || !settings) return templates.current
+      return {
+        ...templates.current,
+        [target.template]: {
+          ...settings,
+          [target.slot]: clean.desktop.elements.length > 0 ? clean : null,
+        },
+      }
+    },
+    [target, tpl],
+  )
+
   // --- Saving: automatically, a moment after each change
   const save = useCallback(async () => {
     const json = JSON.stringify(design)
@@ -250,10 +305,14 @@ export function Designer({
         method: target.kind === 'page' ? 'PATCH' : 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          [target.kind === 'page' ? 'design' : target.field]: clean,
-          _status: 'draft',
-        }),
+        body: JSON.stringify(
+          target.kind === 'template'
+            ? {
+                templates: withSlot(clean),
+                _status: 'draft',
+              }
+            : { [target.kind === 'page' ? 'design' : target.field]: clean, _status: 'draft' },
+        ),
       },
     ).catch(() => null)
     const body = (await response?.json().catch(() => ({}))) as {
@@ -269,12 +328,35 @@ export function Designer({
       return
     }
     savedJson.current = json
+    if (target.kind === 'template') templates.current = withSlot(clean)
     setDirty(false)
     setHasSaved(true)
     setStatus('saved')
     setMessage(null)
     setIsPublished(false)
-  }, [design, dirty, problems.length, readOnly, claimLock, target])
+  }, [design, dirty, problems.length, readOnly, claimLock, target, withSlot])
+
+  const saveSettings = async (next: PageTemplate) => {
+    if (readOnly || target.kind !== 'template') return
+    setTpl(next)
+    setStatus('saving')
+    const all = withSlot(cleanDesign(design), next)
+    const response = await fetch('/api/globals/site-design?draft=true', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ templates: all, _status: 'draft' }),
+    }).catch(() => null)
+    if (!response?.ok) {
+      setStatus('error')
+      setMessage('Could not save the template settings.')
+      return
+    }
+    templates.current = all
+    setStatus('saved')
+    setHasSaved(true)
+    setIsPublished(false)
+  }
 
   // --- Switching to another part of the site, or making a new page
   const open = async (next: Target | 'new') => {
@@ -580,10 +662,18 @@ export function Designer({
           <select
             className="dz-target"
             aria-label="Which part of the site"
-            value={target.kind === 'page' ? `page-${target.id}` : target.field}
+            value={
+              target.kind === 'page'
+                ? `page-${target.id}`
+                : target.kind === 'template'
+                  ? `tpl-${target.template}`
+                  : target.field
+            }
             onChange={(e) => {
               const v = e.target.value
               if (v === 'new') open('new')
+              else if (v.startsWith('tpl-'))
+                open({ kind: 'template', template: v.slice(4) as TemplateKind, slot: 'above' })
               else if (v.startsWith('page-')) {
                 const id = Number(v.slice(5))
                 open({ kind: 'page', id, title: pages.find((p) => p.id === id)?.title ?? '' })
@@ -605,6 +695,13 @@ export function Designer({
                 </option>
               ))}
               {canEdit && <option value="new">+ New page…</option>}
+            </optgroup>
+            <optgroup label="Page templates">
+              {TEMPLATE_KINDS.map((kind) => (
+                <option key={kind} value={`tpl-${kind}`}>
+                  {TEMPLATE_NAMES[kind]}
+                </option>
+              ))}
             </optgroup>
           </select>
           {target.kind === 'page' && (
@@ -775,7 +872,9 @@ export function Designer({
           <span className="dz-sep" />
           <span className={`dz-status dz-status--${shown}`}>
             {shown === 'saved' && !hasSaved
-              ? `The classic ${target.kind === 'page' ? 'page' : TARGET_NAMES[target.field].toLowerCase()}. Nothing is saved until you change something.`
+              ? target.kind === 'template'
+                ? 'Empty: nothing shows here until you add something.'
+                : `The classic ${target.kind === 'page' ? 'page' : TARGET_NAMES[target.field].toLowerCase()}. Nothing is saved until you change something.`
               : shown === 'saved'
                 ? isPublished
                   ? 'Saved · live'
@@ -909,6 +1008,114 @@ export function Designer({
             Take over
           </button>
         </p>
+      )}
+      {target.kind === 'template' && tpl && (
+        <div className="dz-banner dz-template">
+          <span className="dz-tools">
+            {TEMPLATE_SLOTS.map((slot) => (
+              <button
+                key={slot}
+                type="button"
+                className={slot === target.slot ? 'dz-on' : ''}
+                onClick={() => open({ ...target, slot })}
+              >
+                {SLOT_NAMES[slot]}
+              </button>
+            ))}
+          </span>
+          <span className="dz-hint">
+            The content itself ({TEMPLATE_NAMES[target.template].toLowerCase()}) is laid out
+            automatically between these, so it can be any length. Every page of this kind changes.
+          </span>
+          <fieldset className="dz-tools" disabled={readOnly}>
+            <label>
+              Content width{' '}
+              <select
+                value={tpl.width}
+                onChange={(e) =>
+                  saveSettings({ ...tpl, width: e.target.value as PageTemplate['width'] })
+                }
+              >
+                <option value="narrow">Narrow</option>
+                <option value="medium">As now</option>
+                <option value="wide">Wide</option>
+              </select>
+            </label>
+            <label>
+              Position{' '}
+              <select
+                value={tpl.align}
+                onChange={(e) =>
+                  saveSettings({ ...tpl, align: e.target.value as PageTemplate['align'] })
+                }
+              >
+                <option value="center">Centred</option>
+                <option value="left">Left</option>
+              </select>
+            </label>
+            <label>
+              Sidebar on the{' '}
+              <select
+                value={tpl.sidePosition}
+                onChange={(e) =>
+                  saveSettings({
+                    ...tpl,
+                    sidePosition: e.target.value as PageTemplate['sidePosition'],
+                  })
+                }
+              >
+                <option value="right">Right</option>
+                <option value="left">Left</option>
+              </select>
+            </label>
+            {(['headFont', 'bodyFont'] as const).map((key) => (
+              <label key={key}>
+                {key === 'headFont' ? 'Headings' : 'Text'}{' '}
+                <select
+                  value={tpl[key] ?? ''}
+                  onChange={(e) => saveSettings({ ...tpl, [key]: e.target.value || null })}
+                >
+                  <option value="">As now</option>
+                  {FONTS.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </fieldset>
+          {target.template === 'article' && (
+            <fieldset className="dz-tools" disabled={readOnly}>
+              <span className="dz-tools__label">Show</span>
+              {ARTICLE_PARTS.map((part) => (
+                <label key={part}>
+                  <input
+                    type="checkbox"
+                    checked={!tpl.hide.includes(part)}
+                    onChange={(e) =>
+                      saveSettings({
+                        ...tpl,
+                        hide: e.target.checked
+                          ? tpl.hide.filter((h) => h !== part)
+                          : [...tpl.hide, part],
+                      })
+                    }
+                  />{' '}
+                  {ARTICLE_PART_NAMES[part]}
+                </label>
+              ))}
+              <label>
+                <input
+                  type="checkbox"
+                  checked={tpl.imageFirst}
+                  onChange={(e) => saveSettings({ ...tpl, imageFirst: e.target.checked })}
+                />{' '}
+                Picture above the headline
+              </label>
+            </fieldset>
+          )}
+        </div>
       )}
       {message && <p className="dz-banner dz-banner--error">{message}</p>}
       {deploymentId && (
