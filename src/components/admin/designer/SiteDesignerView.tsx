@@ -3,14 +3,22 @@ import type { AdminViewServerProps } from 'payload'
 import React from 'react'
 
 import { canPublishIssues, hasPermission, RANK, rankOf } from '@/access'
-import { classicDesign } from '@/design/defaults'
+import { classicDesign, classicFooter, classicHeader, pageStarter } from '@/design/defaults'
 import { cleanDesign } from '@/design/sanitize'
+import type { Design } from '@/design/types'
 
-import { Designer } from './Designer'
+import { Designer, type Target } from './Designer'
+
+const designed = (value: unknown): Design | null => {
+  if (!value) return null
+  const design = cleanDesign(value)
+  return design.desktop.elements.length > 0 ? design : null
+}
 
 /**
- * /admin/site-designer — the front page on a free canvas. Opens the latest
- * draft; with nothing saved yet, starts from the classic front page.
+ * /admin/site-designer — the site on a free canvas. ?part=header or footer
+ * opens those, ?page=<id> a custom page, and otherwise the front page. Opens
+ * the latest draft; with nothing saved yet, starts from the classic look.
  */
 export async function SiteDesignerView({
   initPageResult,
@@ -23,46 +31,86 @@ export async function SiteDesignerView({
     <p style={{ marginTop: 40 }}>Only newsroom staff can open the designer.</p>
   )
   if (allowed) {
+    const part = String(searchParams?.part ?? '')
+    const pageId = Number(searchParams?.page)
     const global = await req.payload.findGlobal({
       slug: 'site-design',
       draft: true,
       depth: 0,
       overrideAccess: true,
     })
-    let design = global.design ? cleanDesign(global.design) : null
-    if (!design || design.desktop.elements.length === 0) {
-      const sections = await req.payload.find({
-        collection: 'sections',
-        where: { _status: { equals: 'published' } },
-        sort: 'order',
-        limit: 4,
-        depth: 0,
-        overrideAccess: true,
-      })
-      design = classicDesign(sections.docs.map(({ id, name }) => ({ id, name })))
+    const header = designed(global.header)
+    const footer = designed(global.footer)
+    let target: Target
+    let design: Design | null
+    let published = global._status === 'published'
+    // The other half of the header and footer, for the rules about what they must keep.
+    let other: Design | null = null
+    if (pageId) {
+      const page = await req.payload
+        .findByID({ collection: 'pages', id: pageId, draft: true, depth: 0, overrideAccess: true })
+        .catch(() => null)
+      if (!page) {
+        body = <p style={{ marginTop: 40 }}>That page doesn’t exist any more.</p>
+        return wrap(body)
+      }
+      target = { kind: 'page', id: page.id, title: page.title }
+      design = designed(page.design)
+      published = page._status === 'published'
+    } else if (part === 'header' || part === 'footer') {
+      target = { kind: 'global', field: part }
+      design = part === 'header' ? header : footer
+      other = part === 'header' ? footer : header
+    } else {
+      target = { kind: 'global', field: 'design' }
+      design = designed(global.design)
+    }
+    const saved = Boolean(design)
+    if (!design) {
+      if (target.kind === 'global' && target.field === 'header') design = classicHeader()
+      else if (target.kind === 'global' && target.field === 'footer') design = classicFooter()
+      else if (target.kind === 'page') design = pageStarter(target.title)
+      else {
+        const sections = await req.payload.find({
+          collection: 'sections',
+          where: { _status: { equals: 'published' } },
+          sort: 'order',
+          limit: 4,
+          depth: 0,
+          overrideAccess: true,
+        })
+        design = classicDesign(sections.docs.map(({ id, name }) => ({ id, name })))
+      }
     }
     body = (
       <Designer
+        key={target.kind === 'page' ? `page-${target.id}` : target.field}
+        target={target}
+        other={other}
         initial={design}
-        published={global._status === 'published'}
-        saved={Boolean(global.design)}
+        published={published}
+        saved={saved}
         canEdit={hasPermission(req.user, 'design')}
         canPublishNow={canPublishIssues(req.user)}
       />
     )
   }
-  return (
-    <DefaultTemplate
-      i18n={req.i18n}
-      locale={locale}
-      params={params}
-      payload={req.payload}
-      permissions={permissions}
-      searchParams={searchParams}
-      user={req.user ?? undefined}
-      visibleEntities={visibleEntities}
-    >
-      {body}
-    </DefaultTemplate>
-  )
+  return wrap(body)
+
+  function wrap(content: React.ReactNode) {
+    return (
+      <DefaultTemplate
+        i18n={req.i18n}
+        locale={locale}
+        params={params}
+        payload={req.payload}
+        permissions={permissions}
+        searchParams={searchParams}
+        user={req.user ?? undefined}
+        visibleEntities={visibleEntities}
+      >
+        {content}
+      </DefaultTemplate>
+    )
+  }
 }

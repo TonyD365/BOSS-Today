@@ -3,6 +3,7 @@ import {
   imageDefaults,
   listDefaults,
   shapeDefaults,
+  siteDefaults,
   storyDefaults,
   textDefaults,
   widgetDefaults,
@@ -19,6 +20,7 @@ import {
   type Geometry,
   PHONE_WIDTH,
   SHAPES,
+  SITE_PARTS,
 } from './types'
 
 export const MAX_ELEMENTS = 300
@@ -153,6 +155,20 @@ const cleanProps = (type: DesignElement['type'], raw: Record<string, unknown>) =
         color: color(raw.color, d.color),
       }
     }
+    case 'site': {
+      const kind = pick(raw.kind, SITE_PARTS, 'nav')
+      const d = siteDefaults({ kind })
+      return {
+        kind,
+        font: isFont(raw.font) ? raw.font : d.font,
+        size: num(raw.size, 6, 200, d.size),
+        color: color(raw.color, d.color),
+        weight: raw.weight === 700 ? 700 : 400,
+        align: pick(raw.align, ['left', 'center', 'right'] as const, d.align),
+        uppercase: bool(raw.uppercase),
+        gap: num(raw.gap, 0, 120, d.gap),
+      }
+    }
     case 'widget': {
       const d = widgetDefaults()
       return {
@@ -169,7 +185,7 @@ const cleanElement = (value: unknown): DesignElement | null => {
   const raw = (value ?? {}) as Record<string, unknown>
   const type = pick(
     raw.type,
-    ['text', 'shape', 'image', 'story', 'list', 'widget'] as const,
+    ['text', 'shape', 'image', 'story', 'list', 'widget', 'site'] as const,
     'text',
   )
   const elementId = id(raw.id)
@@ -314,7 +330,12 @@ export const contrastProblems = (design: Design): ContrastProblem[] => {
           }
         }
         if (el.props.outline || el.props.shadow) return // Effects make contrast a judgement call.
-      } else if (el.type === 'story' || el.type === 'list' || el.type === 'widget') {
+      } else if (
+        el.type === 'story' ||
+        el.type === 'list' ||
+        el.type === 'widget' ||
+        el.type === 'site'
+      ) {
         background = backgroundAt(elements, index, geometry, page)
         checks.push({ color: el.props.color, size: 15, bold: false })
       } else return
@@ -338,6 +359,42 @@ export const contrastProblems = (design: Design): ContrastProblem[] => {
         }
       }
     })
+  }
+  return problems
+}
+
+const hasPart = (design: Design | null, kinds: string[]) =>
+  Boolean(
+    design?.desktop.elements.some(
+      (el) =>
+        el.type === 'site' &&
+        kinds.includes(el.props.kind) &&
+        !el.hidden &&
+        !design.phone.overrides[el.id]?.hidden,
+    ),
+  )
+
+/**
+ * Readers must always be able to find their way around and staff to sign in:
+ * the header keeps its navigation, and the header or footer keeps the staff
+ * sign-in link (on its own, or in the footer's links). Null means the classic
+ * header or footer, which has both.
+ */
+export const chromeProblems = (header: Design | null, footer: Design | null): string[] => {
+  const problems: string[] = []
+  if (header && !hasPart(header, ['nav'])) {
+    problems.push(
+      'The header needs its navigation bar. You can restyle and move it, but not remove it or hide it (on desktop or phones).',
+    )
+  }
+  if (
+    footer &&
+    !hasPart(header, ['staff', 'links']) &&
+    !hasPart(footer, ['staff', 'links'])
+  ) {
+    problems.push(
+      'Keep the Staff sign-in link in the header or footer (on its own, or in the footer links).',
+    )
   }
   return problems
 }

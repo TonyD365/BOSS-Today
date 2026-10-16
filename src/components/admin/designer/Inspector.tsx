@@ -7,6 +7,7 @@ import type { DArticle, DImage } from '@/design/render'
 import { SHAPES, type Design, type DesignElement, type Geometry } from '@/design/types'
 
 import { ColorField, FillField } from './ColorField'
+import { SITE_PART_NAMES } from './names'
 import type { View } from './operations'
 
 export type InspectorContext = {
@@ -897,6 +898,81 @@ export function Inspector({
             <p className="dz-hint">
               Only appears on the website while something is being covered live.
             </p>
+          )}
+        </div>
+      )}
+      {same && first.type === 'site' && (
+        <div className="dz-group">
+          <h4>{SITE_PART_NAMES[first.props.kind]}</h4>
+          <p className="dz-hint">
+            {
+              {
+                nav: 'The sections, Issues, and pages chosen for the navigation. A menu button on phones. It can be restyled and moved, but the header must keep it.',
+                search: 'Searches every story.',
+                date: 'Today’s date, filled in when a reader opens the page.',
+                theme: 'Lets readers switch between light and dark.',
+                sitename: 'The paper’s name (from Site settings), linking home.',
+                staff: 'Where staff sign in. The header or footer must keep it.',
+                links:
+                  'About, pages chosen for the footer, Topics, Scores, Calendar, Our Staff, Contact, RSS, social links, and Staff sign-in.',
+                tagline: 'The tagline and footer note from Site settings.',
+              }[first.props.kind]
+            }
+          </p>
+          <Choice
+            label="Font"
+            value={p.font as string}
+            options={fontOptions}
+            onChange={(font) => set({ font })}
+          />
+          <Num
+            label="Size"
+            value={p.size as number}
+            min={8}
+            max={200}
+            onChange={(size) => set({ size })}
+          />
+          {first.props.kind !== 'search' && (
+            <>
+              <Choice
+                label="Weight"
+                value={p.weight as number}
+                options={[
+                  { value: 400, label: 'Regular' },
+                  { value: 700, label: 'Bold' },
+                ]}
+                onChange={(weight) => set({ weight })}
+              />
+              <Choice
+                label="Align"
+                value={p.align as string}
+                options={[
+                  { value: 'left', label: 'Left' },
+                  { value: 'center', label: 'Centre' },
+                  { value: 'right', label: 'Right' },
+                ]}
+                onChange={(align) => set({ align })}
+              />
+              <Toggle
+                label="Capitals"
+                value={p.uppercase as boolean}
+                onChange={(uppercase) => set({ uppercase })}
+              />
+              <ColorField
+                label="Colour"
+                value={p.color as string}
+                onChange={(color) => set({ color })}
+              />
+            </>
+          )}
+          {(first.props.kind === 'nav' || first.props.kind === 'links') && (
+            <Num
+              label="Space between"
+              value={p.gap as number}
+              min={0}
+              max={120}
+              onChange={(gap) => set({ gap })}
+            />
           )}
         </div>
       )}

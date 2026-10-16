@@ -32,6 +32,17 @@ export type DArticle = {
   image: DImage | null
 }
 
+export type SiteInfo = {
+  name: string
+  tagline: string
+  footerNote: string
+  /** Main navigation: sections, then Issues and pages chosen for the navigation. */
+  nav: { label: string; href: string }[]
+  /** Footer links, besides Staff sign-in which is always last. */
+  links: { label: string; href: string }[]
+  staffUrl: string
+}
+
 export type DesignData = {
   /** Published stories, newest first. */
   articles: DArticle[]
@@ -39,6 +50,8 @@ export type DesignData = {
   byId: Record<number, DArticle>
   media: Record<number, DImage>
   issue: { title: string; label: string; href: string } | null
+  /** The site's own name, links and so on, for header and footer parts. */
+  site?: SiteInfo
   /** Designer only: live data to show in place of what the site fills in later. */
   preview?: {
     mostRead: { title: string; url: string; section: string | null }[]
@@ -489,6 +502,107 @@ function WidgetElement({
   )
 }
 
+const today = () =>
+  new Intl.DateTimeFormat('en-CA', { dateStyle: 'full', timeZone: 'America/Toronto' }).format(
+    new Date(),
+  )
+
+function SiteElement({
+  el,
+  data,
+  designer,
+}: {
+  el: Extract<DesignElement, { type: 'site' }>
+  data: DesignData
+  designer: boolean
+}) {
+  const p = el.props
+  const site = data.site
+  const style: React.CSSProperties = {
+    fontFamily: fontFamily(p.font),
+    fontSize: `calc(${p.size} * var(--fs, 1) * var(--u))`,
+    color: p.color,
+    fontWeight: p.weight,
+    textAlign: p.align,
+    textTransform: p.uppercase ? 'uppercase' : undefined,
+    ['--gap' as string]: `calc(${p.gap} * var(--u))`,
+    ['--justify' as string]:
+      p.align === 'center' ? 'center' : p.align === 'right' ? 'flex-end' : 'flex-start',
+  }
+  const linkList = (items: { label: string; href: string }[], className: string) => (
+    <ul className={className}>
+      {items.map((item) => (
+        <li key={`${item.href}-${item.label}`}>
+          <a href={item.href}>{item.label}</a>
+        </li>
+      ))}
+    </ul>
+  )
+  switch (p.kind) {
+    case 'nav':
+      return (
+        <nav className="dc-site dc-nav" style={style} aria-label="Sections">
+          <button type="button" className="dc-nav__toggle" data-nav-toggle="" aria-expanded="false">
+            ☰ Menu
+          </button>
+          {linkList(site?.nav ?? [], 'dc-nav__list')}
+        </nav>
+      )
+    case 'search':
+      return (
+        <form className="dc-site dc-search" style={style} action="/search/" role="search">
+          <input type="search" name="q" placeholder="Search" aria-label="Search stories" />
+        </form>
+      )
+    case 'date':
+      return (
+        <div className="dc-site" style={style}>
+          <time data-today="">{designer ? today() : ''}</time>
+        </div>
+      )
+    case 'theme':
+      return (
+        <div className="dc-site" style={style}>
+          <button type="button" className="dc-theme" data-theme-toggle="">
+            Theme: auto
+          </button>
+        </div>
+      )
+    case 'sitename':
+      return (
+        <a
+          className="dc-site dc-sitename"
+          style={style}
+          href="/"
+          aria-label={`${site?.name ?? 'BOSS Today'} — home`}
+        >
+          {site?.name ?? 'BOSS Today'}
+        </a>
+      )
+    case 'staff':
+      return (
+        <div className="dc-site" style={style}>
+          <a href={site?.staffUrl ?? '/admin'}>Staff sign-in</a>
+        </div>
+      )
+    case 'links':
+      return (
+        <nav className="dc-site dc-links" style={style} aria-label="More">
+          {linkList(
+            [...(site?.links ?? []), { label: 'Staff sign-in', href: site?.staffUrl ?? '/admin' }],
+            'dc-links__list',
+          )}
+        </nav>
+      )
+    case 'tagline':
+      return (
+        <p className="dc-site dc-tagline" style={style}>
+          {[site?.tagline, site?.footerNote].filter(Boolean).join(' ')}
+        </p>
+      )
+  }
+}
+
 export function ElementContent({
   el,
   g,
@@ -513,6 +627,8 @@ export function ElementContent({
       return <ListElement el={el} data={data} designer={!publicOnly} />
     case 'widget':
       return <WidgetElement el={el} data={data} designer={!publicOnly} />
+    case 'site':
+      return <SiteElement el={el} data={data} designer={!publicOnly} />
   }
 }
 
@@ -555,6 +671,7 @@ export function DesignCanvas({
   data,
   unit,
   publicOnly = true,
+  chrome = false,
   renderElement,
 }: {
   design: Design
@@ -562,6 +679,8 @@ export function DesignCanvas({
   data: DesignData
   unit?: number
   publicOnly?: boolean
+  /** A header or footer: menus may open beyond its edges. */
+  chrome?: boolean
   /** The designer wraps each element to make it selectable. */
   renderElement?: (
     el: DesignElement,
@@ -574,7 +693,7 @@ export function DesignCanvas({
   const size = canvasSize(design, view, geometry)
   return (
     <div
-      className={`dc dc--${view}`}
+      className={`dc dc--${view}${chrome ? ' dc--chrome' : ''}`}
       style={{
         ['--u' as string]: unit ? `${unit}px` : `calc(100cqw / ${size.width})`,
         aspectRatio: `${size.width} / ${size.height}`,
@@ -598,24 +717,40 @@ export function DesignCanvas({
   )
 }
 
-/** The public front page: desktop canvas, and the phone canvas on small screens. */
-export function DesignedHome({ design, data }: { design: Design; data: DesignData }) {
+/**
+ * A designed page, header or footer on the public site: the desktop canvas, and
+ * the phone canvas on small screens.
+ */
+export function Designed({
+  design,
+  data,
+  chrome = false,
+}: {
+  design: Design
+  data: DesignData
+  chrome?: boolean
+}) {
   return (
-    <div className="dc-home">
+    <div className={`dc-home${chrome ? ' dc-home--chrome' : ''}`}>
       <div className="dc-wrap dc-wrap--desktop">
-        <DesignCanvas design={design} view="desktop" data={data} />
+        <DesignCanvas design={design} view="desktop" data={data} chrome={chrome} />
       </div>
       <div className="dc-wrap dc-wrap--phone">
-        <DesignCanvas design={design} view="phone" data={data} />
+        <DesignCanvas design={design} view="phone" data={data} chrome={chrome} />
       </div>
     </div>
   )
 }
 
+/** The public front page. */
+export const DesignedHome = ({ design, data }: { design: Design; data: DesignData }) => (
+  <Designed design={design} data={data} />
+)
+
 /** Fonts a design uses, for loading them on the page. */
-export const designFonts = (design: Design) => {
+export const designFonts = (...designs: (Design | null | undefined)[]) => {
   const fonts = new Set<string>()
-  for (const el of design.desktop.elements) {
+  for (const el of designs.flatMap((design) => design?.desktop.elements ?? [])) {
     if ('font' in el.props && typeof el.props.font === 'string') fonts.add(el.props.font)
   }
   return fonts

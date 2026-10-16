@@ -51,12 +51,17 @@ export function Shell({
   site,
   publicUrl,
   links,
+  header,
+  footer,
   children,
 }: {
   meta: PageMeta
   site: ExportMeta
   publicUrl: string
   links: SiteLinks
+  /** Designed in the site designer; the classic header and footer otherwise. */
+  header?: React.ReactNode
+  footer?: React.ReactNode
   children: React.ReactNode
 }) {
   const fullTitle =
@@ -110,21 +115,23 @@ export function Shell({
         {/* Filled in by site.js from /api/banner, so the banner never needs a rebuild. */}
         <div id="site-banner" hidden />
         <div className="site">
-          <Header sections={site.sections} settings={site.settings} />
+          {header ?? <Header sections={site.sections} settings={site.settings} />}
           <main>{children}</main>
-          <Footer
-            sections={site.sections}
-            settings={{ ...site.settings, about: site.settings.about as never }}
-            staffUrl={`${site.cmsUrl}/admin`}
-            links={[
-              ...(site.tags.length > 0 ? [{ label: 'Topics', href: '/tags/' }] : []),
-              { label: 'Scores', href: '/scores/' },
-              { label: 'Calendar', href: '/calendar/' },
-              ...(links.staff ? [{ label: 'Our Staff', href: '/staff/' }] : []),
-              ...(links.contact ? [{ label: 'Contact us', href: '/contact/' }] : []),
-              { label: 'RSS', href: '/feed.xml' },
-            ]}
-          />
+          {footer ?? (
+            <Footer
+              sections={site.sections}
+              settings={{ ...site.settings, about: site.settings.about as never }}
+              staffUrl={`${site.cmsUrl}/admin`}
+              links={[
+                ...(site.tags.length > 0 ? [{ label: 'Topics', href: '/tags/' }] : []),
+                { label: 'Scores', href: '/scores/' },
+                { label: 'Calendar', href: '/calendar/' },
+                ...(links.staff ? [{ label: 'Our Staff', href: '/staff/' }] : []),
+                ...(links.contact ? [{ label: 'Contact us', href: '/contact/' }] : []),
+                { label: 'RSS', href: '/feed.xml' },
+              ]}
+            />
+          )}
         </div>
       </body>
     </html>

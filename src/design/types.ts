@@ -110,6 +110,35 @@ export type WidgetProps = {
   color: Color
 }
 
+/**
+ * Parts of the site itself, for the header, footer and pages: the section
+ * navigation, search, today's date, the theme switch, the paper's name, the
+ * staff sign-in link, the footer's links and the tagline.
+ */
+export const SITE_PARTS = [
+  'nav',
+  'search',
+  'date',
+  'theme',
+  'sitename',
+  'staff',
+  'links',
+  'tagline',
+] as const
+export type SitePart = (typeof SITE_PARTS)[number]
+
+export type SiteProps = {
+  kind: SitePart
+  font: string
+  size: number
+  color: Color
+  weight: 400 | 700
+  align: 'left' | 'center' | 'right'
+  uppercase: boolean
+  /** Space between links, for navigation and link lists. */
+  gap: number
+}
+
 type Base = {
   id: string
   name?: string
@@ -133,6 +162,7 @@ export type DesignElement =
   | (Base & { type: 'story'; props: StoryProps })
   | (Base & { type: 'list'; props: ListProps })
   | (Base & { type: 'widget'; props: WidgetProps })
+  | (Base & { type: 'site'; props: SiteProps })
 
 export type ElementType = DesignElement['type']
 

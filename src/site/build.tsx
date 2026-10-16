@@ -15,7 +15,8 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { formatDate } from '@/lib/format'
 
 import { fontsUrl } from '@/design/fonts'
-import { designFonts, DesignedHome } from '@/design/render'
+import { Designed, designFonts, DesignedHome } from '@/design/render'
+import { siteInfo } from '@/design/siteInfo'
 
 import { rssFeed } from './feed'
 import { buildPrintEditions, printStyles } from './print'
@@ -112,10 +113,43 @@ const main = async () => {
   await fs.mkdir(OUT, { recursive: true })
 
   const links: SiteLinks = { staff: site.staff.length > 0, contact: Boolean(TURNSTILE_SITE_KEY) }
+  const { header, footer, pages: customPages } = site.design
+  const data = designData(
+    site,
+    articles,
+    (issue) => `/issues/${editionSlug(issue)}/`,
+    siteInfo({
+      name: site.settings.siteName,
+      tagline: site.settings.tagline,
+      footerNote: site.settings.footerNote,
+      sections: site.sections,
+      pages: customPages,
+      socialLinks: site.settings.socialLinks,
+      hasTags: site.tags.length > 0,
+      hasStaff: links.staff,
+      hasContact: links.contact,
+      hasAbout: Boolean(site.settings.about),
+      cmsUrl: site.cmsUrl,
+    }),
+  )
+  // A designed header and footer replace the classic ones on every page.
+  const chrome = {
+    header: header ? <Designed design={header} data={data} chrome /> : null,
+    footer: footer ? <Designed design={footer} data={data} chrome /> : null,
+    fonts: fontsUrl(designFonts(header, footer)),
+  }
   const urls: string[] = []
   const page = async (file: string, meta: PageMeta, body: React.ReactNode) => {
+    const styles = [...(chrome.fonts ? [chrome.fonts] : []), ...(meta.styles ?? [])]
     const html = renderToStaticMarkup(
-      <Shell meta={meta} site={site} publicUrl={PUBLIC_URL} links={links}>
+      <Shell
+        meta={{ ...meta, styles }}
+        site={site}
+        publicUrl={PUBLIC_URL}
+        links={links}
+        header={chrome.header}
+        footer={chrome.footer}
+      >
         {body}
       </Shell>,
     )
@@ -126,21 +160,33 @@ const main = async () => {
   const { siteName, tagline } = site.settings
 
   // The designed front page once one is published; the classic one until then.
-  if (site.design) {
+  if (site.design.design) {
     const fonts = fontsUrl(designFonts(site.design.design))
     await page(
       'index.html',
       { title: siteName, description: tagline, path: '/', styles: fonts ? [fonts] : [] },
-      <DesignedHome
-        design={site.design.design}
-        data={designData(site, articles, (issue) => `/issues/${editionSlug(issue)}/`)}
-      />,
+      <DesignedHome design={site.design.design} data={data} />,
     )
   } else {
     await page(
       'index.html',
       { title: siteName, description: tagline, path: '/' },
       <HomeView layout={frontPageLayout(site, articles)} />,
+    )
+  }
+
+  // Pages built in the site designer.
+  for (const custom of customPages) {
+    const fonts = fontsUrl(designFonts(custom.design))
+    await page(
+      `p/${custom.slug}/index.html`,
+      {
+        title: custom.title,
+        description: custom.description || tagline,
+        path: `/p/${custom.slug}/`,
+        styles: fonts ? [fonts] : [],
+      },
+      <Designed design={custom.design} data={data} />,
     )
   }
 

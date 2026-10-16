@@ -53,6 +53,21 @@ const autoGeometry = (el: DesignElement, y: number): Geometry => {
       const row = withPictures ? Math.round((CONTENT * 2) / 3) + 72 : 84
       return { ...at, h: (el.props.title ? 48 : 8) + el.props.count * row }
     }
+    case 'site': {
+      // The navigation becomes a menu button on phones (see the site part renderer).
+      const scale = Math.min(1, 40 / el.props.size)
+      const heights: Record<typeof el.props.kind, number> = {
+        nav: 40,
+        search: 40,
+        date: 20,
+        theme: 20,
+        sitename: Math.ceil(el.props.size * scale * 1.25),
+        staff: 24,
+        links: 96,
+        tagline: 48,
+      }
+      return { ...at, h: heights[el.props.kind], fontScale: scale }
+    }
     case 'widget':
       return {
         ...at,

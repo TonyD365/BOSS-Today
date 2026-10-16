@@ -28,6 +28,7 @@ type Review = {
   stories: Story[]
   sections: { id: number; name: string }[]
   tags: { id: number; name: string }[]
+  pages: { id: number; title: string }[]
   frontPage: boolean
   settings: boolean
   banner: boolean
@@ -187,6 +188,7 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
   const hasStructure =
     review.sections.length > 0 ||
     review.tags.length > 0 ||
+    review.pages.length > 0 ||
     review.frontPage ||
     review.settings ||
     review.banner ||
@@ -360,6 +362,14 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
                 Tag: <a href={`/admin/collections/tags/${tag.id}`}>{tag.name}</a>
               </li>
             ))}
+            {review.pages.map((page) => (
+              <li key={`page-${page.id}`}>
+                Page:{' '}
+                <a href={`/admin/site-designer?page=${page.id}`} target="_blank" rel="noreferrer">
+                  {page.title}
+                </a>
+              </li>
+            ))}
             {review.frontPage && (
               <li>
                 <a href="/admin/globals/front-page">Front page</a> arrangement
@@ -374,14 +384,8 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
               <li>
                 <a href="/admin/site-designer" target="_blank" rel="noreferrer">
                   Site design
-                </a>
-                {review.designPhoneUnchecked && (
-                  <span style={{ color: 'var(--theme-warning-650, var(--theme-warning-500))' }}>
-                    {' '}
-                    — the desktop layout changed since anyone checked the phone layout. Open the
-                    designer, look at the phone view, and mark it checked.
-                  </span>
-                )}
+                </a>{' '}
+                (front page, header and footer)
               </li>
             )}
             {review.banner && (
@@ -390,6 +394,12 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
               </li>
             )}
           </ul>
+          {review.designPhoneUnchecked && (
+            <p style={{ margin: 0, color: 'var(--theme-warning-650, var(--theme-warning-500))' }}>
+              A designed layout changed on desktop since anyone checked how it looks on phones. Open
+              the designer, look at the phone view, and mark it checked.
+            </p>
+          )}
           <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <input
               type="checkbox"

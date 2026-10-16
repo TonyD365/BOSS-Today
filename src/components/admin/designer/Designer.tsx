@@ -2,11 +2,11 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { makeElement, pageStarter } from '@/design/defaults'
 import { DEFAULT_SANS, FONTS, fontsUrl } from '@/design/fonts'
-import { makeElement } from '@/design/defaults'
 import { canvasSize, type DArticle, type DesignData, type DImage } from '@/design/render'
 import { plainParagraphs } from '@/design/richtext'
-import { cleanDesign, contrastProblems } from '@/design/sanitize'
+import { chromeProblems, cleanDesign, contrastProblems } from '@/design/sanitize'
 import {
   type Design,
   type DesignElement,
@@ -14,10 +14,12 @@ import {
   type Geometry,
   SHAPES,
   type ShapeKind,
+  SITE_PARTS,
 } from '@/design/types'
 
 import { DeployProgress } from '../DeployProgress'
 import { Inspector } from './Inspector'
+import { SITE_PART_NAMES } from './names'
 import {
   addElement,
   type Align,
@@ -41,7 +43,24 @@ import { format, formatColor, formatSize } from './textEditing'
 import '@/design/design.css'
 import './designer.css'
 
+/** What the designer is editing: the front page, header or footer, or a custom page. */
+export type Target =
+  | { kind: 'global'; field: 'design' | 'header' | 'footer' }
+  | { kind: 'page'; id: number; title: string }
+
+const TARGET_NAMES = { design: 'Front page', header: 'Header', footer: 'Footer' } as const
+
+const targetUrl = (t: Target) =>
+  t.kind === 'page'
+    ? `/admin/site-designer?page=${t.id}`
+    : t.field === 'design'
+      ? '/admin/site-designer'
+      : `/admin/site-designer?part=${t.field}`
+
 type Props = {
+  target: Target
+  /** Editing the header: the footer as saved (or null for the classic one), and the other way round. */
+  other: Design | null
   initial: Design
   published: boolean
   /** False when nothing has been saved yet and the canvas shows the classic page. */
@@ -54,7 +73,15 @@ const HISTORY = 100
 const empty: DesignData = { articles: [], byId: {}, media: {}, issue: null }
 
 /** The site designer: a Canva-style canvas for the front page. */
-export function Designer({ initial, published, saved, canEdit, canPublishNow }: Props) {
+export function Designer({
+  target,
+  other,
+  initial,
+  published,
+  saved,
+  canEdit,
+  canPublishNow,
+}: Props) {
   const [design, setDesign] = useState<Design>(initial)
   const [past, setPast] = useState<Design[]>([])
   const [future, setFuture] = useState<Design[]>([])
@@ -66,6 +93,7 @@ export function Designer({ initial, published, saved, canEdit, canPublishNow }: 
   const [overflow, setOverflow] = useState<Set<string>>(new Set())
   const [data, setData] = useState<DesignData>(empty)
   const [sections, setSections] = useState<{ id: number; name: string }[]>([])
+  const [pages, setPages] = useState<{ id: number; title: string }[]>([])
   const [showGrid, setShowGrid] = useState(false)
   const [menu, setMenu] = useState<{ x: number; y: number; id: string | null } | null>(null)
   const [status, setStatus] = useState<'saved' | 'unsaved' | 'saving' | 'error'>('saved')
@@ -79,6 +107,7 @@ export function Designer({ initial, published, saved, canEdit, canPublishNow }: 
   const [clipboard, setClipboard] = useState<DesignElement[]>([])
   const stageBox = useRef<HTMLDivElement>(null)
   const savedJson = useRef(JSON.stringify(initial))
+  const leaving = useRef(false)
 
   const readOnly = !canEdit || !lock.ok
   const shown = status === 'saved' && dirty ? 'unsaved' : status
@@ -94,9 +123,23 @@ export function Designer({ initial, published, saved, canEdit, canPublishNow }: 
     setDesign(next)
     setDirty(true)
   }, [])
+  const chrome = target.kind === 'global' && target.field !== 'design' ? target.field : null
+  const chromeRules = (d: Design) =>
+    chrome === 'header'
+      ? chromeProblems(d, other)
+      : chrome === 'footer'
+        ? chromeProblems(other, d)
+        : []
   const change = (fn: (d: Design) => Design) => {
     if (readOnly) return
-    commit(fn(design), design)
+    const next = fn(design)
+    // The navigation and staff sign-in can be restyled and moved, never removed.
+    const broken = chromeRules(next)
+    if (broken.length > 0 && chromeRules(design).length === 0) {
+      setMessage(broken[0])
+      return
+    }
+    commit(next, design)
   }
   const undo = () => {
     if (past.length === 0) return
@@ -117,11 +160,20 @@ export function Designer({ initial, published, saved, canEdit, canPublishNow }: 
   useEffect(() => {
     fetch('/api/globals/site-design/preview-data', { credentials: 'include' })
       .then((r) => (r.ok ? r.json() : null))
-      .then((body: { data: DesignData; sections: { id: number; name: string }[] } | null) => {
-        if (!body) return
-        setSections(body.sections)
-        setData((d) => ({ ...body.data, media: { ...body.data.media, ...d.media } }))
-      })
+      .then(
+        (
+          body: {
+            data: DesignData
+            sections: { id: number; name: string }[]
+            pages: { id: number; title: string }[]
+          } | null,
+        ) => {
+          if (!body) return
+          setSections(body.sections)
+          setPages(body.pages ?? [])
+          setData((d) => ({ ...body.data, media: { ...body.data.media, ...d.media } }))
+        },
+      )
       .catch(() => undefined)
     const ids = initial.desktop.elements.flatMap((el) =>
       el.type === 'image' && el.props.mediaId ? [el.props.mediaId] : [],
@@ -189,12 +241,21 @@ export function Designer({ initial, published, saved, canEdit, canPublishNow }: 
       return
     }
     setStatus('saving')
-    const response = await fetch('/api/globals/site-design?draft=true', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ design: cleanDesign(design), _status: 'draft' }),
-    }).catch(() => null)
+    const clean = cleanDesign(design)
+    const response = await fetch(
+      target.kind === 'page'
+        ? `/api/pages/${target.id}?draft=true`
+        : '/api/globals/site-design?draft=true',
+      {
+        method: target.kind === 'page' ? 'PATCH' : 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          [target.kind === 'page' ? 'design' : target.field]: clean,
+          _status: 'draft',
+        }),
+      },
+    ).catch(() => null)
     const body = (await response?.json().catch(() => ({}))) as {
       errors?: { message?: string }[]
       message?: string
@@ -213,7 +274,35 @@ export function Designer({ initial, published, saved, canEdit, canPublishNow }: 
     setStatus('saved')
     setMessage(null)
     setIsPublished(false)
-  }, [design, dirty, problems.length, readOnly, claimLock])
+  }, [design, dirty, problems.length, readOnly, claimLock, target])
+
+  // --- Switching to another part of the site, or making a new page
+  const open = async (next: Target | 'new') => {
+    if (dirty) await save()
+    leaving.current = true
+    if (next !== 'new') {
+      window.location.href = targetUrl(next)
+      return
+    }
+    const title = window.prompt('What is the new page called? (e.g. About us, Join us)')?.trim()
+    if (!title) return
+    const response = await fetch('/api/pages?draft=true', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, design: pageStarter(title), _status: 'draft' }),
+    }).catch(() => null)
+    const body = (await response?.json().catch(() => ({}))) as {
+      doc?: { id: number }
+      errors?: { message?: string }[]
+      message?: string
+    }
+    if (!response?.ok || !body.doc) {
+      setMessage(body?.errors?.[0]?.message ?? body?.message ?? 'Could not make the page.')
+      return
+    }
+    window.location.href = targetUrl({ kind: 'page', id: body.doc.id, title })
+  }
 
   useEffect(() => {
     if (!dirty) return
@@ -223,7 +312,7 @@ export function Designer({ initial, published, saved, canEdit, canPublishNow }: 
 
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => {
-      if (dirty) e.preventDefault()
+      if (dirty && !leaving.current) e.preventDefault()
     }
     window.addEventListener('beforeunload', warn)
     return () => window.removeEventListener('beforeunload', warn)
@@ -488,6 +577,48 @@ export function Designer({ initial, published, saved, canEdit, canPublishNow }: 
       <link rel="stylesheet" href={fontsUrl(FONTS.map((f) => f.id)) ?? ''} />
       <header className="dz-toolbar">
         <div className="dz-tools">
+          <select
+            className="dz-target"
+            aria-label="Which part of the site"
+            value={target.kind === 'page' ? `page-${target.id}` : target.field}
+            onChange={(e) => {
+              const v = e.target.value
+              if (v === 'new') open('new')
+              else if (v.startsWith('page-')) {
+                const id = Number(v.slice(5))
+                open({ kind: 'page', id, title: pages.find((p) => p.id === id)?.title ?? '' })
+              } else open({ kind: 'global', field: v as 'design' | 'header' | 'footer' })
+            }}
+          >
+            <optgroup label="Every page">
+              <option value="header">Header</option>
+              <option value="footer">Footer</option>
+            </optgroup>
+            <optgroup label="Pages">
+              <option value="design">Front page</option>
+              {target.kind === 'page' && !pages.some((p) => p.id === target.id) && (
+                <option value={`page-${target.id}`}>{target.title}</option>
+              )}
+              {pages.map((p) => (
+                <option key={p.id} value={`page-${p.id}`}>
+                  {p.title}
+                </option>
+              ))}
+              {canEdit && <option value="new">+ New page…</option>}
+            </optgroup>
+          </select>
+          {target.kind === 'page' && (
+            <a
+              className="dz-link"
+              href={`/admin/collections/pages/${target.id}`}
+              target="_blank"
+              rel="noreferrer"
+              title="Title, address, and whether it’s in the navigation or footer"
+            >
+              Page settings
+            </a>
+          )}
+          <span className="dz-sep" />
           <span className="dz-tools__label">Add</span>
           <button
             type="button"
@@ -568,6 +699,21 @@ export function Designer({ initial, published, saved, canEdit, canPublishNow }: 
             <option value="live">LIVE link</option>
             <option value="issue">Latest issue</option>
           </select>
+          <select
+            value=""
+            onChange={(e) => {
+              if (e.target.value) add('site', { kind: e.target.value })
+            }}
+            aria-label="Add a site part"
+            disabled={readOnly}
+          >
+            <option value="">Site part…</option>
+            {SITE_PARTS.map((kind) => (
+              <option key={kind} value={kind}>
+                {SITE_PART_NAMES[kind]}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="dz-tools">
           <button type="button" onClick={undo} disabled={past.length === 0} title="Undo (Ctrl+Z)">
@@ -629,7 +775,7 @@ export function Designer({ initial, published, saved, canEdit, canPublishNow }: 
           <span className="dz-sep" />
           <span className={`dz-status dz-status--${shown}`}>
             {shown === 'saved' && !hasSaved
-              ? 'The classic front page. Nothing is saved until you change something.'
+              ? `The classic ${target.kind === 'page' ? 'page' : TARGET_NAMES[target.field].toLowerCase()}. Nothing is saved until you change something.`
               : shown === 'saved'
                 ? isPublished
                   ? 'Saved · live'
@@ -1082,5 +1228,6 @@ const label = (el: DesignElement) => {
     return { scores: 'Scores', events: 'This week', live: 'LIVE link', issue: 'Latest issue' }[
       el.props.kind
     ]
+  if (el.type === 'site') return SITE_PART_NAMES[el.props.kind]
   return 'Image'
 }

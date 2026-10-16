@@ -2,6 +2,7 @@ import { APIError, type Endpoint, type Payload, type PayloadRequest } from 'payl
 
 import { canPublishIssues, hasPermission, RANK, rankOf } from '../access'
 import type { DArticle, DesignData } from '../design/render'
+import { siteInfo } from '../design/siteInfo'
 import { audit } from '../hooks/audit'
 import { buildBoard } from '../publishing/board'
 import { assertDeployBudget, triggerDeploy } from '../publishing/deploy'
@@ -120,7 +121,8 @@ export const designPreviewEndpoint: Endpoint = {
       guestByline: true,
       publishedAt: true,
     } as const
-    const [published, waiting, sections, issues, board, mostRead] = await Promise.all([
+    const [published, waiting, sections, issues, board, mostRead, settings, pages, tags, staff] =
+      await Promise.all([
       payload.find({
         collection: 'articles',
         where: { _status: { equals: 'published' } },
@@ -157,6 +159,21 @@ export const designPreviewEndpoint: Endpoint = {
       }),
       buildBoard(payload).catch(() => null),
       mostReadStories(payload).catch(() => []),
+      payload.findGlobal({ slug: 'settings', depth: 0, overrideAccess: true }),
+      payload.find({
+        collection: 'pages',
+        draft: true,
+        sort: 'title',
+        limit: 200,
+        depth: 0,
+        overrideAccess: true,
+        select: { title: true, slug: true, showInNav: true, showInFooter: true, _status: true },
+      }),
+      payload.count({ collection: 'tags', where: { _status: { equals: 'published' } } }),
+      payload.count({
+        collection: 'users',
+        where: { role: { in: ['reporter', 'editor', 'exec'] } },
+      }),
     ])
     const articles = published.docs.map((a) => toDArticle(a as Article))
     const byId: Record<number, DArticle> = {}
@@ -164,6 +181,19 @@ export const designPreviewEndpoint: Endpoint = {
       byId[a.id] = a
     const issue = issues.docs[0]
     const data: DesignData = {
+      site: siteInfo({
+        name: settings.siteName || 'BOSS Today',
+        tagline: settings.tagline || 'The student newspaper of Bur Oak Secondary School.',
+        footerNote: settings.footerNote ?? '',
+        sections: sections.docs.map(({ name, slug }) => ({ name, slug: slug ?? '' })),
+        pages: pages.docs.map((p) => ({ ...p, slug: p.slug ?? '' })),
+        socialLinks: (settings.socialLinks ?? []).map(({ label, url }) => ({ label, url })),
+        hasTags: tags.totalDocs > 0,
+        hasStaff: staff.totalDocs > 0,
+        hasContact: true,
+        hasAbout: Boolean(settings.about),
+        cmsUrl: '',
+      }),
       articles,
       byId,
       media: {},
@@ -192,11 +222,12 @@ export const designPreviewEndpoint: Endpoint = {
       data,
       sections: sections.docs.map(({ id, name }) => ({ id, name })),
       waiting: waiting.docs.map(({ id, title }) => ({ id, title })),
+      pages: pages.docs.map(({ id, title, slug }) => ({ id, title, slug })),
     })
   },
 }
 
-/** POST /api/globals/site-design/publish-now  { reason } — the saved design, on its own. */
+/** POST /api/globals/site-design/publish-now  { reason } — the saved designs and pages, on their own. */
 export const publishDesignNowEndpoint: Endpoint = {
   path: '/publish-now',
   method: 'post',
@@ -206,24 +237,49 @@ export const publishDesignNowEndpoint: Endpoint = {
     const reason = typeof body.reason === 'string' ? body.reason.trim().slice(0, 500) : ''
     if (!reason) return json({ message: 'Say why this can’t wait for the next issue.' }, 400)
     try {
-      const draft = await req.payload.findGlobal({
-        slug: 'site-design',
-        draft: true,
-        depth: 0,
-        overrideAccess: true,
-        req,
-      })
-      if (draft._status !== 'draft') {
+      const [draft, pages] = await Promise.all([
+        req.payload.findGlobal({
+          slug: 'site-design',
+          draft: true,
+          depth: 0,
+          overrideAccess: true,
+          req,
+        }),
+        req.payload.find({
+          collection: 'pages',
+          draft: true,
+          where: { _status: { equals: 'draft' } },
+          limit: 100,
+          depth: 0,
+          overrideAccess: true,
+          req,
+          select: { title: true },
+        }),
+      ])
+      if (draft._status !== 'draft' && pages.docs.length === 0) {
         return json({ message: 'The website already shows the latest saved design.' }, 409)
       }
       await assertDeployBudget(req.payload, 'issue', req)
-      await req.payload.updateGlobal({
-        slug: 'site-design',
-        data: { _status: 'published' },
-        req,
-        overrideAccess: true,
-        context: { issuePublish: true },
-      })
+      const context = { issuePublish: true }
+      if (draft._status === 'draft') {
+        await req.payload.updateGlobal({
+          slug: 'site-design',
+          data: { _status: 'published' },
+          req,
+          overrideAccess: true,
+          context,
+        })
+      }
+      for (const page of pages.docs) {
+        await req.payload.update({
+          collection: 'pages',
+          id: page.id,
+          data: { _status: 'published' },
+          req,
+          overrideAccess: true,
+          context,
+        })
+      }
       await audit(req, {
         action: 'publish',
         summary: `Published the site design straight away: ${reason}`,

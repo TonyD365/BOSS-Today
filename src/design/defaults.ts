@@ -8,6 +8,8 @@ import type {
   ListProps,
   ShapeKind,
   ShapeProps,
+  SitePart,
+  SiteProps,
   StoryProps,
   TextProps,
   WidgetProps,
@@ -90,6 +92,32 @@ export const widgetDefaults = (overrides: Partial<WidgetProps> = {}): WidgetProp
   ...overrides,
 })
 
+export const siteDefaults = (overrides: Partial<SiteProps> = {}): SiteProps => {
+  const kind: SitePart = overrides.kind ?? 'nav'
+  const looks: Record<SitePart, Partial<SiteProps>> = {
+    nav: { font: DEFAULT_SANS, size: 15, align: 'center', gap: 24 },
+    search: { font: DEFAULT_SANS, size: 15 },
+    date: { font: DEFAULT_SANS, size: 12, weight: 700 },
+    theme: { font: DEFAULT_SANS, size: 12, color: '#5a5a5a' },
+    sitename: { font: 'masthead', size: 64, align: 'center', weight: 400 },
+    staff: { font: DEFAULT_SANS, size: 14 },
+    links: { font: DEFAULT_SANS, size: 14, gap: 22 },
+    tagline: { font: DEFAULT_SANS, size: 14, color: '#5a5a5a' },
+  }
+  return {
+    kind,
+    font: DEFAULT_SANS,
+    size: 15,
+    color: '#121212',
+    weight: 400,
+    align: 'left',
+    uppercase: false,
+    gap: 20,
+    ...looks[kind],
+    ...overrides,
+  }
+}
+
 export const DEFAULT_SIZES: Record<ElementType, { w: number; h: number }> = {
   text: { w: 480, h: 60 },
   shape: { w: 240, h: 160 },
@@ -97,6 +125,7 @@ export const DEFAULT_SIZES: Record<ElementType, { w: number; h: number }> = {
   story: { w: 360, h: 380 },
   list: { w: 300, h: 360 },
   widget: { w: 300, h: 260 },
+  site: { w: 600, h: 40 },
 }
 
 const base = (type: ElementType, x: number, y: number) => ({
@@ -136,6 +165,8 @@ export const makeElement = (
       return { ...base(type, at.x, at.y), type, props: listDefaults(props) }
     case 'widget':
       return { ...base(type, at.x, at.y), type, props: widgetDefaults(props) }
+    case 'site':
+      return { ...base(type, at.x, at.y), type, props: siteDefaults(props) }
   }
 }
 
@@ -201,5 +232,120 @@ export const classicDesign = (sections: { id: number; name: string }[]): Design 
   })
   design.desktop.elements = els
   design.desktop.height = Math.max(y, 1400)
+  return design
+}
+
+/** Places an element at an exact spot and size. */
+const at = (
+  type: ElementType,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  props: Record<string, unknown>,
+) => {
+  const el = makeElement(type, { x, y }, props)
+  el.w = w
+  el.h = h
+  return el
+}
+
+/** Pins an element's place on the phone canvas. */
+const onPhone = (
+  design: Design,
+  el: DesignElement,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  hidden = false,
+) => {
+  design.phone.overrides[el.id] = { x, y, w, h, rotation: 0, hidden }
+}
+
+/** Today's header, recreated on the canvas. */
+export const classicHeader = (): Design => {
+  const design = emptyDesign()
+  const date = at('site', 0, 18, 320, 18, { kind: 'date' })
+  const school = at('text', 0, 38, 320, 18, {
+    paragraphs: plainParagraphs('Bur Oak Secondary School'),
+    font: DEFAULT_SANS,
+    size: 12,
+    weight: 400,
+    color: '#5a5a5a',
+    autoHeight: false,
+  })
+  const theme = at('site', 0, 60, 200, 18, { kind: 'theme' })
+  const name = at('site', 300, 8, 600, 84, { kind: 'sitename' })
+  const search = at('site', 960, 30, 240, 36, { kind: 'search' })
+  const rule = at('shape', 0, 102, 1200, 1, {
+    kind: 'rect',
+    fill: { type: 'solid', color: '#dfdfdf' },
+  })
+  const nav = at('site', 0, 110, 1200, 34, { kind: 'nav' })
+  const thick = at('shape', 0, 150, 1200, 2, {
+    kind: 'rect',
+    fill: { type: 'solid', color: '#121212' },
+  })
+  const thin = at('shape', 0, 154, 1200, 1, {
+    kind: 'rect',
+    fill: { type: 'solid', color: '#121212' },
+  })
+  design.desktop.elements = [date, school, theme, name, search, rule, nav, thick, thin]
+  design.desktop.height = 160
+  // On a phone: the name on top, the date and theme switch under it, then the menu.
+  onPhone(design, name, 16, 8, 358, 56)
+  onPhone(design, date, 16, 68, 200, 18)
+  onPhone(design, theme, 230, 68, 144, 18)
+  onPhone(design, school, 16, 88, 358, 18, true)
+  onPhone(design, search, 16, 92, 358, 36, true)
+  onPhone(design, rule, 0, 94, 390, 1)
+  onPhone(design, nav, 16, 100, 358, 36)
+  onPhone(design, thick, 0, 142, 390, 2)
+  onPhone(design, thin, 0, 146, 390, 1)
+  design.phoneCheckedAt = new Date().toISOString()
+  return design
+}
+
+/** Today's footer, recreated on the canvas. */
+export const classicFooter = (): Design => {
+  const design = emptyDesign()
+  const thick = at('shape', 0, 0, 1200, 2, {
+    kind: 'rect',
+    fill: { type: 'solid', color: '#121212' },
+  })
+  const thin = at('shape', 0, 4, 1200, 1, {
+    kind: 'rect',
+    fill: { type: 'solid', color: '#121212' },
+  })
+  const name = at('site', 0, 24, 300, 44, { kind: 'sitename', size: 30, align: 'left' })
+  const links = at('site', 0, 80, 1200, 30, { kind: 'links' })
+  const tagline = at('site', 0, 120, 1200, 24, { kind: 'tagline' })
+  design.desktop.elements = [thick, thin, name, links, tagline]
+  design.desktop.height = 170
+  return design
+}
+
+/** A new custom page: its title and a paragraph to replace. */
+export const pageStarter = (title: string): Design => {
+  const design = emptyDesign()
+  design.desktop.height = 900
+  design.desktop.elements = [
+    at('text', 160, 80, 880, 80, {
+      paragraphs: plainParagraphs(title),
+      size: 56,
+      align: 'center',
+    }),
+    at('text', 260, 200, 680, 120, {
+      paragraphs: plainParagraphs(
+        'Write something here, or add pictures, shapes and stories from the toolbar.',
+      ),
+      font: DEFAULT_SERIF,
+      size: 20,
+      weight: 400,
+      lineHeight: 1.5,
+      align: 'center',
+    }),
+  ]
   return design
 }

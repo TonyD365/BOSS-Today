@@ -487,28 +487,52 @@
   }
   var themeLabels = { '': 'Theme: auto', dark: 'Theme: dark', light: 'Theme: light' }
   var themeOrder = ['', 'dark', 'light']
-  var dateBox = document.querySelector('.site-header__date')
-  if (dateBox) {
-    var toggle = document.createElement('button')
-    toggle.type = 'button'
-    toggle.className = 'theme-toggle'
-    var current = function () {
-      return root.dataset.theme || ''
-    }
-    var label = function () {
-      toggle.textContent = themeLabels[current()]
-      toggle.setAttribute('aria-label', themeLabels[current()] + '. Click to change.')
-    }
-    toggle.addEventListener('click', function () {
+  var current = function () {
+    return root.dataset.theme || ''
+  }
+  var themeButtons = []
+  var label = function () {
+    themeButtons.forEach(function (button) {
+      button.textContent = themeLabels[current()]
+      button.setAttribute('aria-label', themeLabels[current()] + '. Click to change.')
+    })
+  }
+  var themeButton = function (button) {
+    button.addEventListener('click', function () {
       var next = themeOrder[(themeOrder.indexOf(current()) + 1) % themeOrder.length]
       if (next) root.dataset.theme = next
       else delete root.dataset.theme
       store(next)
       label()
     })
-    label()
+    themeButtons.push(button)
+  }
+  var dateBox = document.querySelector('.site-header__date')
+  if (dateBox) {
+    var toggle = document.createElement('button')
+    toggle.type = 'button'
+    toggle.className = 'theme-toggle'
+    themeButton(toggle)
     dateBox.appendChild(toggle)
   }
+  // A designed header or footer places its own switch.
+  document.querySelectorAll('[data-theme-toggle]').forEach(themeButton)
+  label()
+
+  // A designed navigation is a menu button on phones.
+  document.querySelectorAll('[data-nav-toggle]').forEach(function (button) {
+    var nav = button.parentElement
+    button.addEventListener('click', function () {
+      var open = nav.classList.toggle('dc-nav--open')
+      button.setAttribute('aria-expanded', open ? 'true' : 'false')
+    })
+    document.addEventListener('click', function (event) {
+      if (nav.classList.contains('dc-nav--open') && !nav.contains(event.target)) {
+        nav.classList.remove('dc-nav--open')
+        button.setAttribute('aria-expanded', 'false')
+      }
+    })
+  })
 
   // Sharing: the phone's own share sheet where there is one, and copying the link.
   var nativeShare = document.querySelector('[data-share-native]')

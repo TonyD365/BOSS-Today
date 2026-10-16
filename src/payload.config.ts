@@ -19,6 +19,7 @@ import { IssueChecks } from './collections/IssueChecks'
 import { Issues } from './collections/Issues'
 import { LiveBlogs } from './collections/LiveBlogs'
 import { Media } from './collections/Media'
+import { Pages } from './collections/Pages'
 import { PageViews } from './collections/PageViews'
 import { Sections } from './collections/Sections'
 import { Submissions } from './collections/Submissions'
@@ -101,6 +102,7 @@ export default buildConfig({
     Events,
     Issues,
     Sections,
+    Pages,
     Tags,
     Media,
     Users,

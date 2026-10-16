@@ -55,57 +55,68 @@ export const pendingChanges = async (
   issueId?: number | string,
   req?: PayloadRequest,
 ) => {
-  const [articles, sections, tags, frontPage, settings, banner, design, issue] = await Promise.all([
-    payload.find({
-      collection: 'articles',
-      draft: true,
-      where: { workflow: { equals: 'approved' } },
-      depth: 1,
-      limit: 500,
-      sort: 'updatedAt',
-      overrideAccess: true,
-      req,
-      select: {
-        title: true,
-        summary: true,
-        content: true,
-        section: true,
-        authors: true,
-        updatedAt: true,
-        _status: true,
-      },
-    }),
-    payload.find({
-      collection: 'sections',
-      draft: true,
-      where: { _status: { equals: 'draft' } },
-      limit: 100,
-      overrideAccess: true,
-      req,
-    }),
-    payload.find({
-      collection: 'tags',
-      draft: true,
-      where: { _status: { equals: 'draft' } },
-      limit: 500,
-      overrideAccess: true,
-      req,
-    }),
-    payload.findGlobal({ slug: 'front-page', draft: true, depth: 0, overrideAccess: true, req }),
-    payload.findGlobal({ slug: 'settings', draft: true, depth: 0, overrideAccess: true, req }),
-    payload.findGlobal({ slug: 'banner', draft: true, depth: 0, overrideAccess: true, req }),
-    payload.findGlobal({ slug: 'site-design', draft: true, depth: 0, overrideAccess: true, req }),
-    issueId
-      ? payload.findByID({
-          collection: 'issues',
-          id: issueId,
-          draft: true,
-          depth: 0,
-          overrideAccess: true,
-          req,
-        })
-      : Promise.resolve(undefined),
-  ])
+  const [articles, sections, tags, pages, frontPage, settings, banner, design, issue] =
+    await Promise.all([
+      payload.find({
+        collection: 'articles',
+        draft: true,
+        where: { workflow: { equals: 'approved' } },
+        depth: 1,
+        limit: 500,
+        sort: 'updatedAt',
+        overrideAccess: true,
+        req,
+        select: {
+          title: true,
+          summary: true,
+          content: true,
+          section: true,
+          authors: true,
+          updatedAt: true,
+          _status: true,
+        },
+      }),
+      payload.find({
+        collection: 'sections',
+        draft: true,
+        where: { _status: { equals: 'draft' } },
+        limit: 100,
+        overrideAccess: true,
+        req,
+      }),
+      payload.find({
+        collection: 'tags',
+        draft: true,
+        where: { _status: { equals: 'draft' } },
+        limit: 500,
+        overrideAccess: true,
+        req,
+      }),
+      payload.find({
+        collection: 'pages',
+        draft: true,
+        where: { _status: { equals: 'draft' } },
+        limit: 100,
+        depth: 0,
+        overrideAccess: true,
+        req,
+        select: { title: true, updatedAt: true, design: true },
+      }),
+      payload.findGlobal({ slug: 'front-page', draft: true, depth: 0, overrideAccess: true, req }),
+      payload.findGlobal({ slug: 'settings', draft: true, depth: 0, overrideAccess: true, req }),
+      payload.findGlobal({ slug: 'banner', draft: true, depth: 0, overrideAccess: true, req }),
+      payload.findGlobal({ slug: 'site-design', draft: true, depth: 0, overrideAccess: true, req }),
+      issueId
+        ? payload.findByID({
+            collection: 'issues',
+            id: issueId,
+            draft: true,
+            depth: 0,
+            overrideAccess: true,
+            req,
+          })
+        : Promise.resolve(undefined),
+    ])
 
   const inIssue = new Set(
     (issue?.stories ?? []).map((story) =>
@@ -151,24 +162,31 @@ export const pendingChanges = async (
     banner: banner._status === 'draft',
     design: design._status === 'draft',
     /** The desktop canvas changed after someone last looked at the phone layout. */
-    designPhoneUnchecked: (() => {
-      const d = design.design as {
-        desktopChangedAt?: string | null
-        phoneCheckedAt?: string | null
-      } | null
-      return Boolean(
-        design._status === 'draft' &&
-        d?.desktopChangedAt &&
-        (!d.phoneCheckedAt || d.phoneCheckedAt < d.desktopChangedAt),
-      )
-    })(),
+    pages: pages.docs.map((page) => ({
+      id: page.id,
+      title: page.title,
+      updatedAt: page.updatedAt,
+    })),
+    /** A canvas changed on desktop after someone last looked at its phone layout. */
+    designPhoneUnchecked:
+      (design._status === 'draft' &&
+        [design.design, design.header, design.footer].some(phoneUnchecked)) ||
+      pages.docs.some((page) => phoneUnchecked(page.design)),
   }
 }
 
-/** Sections, tags, front page, settings or banner changes waiting to go live. */
+const phoneUnchecked = (value: unknown) => {
+  const d = value as { desktopChangedAt?: string | null; phoneCheckedAt?: string | null } | null
+  return Boolean(
+    d?.desktopChangedAt && (!d.phoneCheckedAt || d.phoneCheckedAt < d.desktopChangedAt),
+  )
+}
+
+/** Sections, tags, pages, front page, settings or banner changes waiting to go live. */
 const hasStructureChanges = (pending: Awaited<ReturnType<typeof pendingChanges>>) =>
   pending.sections.length > 0 ||
   pending.tags.length > 0 ||
+  pending.pages.length > 0 ||
   pending.frontPage ||
   pending.settings ||
   pending.banner ||
@@ -197,6 +215,7 @@ export const issueReviewEndpoint: Endpoint = {
         stories: pending.stories,
         sections: pending.sections,
         tags: pending.tags,
+        pages: pending.pages,
         frontPage: pending.frontPage,
         settings: pending.settings,
         banner: pending.banner,
@@ -491,6 +510,16 @@ export const issuePublishEndpoint: Endpoint = {
           await req.payload.update({
             collection: 'tags',
             id: tag.id,
+            data: { _status: 'published' },
+            req,
+            overrideAccess: true,
+            context,
+          })
+        }
+        for (const page of pending.pages) {
+          await req.payload.update({
+            collection: 'pages',
+            id: page.id,
             data: { _status: 'published' },
             req,
             overrideAccess: true,

@@ -1,7 +1,8 @@
 import { APIError, type GlobalBeforeChangeHook, type GlobalConfig } from 'payload'
 
 import { RANK, rankOf } from '../access'
-import { cleanDesign, contrastProblems } from '../design/sanitize'
+import { chromeProblems } from '../design/sanitize'
+import { prepareDesign, storedDesign } from '../design/save'
 import {
   assertDesignLock,
   canDesign,
@@ -12,43 +13,38 @@ import {
 import { auditGlobal } from '../hooks/audit'
 import { guardGlobalPublishing } from '../hooks/publishing'
 
-/**
- * Every save is cleaned to what the renderer understands, and refused if text
- * would be hard to read. Changing the desktop canvas is noted, so the issue
- * checklist can ask whether the phone layout was looked at since.
- */
+/** The three canvases the designer keeps here. */
+const PARTS = [
+  ['design', 'Front page'],
+  ['header', 'Header'],
+  ['footer', 'Footer'],
+] as const
+
 const checkDesign: GlobalBeforeChangeHook = async ({ data, originalDoc, req, context }) => {
-  if (data.design === undefined) return data
-  if (!context.issuePublish) await assertDesignLock(req)
-  const design = cleanDesign(data.design)
-  if (!context.issuePublish) {
-    const problems = contrastProblems(design)
-    if (problems.length > 0) {
-      const first = problems[0]
-      throw new APIError(
-        `Some text is hard to read: “${first.label}” on ${first.view} has contrast ${first.ratio}:1 (needs ${first.needed}:1). Try ${first.suggestion}.`,
-        400,
-        { problems },
-        true,
-      )
-    }
+  if (PARTS.every(([field]) => data[field] === undefined)) return data
+  const check = !context.issuePublish
+  if (check) await assertDesignLock(req)
+  for (const [field, label] of PARTS) {
+    if (data[field] === undefined || data[field] === null) continue
+    data[field] = prepareDesign(data[field], originalDoc?.[field], check, label)
   }
-  const before = cleanDesign(originalDoc?.design)
-  if (JSON.stringify(before.desktop) !== JSON.stringify(design.desktop)) {
-    design.desktopChangedAt = new Date().toISOString()
+  if (check) {
+    const header = storedDesign(data.header === undefined ? originalDoc?.header : data.header)
+    const footer = storedDesign(data.footer === undefined ? originalDoc?.footer : data.footer)
+    const problems = chromeProblems(header, footer)
+    if (problems.length > 0) throw new APIError(problems.join(' '), 400, undefined, true)
   }
-  data.design = design
   return data
 }
 
-/** The front page, designed on a free canvas (see src/design). */
+/** The front page, header and footer, designed on a free canvas (see src/design). */
 export const SiteDesign: GlobalConfig = {
   slug: 'site-design',
   label: 'Site Design',
   admin: {
     group: 'Site',
     description:
-      'The designed front page. Open the designer to change it. Saved changes go live with the next issue. Until a design is published, the site uses the classic front page.',
+      'The designed front page, header and footer. Open the designer to change them. Saved changes go live with the next issue. Anything not designed yet keeps its classic look.',
     components: {
       elements: {
         PublishButton: '@/components/admin/Hidden#Hidden',
@@ -73,5 +69,7 @@ export const SiteDesign: GlobalConfig = {
       admin: { components: { Field: '@/components/admin/designer/DesignSummary#DesignSummary' } },
     },
     { name: 'design', type: 'json', admin: { hidden: true } },
+    { name: 'header', type: 'json', admin: { hidden: true } },
+    { name: 'footer', type: 'json', admin: { hidden: true } },
   ],
 }

@@ -1,7 +1,7 @@
 import type { PaperSize } from '@/components/print/PrintEdition'
 import type { Design } from '@/design/types'
 import type { Author } from '@/lib/author'
-import type { DArticle, DesignData } from '@/design/render'
+import type { DArticle, DesignData, SiteInfo } from '@/design/render'
 import type { Article, Media } from '@/payload-types'
 
 /** Shapes returned by /api/site-export (see src/endpoints/siteExport.ts). */
@@ -40,9 +40,26 @@ export type ExportIssue = {
   } | null
 }
 
+/** A page built in the site designer, at /p/<slug>/. */
+export type ExportPage = {
+  id: number
+  title: string
+  slug: string
+  description: string
+  showInNav: boolean
+  showInFooter: boolean
+  design: Design
+}
+
 export type ExportMeta = {
   generatedAt: string
-  design: { design: Design; media: Media[] } | null
+  design: {
+    design: Design | null
+    header: Design | null
+    footer: Design | null
+    pages: ExportPage[]
+    media: Media[]
+  }
   cmsUrl: string
   settings: {
     siteName: string
@@ -130,6 +147,7 @@ export const designData = (
   meta: ExportMeta,
   articles: ExportArticle[],
   issueLink: (issue: ExportIssue) => string,
+  site?: SiteInfo,
 ): DesignData => {
   const image = (media: Media | null | undefined) =>
     media?.url
@@ -151,6 +169,7 @@ export const designData = (
   }))
   const latest = meta.issues[0]
   return {
+    site,
     articles: list,
     byId: Object.fromEntries(list.map((a) => [a.id, a])),
     media: Object.fromEntries(

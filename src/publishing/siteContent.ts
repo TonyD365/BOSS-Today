@@ -1,6 +1,7 @@
 import type { Payload, PayloadRequest, Where } from 'payload'
 
 import { cleanDesign } from '../design/sanitize'
+import type { Design } from '../design/types'
 import type { Article, Media, User } from '../payload-types'
 
 /**
@@ -87,18 +88,58 @@ export const exportArticles = async (payload: Payload, page: number) => {
   return { page, totalPages: result.totalPages, docs }
 }
 
+const designed = (value: unknown): Design | null => {
+  if (!value) return null
+  const design = cleanDesign(value)
+  return design.desktop.elements.length > 0 ? design : null
+}
+
 /**
- * The published front page design, with the images it places. Null until a
- * design with something on it has been published.
+ * The published designs: front page, header, footer and custom pages, with
+ * the images they place. Anything not designed (or not yet published) is null
+ * and keeps its classic look.
  */
 export const exportDesign = async (payload: Payload) => {
-  const global = await payload.findGlobal({ slug: 'site-design', depth: 0, overrideAccess: true })
-  if (global._status !== 'published' || !global.design) return null
-  const design = cleanDesign(global.design)
-  if (design.desktop.elements.length === 0) return null
-  const mediaIds = design.desktop.elements.flatMap((el) =>
-    el.type === 'image' && el.props.mediaId ? [el.props.mediaId] : [],
-  )
+  const [global, pages] = await Promise.all([
+    payload.findGlobal({ slug: 'site-design', depth: 0, overrideAccess: true }),
+    payload.find({
+      collection: 'pages',
+      where: published,
+      sort: 'title',
+      limit: 200,
+      depth: 0,
+      overrideAccess: true,
+    }),
+  ])
+  const live = global._status === 'published'
+  const front = live ? designed(global.design) : null
+  const header = live ? designed(global.header) : null
+  const footer = live ? designed(global.footer) : null
+  const customPages = pages.docs.flatMap((page) => {
+    const design = designed(page.design)
+    return design
+      ? [
+          {
+            id: page.id,
+            title: page.title,
+            slug: page.slug,
+            description: page.description ?? '',
+            showInNav: Boolean(page.showInNav),
+            showInFooter: Boolean(page.showInFooter),
+            design,
+          },
+        ]
+      : []
+  })
+  const mediaIds = [
+    ...new Set(
+      [front, header, footer, ...customPages.map((p) => p.design)].flatMap((design) =>
+        (design?.desktop.elements ?? []).flatMap((el) =>
+          el.type === 'image' && el.props.mediaId ? [el.props.mediaId] : [],
+        ),
+      ),
+    ),
+  ]
   const media = mediaIds.length
     ? (
         await payload.find({
@@ -110,7 +151,7 @@ export const exportDesign = async (payload: Payload) => {
         })
       ).docs
     : []
-  return { design, media }
+  return { design: front, header, footer, pages: customPages, media }
 }
 
 /** Site settings, sections, tags, issues and staff. */

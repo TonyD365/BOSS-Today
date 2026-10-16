@@ -103,11 +103,13 @@ Open an issue, tick **Print edition**, pick a paper size and set each story's wi
 
 ## Site designer
 
-`/admin/site-designer` (sidebar: **Site designer**) lays out the front page on a free canvas, like Canva: drag, resize, rotate, flip, group, align and distribute, snap to guides or a grid, layers, undo/redo, copy/paste, right-click menu and Canva's shortcuts. Text is edited in place, with bold/italic/underline/colour/size on parts of it, lists, shadow, outline, background and curved text. Shapes take colours or gradients; story cards, lists, Most read, Scores, This week, LIVE and the latest issue fill themselves from the site.
+`/admin/site-designer` (sidebar: **Site designer**) lays out the front page, the site-wide header and footer, and custom pages on a free canvas, like Canva: drag, resize, rotate, flip, group, align and distribute, snap to guides or a grid, layers, undo/redo, copy/paste, right-click menu and Canva's shortcuts. Text is edited in place, with bold/italic/underline/colour/size on parts of it, lists, shadow, outline, background and curved text. Shapes take colours or gradients; story cards, lists, Most read, Scores, This week, LIVE and the latest issue fill themselves from the site.
 
 - **Phones** get their own canvas. Anything not placed by hand is stacked automatically, and a coloured band keeps whatever sits on it. The issue checklist warns when the desktop changed after the phone layout was last checked.
 - **Saving** is automatic after each change, as a draft that goes live with the next issue; someone with the Issue permission can **Publish now** (one rebuild). One person edits at a time (a lock that lapses after two minutes; others can take over). Text that's hard to read is refused, with a suggested colour. Earlier designs are under Site Design → Versions.
-- The design is data (`src/design`): the server cleans every save, and the same renderer draws the designer's canvas and the static front page. Until a design is published, the site uses the classic front page.
+- The design is data (`src/design`): the server cleans every save, and the same renderer draws the designer's canvas and the static front page. Anything not designed yet keeps its classic look.
+- **Header and footer** (the menu at the top left of the designer) appear on every page. **Site parts** (navigation, search, date, light/dark switch, site name, Staff sign-in, footer links, tagline) fill themselves from the site and can be restyled and moved. The header must keep its navigation, and the header or footer the Staff sign-in link; the designer and the server both refuse to remove or hide them. On phones the navigation becomes a menu button.
+- **Custom pages** (Site → Custom pages, or **+ New page…** in the designer) are free canvases at `/p/<slug>/`, optionally listed in the navigation or the footer links. They go live with the next issue, like everything else.
 - The **Design** permission (formerly Front Page; holders were carried over) covers the designer, sections, the classic front page and site settings, and can be given to editors.
 
 ## Scores, calendar and live coverage
