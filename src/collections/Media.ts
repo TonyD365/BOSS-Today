@@ -1,12 +1,30 @@
-import type { CollectionConfig } from 'payload'
+import { APIError, type CollectionBeforeOperationHook, type CollectionConfig } from 'payload'
 
 import { atLeast, withPermission } from '../access'
 import { auditDelete } from '../hooks/audit'
+import { githubStorageConfig } from '../storage/github'
+
+/**
+ * On Vercel the disk is read-only, so uploads need Vercel Blob or the GitHub
+ * image repository. Say so plainly instead of failing with "mkdir 'media'".
+ */
+const requireStorage: CollectionBeforeOperationHook = ({ operation, req }) => {
+  const uploading = (operation === 'create' || operation === 'update') && Boolean(req.file)
+  const configured = Boolean(githubStorageConfig() || process.env.BLOB_READ_WRITE_TOKEN?.trim())
+  if (uploading && process.env.VERCEL && !configured) {
+    throw new APIError(
+      'Image storage isn’t set up yet, so images can’t be uploaded. Ask the super admin to connect Vercel Blob (Vercel → Storage → Blob) or the GitHub image repository, then redeploy.',
+      503,
+      undefined,
+      true,
+    )
+  }
+}
 
 export const Media: CollectionConfig = {
   slug: 'media',
   admin: { useAsTitle: 'alt', group: 'Newsroom' },
-  hooks: { afterDelete: [auditDelete('image')] },
+  hooks: { beforeOperation: [requireStorage], afterDelete: [auditDelete('image')] },
   access: {
     read: () => true,
     create: atLeast('reporter'),
