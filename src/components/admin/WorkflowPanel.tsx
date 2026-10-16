@@ -72,9 +72,16 @@ export function WorkflowPanel() {
       })
       const result = (await response.json().catch(() => ({}))) as {
         message?: string
-        deploy?: { id?: number; status?: string }
+        deploy?: { id?: number; status?: string; message?: string }
       }
       if (!response.ok) throw new Error(result.message ?? 'Something went wrong.')
+      if (action === 'withdraw' && result.deploy?.message) {
+        // Withdrawn in the newsroom, but the website still shows it until a rebuild works.
+        setError(`Withdrawn, but the website was not rebuilt: ${result.deploy.message}`)
+        setMode(null)
+        setBusy(false)
+        return
+      }
       if (action === 'withdraw' && result.deploy?.id) {
         setWithdrawnDeploy(result.deploy.id)
         setMode(null)

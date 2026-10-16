@@ -2,7 +2,7 @@ import { APIError, type CollectionBeforeOperationHook, type CollectionConfig } f
 
 import { atLeast, withPermission } from '../access'
 import { auditDelete } from '../hooks/audit'
-import { githubStorageConfig } from '../storage/github'
+import { githubImagesConfig } from '../storage/github'
 
 /**
  * On Vercel the disk is read-only, so uploads need Vercel Blob or the GitHub
@@ -10,7 +10,7 @@ import { githubStorageConfig } from '../storage/github'
  */
 const requireStorage: CollectionBeforeOperationHook = ({ operation, req }) => {
   const uploading = (operation === 'create' || operation === 'update') && Boolean(req.file)
-  const configured = Boolean(githubStorageConfig() || process.env.BLOB_READ_WRITE_TOKEN?.trim())
+  const configured = Boolean(githubImagesConfig() || process.env.BLOB_READ_WRITE_TOKEN?.trim())
   if (uploading && process.env.VERCEL && !configured) {
     throw new APIError(
       'Image storage isn’t set up yet, so images can’t be uploaded. Ask the super admin to connect Vercel Blob (Vercel → Storage → Blob) or the GitHub image repository, then redeploy.',
@@ -26,7 +26,9 @@ export const Media: CollectionConfig = {
   admin: { useAsTitle: 'alt', group: 'Newsroom' },
   hooks: { beforeOperation: [requireStorage], afterDelete: [auditDelete('image')] },
   access: {
-    read: () => true,
+    // With the GitHub repositories, readers get published images from the public
+    // one and the files here include drafts, so only staff can fetch them.
+    read: (args) => (githubImagesConfig() ? atLeast('reporter')(args) : true),
     create: atLeast('reporter'),
     update: atLeast('reporter'),
     delete: withPermission('media'),

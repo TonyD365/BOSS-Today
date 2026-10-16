@@ -11,6 +11,7 @@ import * as migration_20261014_231138_batch1_tags_corrections_banner from './202
 import * as migration_20261014_233311_batch2_assignments_templates_comments from './20261014_233311_batch2_assignments_templates_comments'
 import * as migration_20261014_233400_seed_story_templates from './20261014_233400_seed_story_templates'
 import * as migration_20261015_153301_batch3_submissions_readership_staff from './20261015_153301_batch3_submissions_readership_staff'
+import * as migration_20261016_132138_github_media_prefix from './20261016_132138_github_media_prefix'
 
 export const migrations = [
   {
@@ -77,5 +78,10 @@ export const migrations = [
     up: migration_20261015_153301_batch3_submissions_readership_staff.up,
     down: migration_20261015_153301_batch3_submissions_readership_staff.down,
     name: '20261015_153301_batch3_submissions_readership_staff',
+  },
+  {
+    up: migration_20261016_132138_github_media_prefix.up,
+    down: migration_20261016_132138_github_media_prefix.down,
+    name: '20261016_132138_github_media_prefix',
   },
 ]

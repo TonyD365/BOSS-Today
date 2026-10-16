@@ -22,14 +22,14 @@ import { Submissions } from './collections/Submissions'
 import { Tags } from './collections/Tags'
 import { Templates } from './collections/Templates'
 import { Users } from './collections/Users'
-import { githubAdapter, githubStorageConfig } from './storage/github'
+import { draftsAdapter, githubImagesConfig } from './storage/github'
 import { dailyCronEndpoint } from './endpoints/readership'
 import { siteExportEndpoint } from './endpoints/siteExport'
 import { Banner } from './globals/Banner'
 import { FrontPage } from './globals/FrontPage'
 import { Settings } from './globals/Settings'
 
-const github = githubStorageConfig()
+const github = githubImagesConfig()
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -114,8 +114,9 @@ export default buildConfig({
   }),
   sharp,
   plugins: [
-    // Images go to the GitHub image repository when it is configured, otherwise
-    // to Vercel Blob, otherwise to ./media during local development. Exactly one
+    // Images go to the private GitHub drafts repository when it is configured
+    // (and published ones are copied to the public one, see storage/publicImages.ts),
+    // otherwise to Vercel Blob, otherwise to ./media during local development. Exactly one
     // storage plugin is registered, and it always adds its fields, so the database
     // schema is the same whichever storage is in use.
     github
@@ -123,9 +124,9 @@ export default buildConfig({
           alwaysInsertFields: true,
           collections: {
             media: {
-              adapter: githubAdapter(github),
+              adapter: draftsAdapter(github),
               disableLocalStorage: true,
-              disablePayloadAccessControl: true,
+              // Drafts are private: files are served through the newsroom, to staff only.
               prefix: 'media',
             },
           },

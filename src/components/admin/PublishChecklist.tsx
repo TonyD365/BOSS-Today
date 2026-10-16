@@ -153,7 +153,7 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
         declaration,
       })) as {
         published?: number
-        deploy?: { id?: number; status?: string; used?: number; limit?: number }
+        deploy?: { id?: number; status?: string; used?: number; limit?: number; message?: string }
         bannerWarning?: string
       }
       const deploy = result.deploy?.status
@@ -164,7 +164,8 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
             ? `The website is rebuilding (${result.deploy?.used}/${result.deploy?.limit} rebuilds this month).`
             : deploy === 'not-configured'
               ? 'The Cloudflare deploy hook is not set up yet, so the website was not rebuilt.'
-              : 'The rebuild request failed. Use “Rebuild site” on the dashboard to try again.') +
+              : (result.deploy?.message ??
+                'The rebuild request failed. Use “Rebuild site” on the dashboard to try again.')) +
           (result.bannerWarning ? ` ${result.bannerWarning}` : ''),
       )
     })

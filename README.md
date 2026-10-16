@@ -5,7 +5,7 @@ The student newspaper of Bur Oak Secondary School.
 - **Newsroom (admin)**: Next.js + Payload CMS on Vercel, at `/admin`
 - **Public site**: static pages on Cloudflare Pages, rebuilt when an issue is published
 - **Database**: PostgreSQL (Neon)
-- **Images**: GitHub Pages (or Vercel Blob)
+- **Images**: private GitHub repository for drafts, public one on GitHub Pages for published images (or Vercel Blob)
 
 Design plans awaiting approval are in [docs/plans](docs/plans).
 
@@ -103,14 +103,19 @@ Open an issue, tick **Print edition**, pick a paper size and set each story's wi
 
 ## Images on GitHub
 
-Uploads are converted to WebP (at most 2400px wide) and, when `GITHUB_IMAGES_REPO` and `GITHUB_IMAGES_TOKEN` are set, committed to that repository and served from GitHub Pages. Without them, Vercel Blob is used; locally, files go to `./media`.
+Uploads are converted to WebP (at most 2400px wide). With `GITHUB_DRAFTS_REPO`, `GITHUB_IMAGES_REPO` and `GITHUB_IMAGES_TOKEN` set, images live in two repositories:
 
-1. Create a **public** repository for images, e.g. `boss-today-images`, with a `.nojekyll` file at the root.
-2. Settings → Pages → Deploy from branch → `main`, folder `/ (root)`.
-3. Create a fine-grained personal access token limited to that repository with **Contents: Read and write**.
-4. Set `GITHUB_IMAGES_REPO` (`owner/repo`) and `GITHUB_IMAGES_TOKEN` on Vercel and redeploy.
+- **Drafts (private).** Every upload is committed here. Staff see these images through the newsroom (`/api/media/file/…`, signed in only); the public never can.
+- **Public (GitHub Pages).** Before each site rebuild (an issue, a withdrawal or Rebuild site) the newsroom copies in exactly the images that published content uses (`src/storage/publicImages.ts`). If something has to come out, for example a withdrawn story's photo, the repository is rewritten as one fresh commit so the image is gone from its history too. Caches and forks made before that can't be recalled, so check photos before publishing.
 
-Limits to keep in mind: new images take about a minute to appear while Pages rebuilds; GitHub recommends keeping a repository under 1 GB (roughly 4,000 photos after compression), so start a new repository each school year if needed; on Vercel a single upload must be under 4.5 MB when using GitHub storage.
+Without these settings, Vercel Blob is used; locally, files go to `./media`.
+
+1. Create a **private** repository (e.g. `BOSS-Today-media-drafts`) and a **public** one (e.g. `BOSS-Today-images`), both with a README so they have a `main` branch.
+2. In the public one, Settings → Pages → Deploy from a branch → `main`, `/ (root)`. (The newsroom adds `.nojekyll` itself.)
+3. Create a fine-grained token with **Contents: Read and write** on both repositories only.
+4. Set `GITHUB_DRAFTS_REPO`, `GITHUB_IMAGES_REPO` (both `owner/repo`) and `GITHUB_IMAGES_TOKEN` on Vercel and redeploy.
+
+If the images can't be copied, the site isn't rebuilt (so it never shows broken images) and the newsroom says so; Rebuild site tries again. GitHub recommends keeping a repository under 1 GB (about 2,000 published photos with their sizes). On Vercel a single upload must be under 4.5 MB.
 
 ## Changing the data model
 

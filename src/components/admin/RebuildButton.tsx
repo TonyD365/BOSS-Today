@@ -21,7 +21,7 @@ export function RebuildButton() {
     })
     const result = (await response.json().catch(() => ({}))) as {
       message?: string
-      deploy?: { id?: number; status?: string; used?: number; limit?: number }
+      deploy?: { id?: number; status?: string; used?: number; limit?: number; message?: string }
     }
     setBusy(false)
     if (!response.ok) setMessage(result.message ?? 'Something went wrong.')
@@ -30,7 +30,7 @@ export function RebuildButton() {
       if (result.deploy.id) setDeploymentId(result.deploy.id)
     } else if (result.deploy?.status === 'not-configured') {
       setMessage('The Cloudflare deploy hook is not set up yet.')
-    } else setMessage('The rebuild request failed.')
+    } else setMessage(result.deploy?.message ?? 'The rebuild request failed.')
   }
 
   return (

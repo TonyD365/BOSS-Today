@@ -1,5 +1,6 @@
 import { APIError, type Payload, type PayloadRequest } from 'payload'
 
+import { syncPublicImages } from '../storage/publicImages'
 import { deploymentIdFromHook } from './progress'
 
 /** Cloudflare Pages allows 500 builds a month on the free plan; we stop well short of it. */
@@ -99,11 +100,22 @@ export const triggerDeploy = async (
   const { payload } = req
   await assertDeployBudget(payload, reason, req)
 
+  // The public image repository must hold every image the rebuilt site will show.
+  let imageError: string | undefined
+  try {
+    await syncPublicImages(payload)
+  } catch (error) {
+    imageError = error instanceof Error ? error.message : String(error)
+    payload.logger.error({ err: error, msg: 'Could not update the public image repository' })
+  }
+
   const hook = process.env.CLOUDFLARE_DEPLOY_HOOK_URL?.trim()
   let status: 'triggered' | 'failed' | 'not-configured' = 'not-configured'
   let httpStatus: number | undefined
   let cloudflareId: string | undefined
-  if (hook) {
+  if (imageError) {
+    status = 'failed'
+  } else if (hook) {
     try {
       const response = await fetch(hook, { method: 'POST' })
       httpStatus = response.status
@@ -122,7 +134,9 @@ export const triggerDeploy = async (
       httpStatus,
       cloudflareId: cloudflareId ?? null,
       buildStatus: status === 'triggered' ? 'queued' : null,
-      note: note ?? null,
+      note: imageError
+        ? `Not rebuilt: images could not be published (${imageError})`
+        : (note ?? null),
       issue: issue ? Number(issue) : null,
       actor: req.user ? Number(req.user.id) : null,
     },
@@ -133,6 +147,9 @@ export const triggerDeploy = async (
   return {
     id: record.id,
     status,
+    message: imageError
+      ? 'The images for the website could not be published, so the site was not rebuilt. Try “Rebuild site” on the dashboard; if it keeps failing, check the GitHub image settings.'
+      : undefined,
     used: await deploysThisMonth(payload, req),
     limit: ISSUE_DEPLOY_LIMIT,
   }
