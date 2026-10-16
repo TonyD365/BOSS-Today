@@ -1,6 +1,7 @@
 import {
   APIError,
   type CollectionBeforeChangeHook,
+  type CollectionBeforeValidateHook,
   type CollectionConfig,
   type Where,
 } from 'payload'
@@ -73,6 +74,16 @@ type Correction = { id?: string | null; date?: string | null; text?: string | nu
  * A correction that readers have seen stays on the record: it can't be edited
  * or removed later, only followed by another correction.
  */
+/** A correction row left empty is dropped rather than blocking publication. */
+const dropEmptyCorrections: CollectionBeforeValidateHook = ({ data }) => {
+  if (!data) return data
+  const rows = data.corrections as Correction[] | null | undefined
+  if (!Array.isArray(rows)) return data
+  const kept = rows.filter((row) => (row.text ?? '').trim())
+  if (kept.length !== rows.length) data.corrections = kept
+  return data
+}
+
 const keepPublishedCorrections: CollectionBeforeChangeHook = async ({
   data,
   originalDoc,
@@ -145,7 +156,7 @@ export const Articles: CollectionConfig = {
     delete: atLeast('exec'),
   },
   hooks: {
-    beforeValidate: [storySlug],
+    beforeValidate: [storySlug, dropEmptyCorrections],
     beforeChange: [guardPublishing('A story'), syncWorkflow, keepPublishedCorrections],
     afterChange: [revalidateAfterChange, auditPublishing('story')],
     beforeDelete: [deleteStoryComments],

@@ -491,9 +491,12 @@ export const issuePublishEndpoint: Endpoint = {
 
       // All of the changes below succeed together or not at all.
       const ownsTransaction = await initTransaction(req)
+      // What was being published when something failed, so the message can say.
+      let step = ''
       try {
         const context = { issuePublish: true }
         for (const story of pending.stories) {
+          step = `the story “${story.title}”`
           await req.payload.update({
             collection: 'articles',
             id: story.id,
@@ -504,6 +507,7 @@ export const issuePublishEndpoint: Endpoint = {
           })
         }
         for (const section of pending.sections) {
+          step = `the section “${section.name}”`
           await req.payload.update({
             collection: 'sections',
             id: section.id,
@@ -514,6 +518,7 @@ export const issuePublishEndpoint: Endpoint = {
           })
         }
         for (const tag of pending.tags) {
+          step = `the tag “${tag.name}”`
           await req.payload.update({
             collection: 'tags',
             id: tag.id,
@@ -524,6 +529,7 @@ export const issuePublishEndpoint: Endpoint = {
           })
         }
         for (const page of pending.pages) {
+          step = `the page “${page.title}”`
           await req.payload.update({
             collection: 'pages',
             id: page.id,
@@ -534,6 +540,7 @@ export const issuePublishEndpoint: Endpoint = {
           })
         }
         if (pending.frontPage) {
+          step = 'the front page arrangement'
           await req.payload.updateGlobal({
             slug: 'front-page',
             data: { _status: 'published' },
@@ -543,6 +550,7 @@ export const issuePublishEndpoint: Endpoint = {
           })
         }
         if (pending.settings) {
+          step = 'site settings'
           await req.payload.updateGlobal({
             slug: 'settings',
             data: { _status: 'published' },
@@ -552,6 +560,7 @@ export const issuePublishEndpoint: Endpoint = {
           })
         }
         if (pending.design) {
+          step = 'the site design'
           await req.payload.updateGlobal({
             slug: 'site-design',
             data: { _status: 'published' },
@@ -560,6 +569,7 @@ export const issuePublishEndpoint: Endpoint = {
             context,
           })
         }
+        if (pending.banner) step = 'the banner'
         const banner = pending.banner
           ? await req.payload.updateGlobal({
               slug: 'banner',
@@ -570,6 +580,7 @@ export const issuePublishEndpoint: Endpoint = {
             })
           : null
 
+        step = ''
         // The print edition keeps only stories that are now live.
         const live = await req.payload.find({
           collection: 'articles',
@@ -628,7 +639,7 @@ export const issuePublishEndpoint: Endpoint = {
       } catch (error) {
         await killTransaction(req)
         throw new APIError(
-          `Nothing was published. ${error instanceof Error ? error.message : 'Something went wrong.'}`,
+          `Nothing was published. ${step ? `Problem with ${step}: ` : ''}${error instanceof Error ? error.message : 'Something went wrong.'}`,
           error instanceof APIError ? error.status : 400,
           undefined,
           true,
