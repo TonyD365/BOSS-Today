@@ -46,6 +46,7 @@ import {
   Shell,
   type SiteLinks,
   StaffView,
+  SubscribeView,
   TagsView,
   TagView,
 } from './views'
@@ -303,6 +304,24 @@ const main = async () => {
       inTag,
     )
   }
+  await page(
+    'subscribe/index.html',
+    {
+      title: 'Follow us',
+      description: `Get new stories from ${siteName} in a feed reader.`,
+      path: '/subscribe/',
+    },
+    <SubscribeView
+      siteUrl={SITE_URL}
+      feeds={[
+        { title: `Every story`, path: '/feed.xml' },
+        ...site.sections.map((section) => ({
+          title: section.name,
+          path: `/section/${section.slug}/feed.xml`,
+        })),
+      ]}
+    />,
+  )
 
   const authors = new Map<
     number,

@@ -128,7 +128,7 @@ export function Shell({
                 { label: 'Calendar', href: '/calendar/' },
                 ...(links.staff ? [{ label: 'Our Staff', href: '/staff/' }] : []),
                 ...(links.contact ? [{ label: 'Contact us', href: '/contact/' }] : []),
-                { label: 'RSS', href: '/feed.xml' },
+                { label: 'RSS', href: '/subscribe/' },
               ]}
             />
           )}
@@ -578,6 +578,42 @@ export function SearchView() {
       </header>
       <div id="search-results" aria-live="polite" />
     </div>
+  )
+}
+
+/** /subscribe/: what the feeds are, and their addresses. */
+export function SubscribeView({
+  siteUrl,
+  feeds,
+}: {
+  siteUrl: string
+  feeds: { title: string; path: string }[]
+}) {
+  return (
+    <article className="article">
+      <header className="article__header">
+        <h1>Follow us</h1>
+        <p className="article__summary">
+          Get every new story in a feed reader, without checking the site.
+        </p>
+      </header>
+      <div className="article__body">
+        <p>
+          Install a free feed (RSS) reader, such as Feedly or Inoreader on the web and phones, or
+          NetNewsWire on iPhone and Mac. Choose “Add feed” and paste one of the addresses below. New
+          stories then appear there on their own.
+        </p>
+        <ul>
+          {feeds.map((feed) => (
+            <li key={feed.path}>
+              <strong>{feed.title}</strong>
+              <br />
+              <a href={feed.path}>{`${siteUrl}${feed.path}`}</a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </article>
   )
 }
 
