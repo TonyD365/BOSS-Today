@@ -1,6 +1,6 @@
-import type { Payload } from 'payload'
+import type { Payload, PayloadRequest } from 'payload'
 
-import { exportAllArticles, exportMeta } from '../publishing/siteContent'
+import { exportAllArticles, exportLiveBlogs, exportMeta } from '../publishing/siteContent'
 import {
   encodePath,
   github,
@@ -112,16 +112,20 @@ export type ImageSyncResult = {
   missing: string[]
 }
 
-export const syncPublicImages = (payload: Payload): Promise<ImageSyncResult> =>
+export const syncPublicImages = (
+  payload: Payload,
+  req?: PayloadRequest,
+): Promise<ImageSyncResult> =>
   serially(async () => {
     const config = githubImagesConfig()
     if (!config) return { configured: false, added: 0, removed: 0, rewritten: false, missing: [] }
 
-    const [meta, articles] = await Promise.all([
+    const [meta, articles, live] = await Promise.all([
       exportMeta(payload, ''),
       exportAllArticles(payload),
+      exportLiveBlogs(payload, req),
     ])
-    const needed = collectImageFiles([meta, articles])
+    const needed = collectImageFiles([meta, articles, live])
 
     const repo = `/repos/${config.public}`
     const branch = encodeURIComponent(config.branch)

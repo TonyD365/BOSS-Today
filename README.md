@@ -101,6 +101,10 @@ Stories move through Draft → In review → Changes requested → Published →
 
 Open an issue, tick **Print edition**, pick a paper size and set each story's width. In the newsroom, `/issues/<vol>-<no>/print` shows the typeset pages for proofing. The PDF readers download is made when Cloudflare builds the public site (`src/site/print.tsx`, headless Chromium via `@sparticuz/chromium`; locally your installed Chrome, or set `CHROME_PATH`), so it costs the newsroom host nothing. An unchanged issue's PDF is copied from the live site instead of being made again. If Chromium can't run, the build still succeeds and the issue links to a printable page.
 
+## Scores, calendar and live coverage
+
+Under **Live** in the newsroom: **Scores & schedule** (reporters and up), **Calendar** (editors and up) and **Live coverage** (Issue permission only, since it skips the issue sign-off). Every save rewrites the `board` key in Workers KV, and live coverage its own `live:<slug>` key; `functions/api/live.js` serves them and the browser draws the front page boxes and `/scores/`, `/calendar/` and `/live/?s=<slug>`. Nothing is rebuilt. If KV can't be reached, the save is refused with the reason, so the website never quietly falls behind. Each change is in the audit log.
+
 ## Images on GitHub
 
 Uploads are converted to WebP (at most 2400px wide). With `GITHUB_DRAFTS_REPO`, `GITHUB_IMAGES_REPO` and `GITHUB_IMAGES_TOKEN` set, images live in two repositories:

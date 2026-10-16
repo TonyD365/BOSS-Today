@@ -72,6 +72,9 @@ export interface Config {
     comments: Comment;
     templates: Template;
     submissions: Submission;
+    'live-blogs': LiveBlog;
+    games: Game;
+    events: Event;
     issues: Issue;
     sections: Section;
     tags: Tag;
@@ -93,6 +96,9 @@ export interface Config {
     comments: CommentsSelect<false> | CommentsSelect<true>;
     templates: TemplatesSelect<false> | TemplatesSelect<true>;
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
+    'live-blogs': LiveBlogsSelect<false> | LiveBlogsSelect<true>;
+    games: GamesSelect<false> | GamesSelect<true>;
+    events: EventsSelect<false> | EventsSelect<true>;
     issues: IssuesSelect<false> | IssuesSelect<true>;
     sections: SectionsSelect<false> | SectionsSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
@@ -550,6 +556,94 @@ export interface Submission {
   createdAt: string;
 }
 /**
+ * Updates go straight to the website within a minute, without the issue sign-off. Only people with the Issue permission can post. Every update records who posted it.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "live-blogs".
+ */
+export interface LiveBlog {
+  id: number;
+  title: string;
+  /**
+   * One or two sentences at the top of the page.
+   */
+  summary?: string | null;
+  /**
+   * While live, the front page shows a LIVE link to it.
+   */
+  status: 'live' | 'ended';
+  /**
+   * Its address: /live/?s=this
+   */
+  slug: string;
+  /**
+   * Add a row for each update. The newest appears at the top of the page.
+   */
+  updates?:
+    | {
+        /**
+         * Filled in automatically.
+         */
+        at?: string | null;
+        text: string;
+        /**
+         * Optional. Appears on the website within a few minutes.
+         */
+        image?: (number | null) | Media;
+        by?: (number | null) | User;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Saved changes reach the website within a minute, without a rebuild. Mark a game Live while it is on and Final when it ends.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "games".
+ */
+export interface Game {
+  id: number;
+  title?: string | null;
+  team: string;
+  opponent: string;
+  startsAt: string;
+  location?: string | null;
+  home?: ('home' | 'away') | null;
+  status: 'scheduled' | 'live' | 'final' | 'cancelled';
+  ourScore?: number | null;
+  theirScore?: number | null;
+  note?: string | null;
+  /**
+   * Linked from the score once the story is published.
+   */
+  recap?: (number | null) | Article;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Shown on the front page in the week before, and on the Calendar page. Saved changes reach the website within a minute.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events".
+ */
+export interface Event {
+  id: number;
+  title: string;
+  startsAt: string;
+  endsAt?: string | null;
+  allDay?: boolean | null;
+  location?: string | null;
+  description?: string | null;
+  /**
+   * Optional: sign-up form or story.
+   */
+  link?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Every publish, withdrawal, deletion and staff change. Visible to the super admin only.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -558,7 +652,7 @@ export interface Submission {
 export interface AuditLog {
   id: number;
   summary: string;
-  action: 'publish' | 'withdraw' | 'delete' | 'invite' | 'role' | 'deactivate' | 'reactivate' | 'settings';
+  action: 'publish' | 'withdraw' | 'delete' | 'invite' | 'role' | 'deactivate' | 'reactivate' | 'settings' | 'live';
   actor?: (number | null) | User;
   target?: string | null;
   updatedAt: string;
@@ -663,6 +757,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'submissions';
         value: number | Submission;
+      } | null)
+    | ({
+        relationTo: 'live-blogs';
+        value: number | LiveBlog;
+      } | null)
+    | ({
+        relationTo: 'games';
+        value: number | Game;
+      } | null)
+    | ({
+        relationTo: 'events';
+        value: number | Event;
       } | null)
     | ({
         relationTo: 'issues';
@@ -844,6 +950,61 @@ export interface SubmissionsSelect<T extends boolean = true> {
   assignment?: T;
   ipHash?: T;
   contactRemovedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "live-blogs_select".
+ */
+export interface LiveBlogsSelect<T extends boolean = true> {
+  title?: T;
+  summary?: T;
+  status?: T;
+  slug?: T;
+  updates?:
+    | T
+    | {
+        at?: T;
+        text?: T;
+        image?: T;
+        by?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "games_select".
+ */
+export interface GamesSelect<T extends boolean = true> {
+  title?: T;
+  team?: T;
+  opponent?: T;
+  startsAt?: T;
+  location?: T;
+  home?: T;
+  status?: T;
+  ourScore?: T;
+  theirScore?: T;
+  note?: T;
+  recap?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events_select".
+ */
+export interface EventsSelect<T extends boolean = true> {
+  title?: T;
+  startsAt?: T;
+  endsAt?: T;
+  allDay?: T;
+  location?: T;
+  description?: T;
+  link?: T;
   updatedAt?: T;
   createdAt?: T;
 }

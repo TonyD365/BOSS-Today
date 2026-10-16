@@ -113,6 +113,8 @@ export function Shell({
             staffUrl={`${site.cmsUrl}/admin`}
             links={[
               ...(site.tags.length > 0 ? [{ label: 'Topics', href: '/tags/' }] : []),
+              { label: 'Scores', href: '/scores/' },
+              { label: 'Calendar', href: '/calendar/' },
               ...(links.staff ? [{ label: 'Our Staff', href: '/staff/' }] : []),
               ...(links.contact ? [{ label: 'Contact us', href: '/contact/' }] : []),
               { label: 'RSS', href: '/feed.xml' },
@@ -136,6 +138,8 @@ export function HomeView({ layout }: { layout: ReturnType<typeof frontPageLayout
   }
   return (
     <>
+      {/* Filled in by site.js from /api/live when something is being covered live. */}
+      <div id="live-strip" className="live-strip" hidden />
       <section className="front" aria-label="Top stories">
         <div className="front__main">
           <StoryCard article={asArticle(lead)} variant="lead" showSection />
@@ -165,6 +169,18 @@ export function HomeView({ layout }: { layout: ReturnType<typeof frontPageLayout
           <section id="most-read" className="most-read" aria-label="Most read this week" hidden>
             <h2 className="rail-title">Most read this week</h2>
             <ol />
+          </section>
+          <section id="scores-box" className="board-box" aria-label="Scores" hidden>
+            <h2 className="rail-title">
+              <a href="/scores/">Scores</a>
+            </h2>
+            <ul />
+          </section>
+          <section id="events-box" className="board-box" aria-label="This week at Bur Oak" hidden>
+            <h2 className="rail-title">
+              <a href="/calendar/">This week at Bur Oak</a>
+            </h2>
+            <ul />
           </section>
         </aside>
       </section>
@@ -559,6 +575,32 @@ export function NotFoundView() {
       <h1>Page not found</h1>
       <p>This page does not exist, or the story has been taken down.</p>
       <a href="/">Go to the front page</a>
+    </div>
+  )
+}
+
+/** A page whose content site.js fills in from /api/live, so it changes without a rebuild. */
+export function LiveShell({
+  id,
+  title,
+  intro,
+}: {
+  id: 'scores-page' | 'calendar-page' | 'live-page'
+  title: string
+  intro: string
+}) {
+  return (
+    <div className="listing">
+      <header className="listing__header">
+        <h1 data-live-title="">{title}</h1>
+        <p data-live-intro="">{intro}</p>
+      </header>
+      <div id={id} className="board-page" aria-live="polite">
+        <p className="listing__empty">Loading…</p>
+      </div>
+      <noscript>
+        <p className="listing__empty">This page needs JavaScript to show the latest updates.</p>
+      </noscript>
     </div>
   )
 }

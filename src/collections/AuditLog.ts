@@ -37,6 +37,7 @@ export const AuditLog: CollectionConfig = {
         'deactivate',
         'reactivate',
         'settings',
+        'live',
       ],
     },
     { name: 'actor', type: 'relationship', relationTo: 'users', admin: { allowCreate: false } },

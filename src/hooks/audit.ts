@@ -7,7 +7,15 @@ import type {
 
 type Entry = {
   action:
-    'publish' | 'withdraw' | 'delete' | 'invite' | 'role' | 'deactivate' | 'reactivate' | 'settings'
+    | 'publish'
+    | 'withdraw'
+    | 'delete'
+    | 'invite'
+    | 'role'
+    | 'deactivate'
+    | 'reactivate'
+    | 'settings'
+    | 'live'
   summary: string
   target?: string
 }

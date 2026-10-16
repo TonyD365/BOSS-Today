@@ -1,4 +1,4 @@
-import type { Payload, Where } from 'payload'
+import type { Payload, PayloadRequest, Where } from 'payload'
 
 import type { Article, Media, User } from '../payload-types'
 
@@ -205,3 +205,31 @@ export const exportAllArticles = async (payload: Payload) => {
   }
   return docs
 }
+
+/** Live coverage is public from the moment it is posted, including its photos. */
+export const exportLiveBlogs = async (payload: Payload, req?: PayloadRequest) =>
+  (
+    await payload.find({
+      collection: 'live-blogs',
+      sort: '-updatedAt',
+      limit: 50,
+      depth: 1,
+      overrideAccess: true,
+      // Inside a save, read through its transaction to see the change being saved.
+      req,
+    })
+  ).docs.map((blog) => ({
+    slug: blog.slug,
+    title: blog.title,
+    summary: blog.summary ?? null,
+    status: blog.status,
+    updatedAt: blog.updatedAt,
+    updates: [...(blog.updates ?? [])]
+      .sort((a, b) => new Date(b.at ?? 0).getTime() - new Date(a.at ?? 0).getTime())
+      .map((update) => ({
+        id: update.id,
+        at: update.at ?? null,
+        text: update.text,
+        image: update.image && typeof update.image === 'object' ? update.image : null,
+      })),
+  }))

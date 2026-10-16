@@ -52,17 +52,324 @@
     })
     if (list.children.length > 0) mostRead.hidden = false
   }
-  if ((bannerBox || mostRead) && window.fetch) {
-    fetch('/api/live')
+  // Scores, the calendar and live coverage (src/publishing/board.ts).
+  var zone = 'America/Toronto'
+  var fmt = function (options) {
+    return new Intl.DateTimeFormat('en-CA', Object.assign({ timeZone: zone }, options))
+  }
+  var whenShort = fmt({
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+  var dayLong = fmt({ weekday: 'long', month: 'long', day: 'numeric' })
+  var timeOnly = fmt({ hour: 'numeric', minute: '2-digit' })
+  var dayKey = fmt({ year: 'numeric', month: '2-digit', day: '2-digit' })
+  var el = function (tag, className, text) {
+    var node = document.createElement(tag)
+    if (className) node.className = className
+    if (text !== undefined && text !== null) node.textContent = text
+    return node
+  }
+  var safeLink = function (href) {
+    return typeof href === 'string' && /^(https?:\/\/|\/)/.test(href) ? href : null
+  }
+  var gameLine = function (game) {
+    var item = el('li', 'game game--' + game.status)
+    item.appendChild(el('span', 'game__team', game.team))
+    var vs = (game.home ? 'vs ' : 'at ') + game.opponent
+    var result
+    if (game.status === 'final' || game.status === 'live') {
+      var ours = game.ourScore === null ? 0 : game.ourScore
+      var theirs = game.theirScore === null ? 0 : game.theirScore
+      var outcome =
+        game.status === 'live' ? 'LIVE' : ours > theirs ? 'W' : ours < theirs ? 'L' : 'T'
+      result = outcome + ' ' + ours + '–' + theirs + ' ' + vs + (game.note ? ' · ' + game.note : '')
+    } else if (game.status === 'cancelled') {
+      result = vs + ' · postponed or cancelled'
+    } else {
+      result =
+        vs +
+        ' · ' +
+        whenShort.format(new Date(game.startsAt)) +
+        (game.location ? ' · ' + game.location : '')
+    }
+    var line = el('span', 'game__result', result)
+    var recap = safeLink(game.recap)
+    if (recap) {
+      var link = el('a', 'game__recap', 'Recap')
+      link.href = recap
+      line.appendChild(document.createTextNode(' · '))
+      line.appendChild(link)
+    }
+    item.appendChild(line)
+    return item
+  }
+  var eventLine = function (event, underDayHeading) {
+    var item = el('li', 'event')
+    var start = new Date(event.startsAt)
+    // Under a day's heading the date is already shown; all-day events need no time.
+    var when = underDayHeading
+      ? event.allDay
+        ? null
+        : timeOnly.format(start)
+      : event.allDay
+        ? dayLong.format(start)
+        : whenShort.format(start)
+    if (when) item.appendChild(el('span', 'event__when', when))
+    var href = safeLink(event.link)
+    var title = el(href ? 'a' : 'span', 'event__title', event.title)
+    if (href) title.href = href
+    item.appendChild(title)
+    if (event.location) item.appendChild(el('span', 'event__where', event.location))
+    return item
+  }
+  var byStart = function (a, b) {
+    return new Date(a.startsAt) - new Date(b.startsAt)
+  }
+  var fill = function (box, items, render) {
+    if (!box) return
+    var list = box.querySelector('ul')
+    list.textContent = ''
+    items.forEach(function (item) {
+      list.appendChild(render(item))
+    })
+    box.hidden = items.length === 0
+  }
+
+  var showBoard = function (board) {
+    if (!board) return
+    var now = Date.now()
+    var games = board.games || []
+    var events = board.events || []
+    var live = (board.live || []).filter(function (item) {
+      return item.status === 'live'
+    })
+
+    var strip = document.getElementById('live-strip')
+    if (strip) {
+      strip.textContent = ''
+      live.forEach(function (item) {
+        var link = el('a', null)
+        link.href = '/live/?s=' + encodeURIComponent(item.slug)
+        link.appendChild(el('span', 'live-badge', 'LIVE'))
+        link.appendChild(document.createTextNode(' ' + item.title))
+        strip.appendChild(link)
+      })
+      strip.hidden = live.length === 0
+    }
+
+    var playing = games.filter(function (g) {
+      return g.status === 'live'
+    })
+    var finals = games
+      .filter(function (g) {
+        return g.status === 'final'
+      })
+      .sort(byStart)
+      .reverse()
+    var upcoming = games
+      .filter(function (g) {
+        return g.status === 'scheduled' && new Date(g.startsAt) > now - 3 * 3600000
+      })
+      .sort(byStart)
+    fill(
+      document.getElementById('scores-box'),
+      playing.concat(finals.slice(0, 3), upcoming.slice(0, 3)).slice(0, 6),
+      gameLine,
+    )
+
+    var week = events
+      .filter(function (e) {
+        var start = new Date(e.startsAt).getTime()
+        var end = e.endsAt ? new Date(e.endsAt).getTime() : start + 3600000
+        return end >= now && start <= now + 7 * 86400000
+      })
+      .sort(byStart)
+    fill(document.getElementById('events-box'), week.slice(0, 5), eventLine)
+
+    var scoresPage = document.getElementById('scores-page')
+    if (scoresPage) {
+      scoresPage.textContent = ''
+      var groups = [
+        ['Live now', playing],
+        ['Upcoming', upcoming],
+        ['Results', finals],
+        [
+          'Postponed or cancelled',
+          games.filter(function (g) {
+            return g.status === 'cancelled'
+          }),
+        ],
+      ]
+      groups.forEach(function (group) {
+        if (group[1].length === 0) return
+        scoresPage.appendChild(el('h2', 'section-block__title', group[0]))
+        var list = el('ul', 'board-list')
+        group[1].forEach(function (game) {
+          list.appendChild(gameLine(game))
+        })
+        scoresPage.appendChild(list)
+      })
+      if (!scoresPage.firstChild)
+        scoresPage.appendChild(el('p', 'listing__empty', 'No games in the next few weeks.'))
+    }
+
+    var calendarPage = document.getElementById('calendar-page')
+    if (calendarPage) {
+      calendarPage.textContent = ''
+      var current = null
+      var list = null
+      events
+        .filter(function (e) {
+          return new Date(e.endsAt || e.startsAt).getTime() >= now - 3600000
+        })
+        .sort(byStart)
+        .forEach(function (event) {
+          var key = dayKey.format(new Date(event.startsAt))
+          if (key !== current) {
+            current = key
+            calendarPage.appendChild(
+              el('h2', 'section-block__title', dayLong.format(new Date(event.startsAt))),
+            )
+            list = el('ul', 'board-list')
+            calendarPage.appendChild(list)
+          }
+          var item = eventLine(event, true)
+          if (event.description) item.appendChild(el('p', 'event__about', event.description))
+          list.appendChild(item)
+        })
+      if (!calendarPage.firstChild)
+        calendarPage.appendChild(el('p', 'listing__empty', 'Nothing on the calendar yet.'))
+    }
+
+    var livePage = document.getElementById('live-page')
+    if (livePage && !new URLSearchParams(window.location.search).get('s')) {
+      livePage.textContent = ''
+      var all = board.live || []
+      if (all.length === 0)
+        livePage.appendChild(el('p', 'listing__empty', 'No live coverage right now.'))
+      var index = el('ul', 'board-list')
+      all.forEach(function (item) {
+        var row = el('li', 'event')
+        if (item.status === 'live') row.appendChild(el('span', 'live-badge', 'LIVE'))
+        var link = el('a', 'event__title', item.title)
+        link.href = '/live/?s=' + encodeURIComponent(item.slug)
+        row.appendChild(link)
+        index.appendChild(row)
+      })
+      livePage.appendChild(index)
+    }
+    return playing.length > 0
+  }
+
+  var bannerShown = false
+  var mostReadShown = false
+  var loadLive = function () {
+    return fetch('/api/live')
       .then(function (response) {
         return response.ok ? response.json() : null
       })
       .then(function (live) {
-        if (!live) return
-        showBanner(live.banner)
-        showMostRead(live.mostRead)
+        if (!live) return false
+        if (!bannerShown) {
+          bannerShown = true
+          showBanner(live.banner)
+        }
+        if (!mostReadShown) {
+          mostReadShown = true
+          showMostRead(live.mostRead)
+        }
+        return showBoard(live.board)
       })
-      .catch(function () {})
+      .catch(function () {
+        return false
+      })
+  }
+  var wantsLive =
+    bannerBox ||
+    mostRead ||
+    document.getElementById('scores-page') ||
+    document.getElementById('calendar-page') ||
+    document.getElementById('live-page')
+  if (wantsLive && window.fetch) {
+    var poll = function () {
+      loadLive().then(function (anyLive) {
+        // Keep live scores fresh while a game is on.
+        var showsScores =
+          document.getElementById('scores-box') || document.getElementById('scores-page')
+        if (anyLive && showsScores) setTimeout(poll, 60000)
+      })
+    }
+    poll()
+  }
+
+  // One live coverage page: /live/?s=slug, refreshed every 30 seconds while live.
+  var livePageBox = document.getElementById('live-page')
+  var slug = new URLSearchParams(window.location.search).get('s')
+  if (livePageBox && slug && window.fetch) {
+    var titleBox = document.querySelector('[data-live-title]')
+    var introBox = document.querySelector('[data-live-intro]')
+    var drawBlog = function (blog) {
+      if (!blog || !blog.title) {
+        livePageBox.textContent = ''
+        livePageBox.appendChild(el('p', 'listing__empty', 'This live coverage isn’t available.'))
+        return false
+      }
+      document.title = blog.title + ' — Live'
+      titleBox.textContent = blog.title
+      introBox.textContent = blog.summary || ''
+      if (blog.status === 'live')
+        introBox.insertBefore(el('span', 'live-badge', 'LIVE'), introBox.firstChild)
+      livePageBox.textContent = ''
+      var list = el('ol', 'live-updates')
+      ;(blog.updates || []).forEach(function (update) {
+        var item = el('li', 'live-update')
+        if (update.at) {
+          var time = el('time', 'live-update__time', timeOnly.format(new Date(update.at)))
+          time.setAttribute('datetime', update.at)
+          time.title = dayLong.format(new Date(update.at))
+          item.appendChild(time)
+        }
+        var body = el('div', 'live-update__body')
+        String(update.text || '')
+          .split(/\n+/)
+          .forEach(function (paragraph) {
+            if (paragraph.trim()) body.appendChild(el('p', null, paragraph))
+          })
+        if (update.image && update.image.url) {
+          var picture = el('img', 'live-update__image')
+          var size = update.image.sizes && update.image.sizes.card
+          picture.src = (size && size.url) || update.image.url
+          picture.alt = update.image.alt || ''
+          picture.loading = 'lazy'
+          body.appendChild(picture)
+        }
+        item.appendChild(body)
+        list.appendChild(item)
+      })
+      if (!list.firstChild)
+        livePageBox.appendChild(
+          el('p', 'listing__empty', 'No updates yet. This page refreshes by itself.'),
+        )
+      livePageBox.appendChild(list)
+      return blog.status === 'live'
+    }
+    var pollBlog = function () {
+      fetch('/api/live?blog=' + encodeURIComponent(slug.toLowerCase()))
+        .then(function (response) {
+          return response.ok ? response.json() : {}
+        })
+        .then(function (result) {
+          if (drawBlog(result.blog)) setTimeout(pollBlog, 30000)
+        })
+        .catch(function () {
+          setTimeout(pollBlog, 60000)
+        })
+    }
+    pollBlog()
   }
 
   // Contact form: posts to the newsroom as plain text, so no extra request is needed first.

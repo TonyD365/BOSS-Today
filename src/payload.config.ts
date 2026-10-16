@@ -12,9 +12,12 @@ import { Articles } from './collections/Articles'
 import { Assignments } from './collections/Assignments'
 import { AuditLog } from './collections/AuditLog'
 import { Comments } from './collections/Comments'
+import { Events } from './collections/Events'
+import { Games } from './collections/Games'
 import { Deployments } from './collections/Deployments'
 import { IssueChecks } from './collections/IssueChecks'
 import { Issues } from './collections/Issues'
+import { LiveBlogs } from './collections/LiveBlogs'
 import { Media } from './collections/Media'
 import { PageViews } from './collections/PageViews'
 import { Sections } from './collections/Sections'
@@ -87,6 +90,9 @@ export default buildConfig({
     Comments,
     Templates,
     Submissions,
+    LiveBlogs,
+    Games,
+    Events,
     Issues,
     Sections,
     Tags,

@@ -32,6 +32,7 @@ import {
   HomeView,
   IssuesView,
   IssueView,
+  LiveShell,
   NotFoundView,
   type PageMeta,
   SearchView,
@@ -298,6 +299,35 @@ const main = async () => {
       />,
     )
   }
+
+  // Scores, the calendar and live coverage are drawn in the browser from /api/live.
+  await page(
+    'scores/index.html',
+    {
+      title: 'Scores & Schedule',
+      description: `Bur Oak teams’ results and upcoming games.`,
+      path: '/scores/',
+    },
+    <LiveShell
+      id="scores-page"
+      title="Scores & Schedule"
+      intro="Results and upcoming games for Bur Oak teams. Live scores update by themselves."
+    />,
+  )
+  await page(
+    'calendar/index.html',
+    { title: 'Calendar', description: `What’s on at Bur Oak.`, path: '/calendar/' },
+    <LiveShell id="calendar-page" title="Calendar" intro="What’s coming up at Bur Oak." />,
+  )
+  await page(
+    'live/index.html',
+    { title: 'Live', description: `Live coverage from ${siteName}.`, path: '/live/' },
+    <LiveShell
+      id="live-page"
+      title="Live coverage"
+      intro="Updates as they happen. This page refreshes by itself."
+    />,
+  )
 
   if (site.settings.about) {
     await page(

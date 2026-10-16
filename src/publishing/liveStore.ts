@@ -6,7 +6,7 @@ import { APIError } from 'payload'
  * updating them never rebuilds the site. A Pages Function (functions/api/live.js)
  * serves them to readers' browsers.
  */
-export type LiveKey = 'banner' | 'mostread'
+export type LiveKey = 'banner' | 'mostread' | 'board' | `live:${string}`
 
 const kv = () => {
   const token = process.env.CLOUDFLARE_API_TOKEN?.trim()
@@ -18,7 +18,7 @@ const kv = () => {
   ).replace(/\/$/, '')
   return {
     url: (key: LiveKey) =>
-      `${base}/accounts/${account}/storage/kv/namespaces/${namespace}/values/${key}`,
+      `${base}/accounts/${account}/storage/kv/namespaces/${namespace}/values/${encodeURIComponent(key)}`,
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
   }
 }

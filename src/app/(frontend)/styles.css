@@ -892,6 +892,123 @@ img {
   color: var(--urgent);
 }
 
+/* Scores, calendar and live coverage */
+
+.live-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 12px 0 0;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule);
+  font:
+    600 14px/1.4 var(--font-sans),
+    sans-serif;
+}
+
+.live-strip[hidden] {
+  display: none;
+}
+
+.live-badge {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--urgent);
+  color: var(--urgent-ink);
+  font:
+    700 11px/1.5 var(--font-sans),
+    sans-serif;
+  letter-spacing: 0.04em;
+  vertical-align: 1px;
+}
+
+.board-box ul,
+.board-list {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 24px;
+  padding: 0;
+  list-style: none;
+  font:
+    14px/1.4 var(--font-sans),
+    sans-serif;
+}
+
+.game,
+.event {
+  display: grid;
+  gap: 2px;
+}
+
+.game__team,
+.event__when {
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.game--live .game__result {
+  color: var(--urgent);
+  font-weight: 700;
+}
+
+.game__recap,
+.event__title[href] {
+  text-decoration: underline;
+}
+
+.event__title {
+  font-weight: 600;
+}
+
+.event__where,
+.event__about {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+.board-page .board-list {
+  max-width: 720px;
+}
+
+.live-updates {
+  display: grid;
+  gap: 0;
+  max-width: 720px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.live-update {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.live-update__time {
+  color: var(--urgent);
+  font:
+    700 13px/1.6 var(--font-sans),
+    sans-serif;
+}
+
+.live-update__body p {
+  margin: 0 0 8px;
+}
+
+.live-update__image {
+  width: 100%;
+  margin-top: 4px;
+}
+
 /* Banner */
 
 .site-banner {
