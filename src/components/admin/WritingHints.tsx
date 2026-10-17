@@ -3,6 +3,7 @@
 import { useFormFields } from '@payloadcms/ui'
 import React, { useEffect, useMemo, useState } from 'react'
 
+import { styleNotes } from '@/lib/style'
 import { hasPlaceholders, readingMinutes, wordCount } from '@/lib/text'
 
 const HEADLINE_LIMIT = 70
@@ -52,6 +53,7 @@ export function WritingHints() {
 
   const words = useMemo(() => wordCount(content), [content])
   const minutes = useMemo(() => readingMinutes(content), [content])
+  const style = useMemo(() => styleNotes(title ?? '', content), [title, content])
   const heroId = idOf(hero)
   const imageIds = useMemo(
     () => [...new Set([...(heroId ? [heroId] : []), ...bodyImageIds(content)])],
@@ -159,6 +161,23 @@ export function WritingHints() {
         <p style={{ margin: 0, fontSize: 13, color: 'var(--theme-success-500)' }}>
           Nothing missing.
         </p>
+      )}
+      {style.length > 0 && (
+        <details open={style.length <= 3}>
+          <summary style={{ fontSize: 13, cursor: 'pointer' }}>
+            Style suggestions ({style.length})
+          </summary>
+          <ul style={{ margin: '4px 0 0', paddingLeft: 18, fontSize: 13, display: 'grid', gap: 4 }}>
+            {style.map((note) => (
+              <li key={note.text}>
+                {note.text}
+                {note.example && (
+                  <span style={{ display: 'block', opacity: 0.7 }}>“{note.example}”</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
     </div>
   )
