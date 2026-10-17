@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BOSS Today Staff Guide</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;600;700&family=Manufacturing+Consent&family=Newsreader:opsz,wght@6..72,400;6..72,700&display=swap">
+<style>
+  @page { size: Letter; margin: 18mm 18mm 20mm; }
+  :root { --ink: #121212; --muted: #555; --rule: #d9d9d9; --accent: #326891; --tint: #f4f6f8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; color: var(--ink); font: 10.5pt/1.5 'Libre Franklin', Arial, sans-serif; }
+  h1, h2, h3 { font-family: 'Newsreader', Georgia, serif; line-height: 1.15; break-after: avoid; }
+  h2 { font-size: 20pt; margin: 0 0 6pt; padding-top: 4pt; border-top: 3px double var(--ink); }
+  h3 { font-size: 13pt; margin: 14pt 0 4pt; }
+  p { margin: 0 0 7pt; }
+  ul, ol { margin: 0 0 8pt; padding-left: 16pt; }
+  li { margin-bottom: 3pt; }
+  b, strong { font-weight: 700; }
+  .ui { font-weight: 600; background: var(--tint); border: 1px solid var(--rule); border-radius: 3px; padding: 0 3pt; white-space: nowrap; }
+  .chapter { break-before: page; }
+  .lead { color: var(--muted); font-size: 11pt; margin-bottom: 10pt; }
+  .tip, .warn { border-left: 3px solid var(--accent); background: var(--tint); padding: 6pt 9pt; margin: 8pt 0; break-inside: avoid; }
+  .warn { border-color: #b3261e; background: #fbf1f0; }
+  table { width: 100%; border-collapse: collapse; margin: 6pt 0 10pt; font-size: 9.5pt; break-inside: avoid; }
+  th, td { text-align: left; vertical-align: top; padding: 4pt 6pt; border-bottom: 1px solid var(--rule); }
+  th { background: var(--ink); color: #fff; font-weight: 600; }
+  .cover { height: 230mm; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+  .masthead { font: 64pt/1 'Manufacturing Consent', serif; margin: 0; padding: 12pt 0; border-top: 3px double var(--ink); border-bottom: 3px double var(--ink); }
+  .cover h1 { font-size: 26pt; margin: 18pt 0 6pt; }
+  .cover p { color: var(--muted); }
+  .toc { columns: 2; column-gap: 24pt; padding: 0; list-style: none; }
+  .toc li { break-inside: avoid; margin-bottom: 5pt; }
+  .toc b { display: block; }
+  .steps { counter-reset: s; list-style: none; padding: 0; }
+  .steps > li { counter-increment: s; position: relative; padding-left: 22pt; margin-bottom: 5pt; }
+  .steps > li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 15pt; height: 15pt; border-radius: 50%; background: var(--ink); color: #fff; font-size: 8pt; font-weight: 700; text-align: center; line-height: 15pt; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14pt; }
+  kbd { font: 600 8.5pt ui-monospace, monospace; border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 3px; padding: 0 3pt; }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <p class="masthead">BOSS Today</p>
+  <h1>Staff Guide</h1>
+  <p>How to write, edit, publish and design the paper in the BOSS Today newsroom.</p>
+  <p style="margin-top:30pt">Updated October 2026</p>
+</section>
+
+<section class="chapter">
+  <h2>Contents</h2>
+  <ol class="toc">
+    <li><b>1. Getting started</b>Signing in, roles, permissions and positions</li>
+    <li><b>2. How a story gets published</b>The path from draft to the website</li>
+    <li><b>3. Reporters</b>Writing, pictures, galleries, video, sending for review</li>
+    <li><b>4. Editors</b>Reviewing, comments, corrections, assignments, reader mail</li>
+    <li><b>5. Publishing an issue</b>The checklist, rebuilds and emergencies</li>
+    <li><b>6. Live updates</b>Scores, calendar, live coverage and the banner</li>
+    <li><b>7. Print editions</b>Making the PDF for printing</li>
+    <li><b>8. The site designer</b>Front page, header, footer, pages and templates</li>
+    <li><b>9. Site settings</b>Look, standards, About and Join us</li>
+    <li><b>10. People</b>Accounts, positions and access</li>
+    <li><b>11. Social media</b>Instagram images and link previews</li>
+    <li><b>12. Quick reference</b>Shortcuts, limits and fixes</li>
+  </ol>
+  <div class="tip"><b>The one rule to remember.</b> Nothing reaches the website until someone with the Issue permission publishes an issue. Saving, approving and designing all prepare the next issue; they never change the live site on their own. The few exceptions (live updates, the banner, Publish now, emergency withdrawal) are marked in this guide.</div>
+</section>
+
+<section class="chapter">
+  <h2>1. Getting started</h2>
+  <p class="lead">The newsroom is where staff work. Readers never see it.</p>
+  <h3>Signing in</h3>
+  <ul>
+    <li>Go to the newsroom address your editor gave you and add <b>/admin</b>, or use <span class="ui">Staff sign-in</span> at the bottom of the website.</li>
+    <li>Sign in with Google (school account) or the email and password you were given. Change a temporary password the first time.</li>
+    <li>Forgot your password? Ask an exec with the Staff permission to reset it.</li>
+  </ul>
+  <h3>Roles</h3>
+  <table>
+    <tr><th>Role</th><th>Can do</th></tr>
+    <tr><td><b>Reporter</b></td><td>Write and edit their own stories, upload pictures, send stories for review, comment.</td></tr>
+    <tr><td><b>Editor</b></td><td>Everything a reporter can, plus edit anyone's story, approve or send back, add corrections, run the assignment board.</td></tr>
+    <tr><td><b>Exec</b></td><td>Everything an editor can, plus whichever permissions below they have been given.</td></tr>
+  </table>
+  <h3>Permissions (given by the super admin)</h3>
+  <table>
+    <tr><th>Permission</th><th>Allows</th></tr>
+    <tr><td><b>Issue</b></td><td>Publish issues, rebuild the site, post live coverage, publish design changes straight away.</td></tr>
+    <tr><td><b>Design</b></td><td>The site designer, sections, site settings and the classic front page. Editors can have it too.</td></tr>
+    <tr><td><b>Print</b></td><td>Print editions: choose stories, layout and paper size.</td></tr>
+    <tr><td><b>Staff</b></td><td>Create accounts, reset passwords, set positions, deactivate people who leave.</td></tr>
+    <tr><td><b>Media</b></td><td>Manage the picture library, including deleting pictures.</td></tr>
+  </table>
+  <h3>Your profile</h3>
+  <p>Open your name at the top right. Add a photo and a short bio: they appear on your author page and the Our Staff page. Untick <span class="ui">Show me on the Our Staff page</span> to stay off the public list.</p>
+</section>
+
+<section class="chapter">
+  <h2>2. How a story gets published</h2>
+  <ol class="steps">
+    <li><b>Draft.</b> A reporter writes and saves. Only staff can see it.</li>
+    <li><b>In review.</b> The reporter clicks <span class="ui">Submit for review</span>. Editors are told.</li>
+    <li><b>Sent back</b> (if needed). The editor clicks <span class="ui">Send back to reporter</span> with a note. The reporter fixes it and submits again.</li>
+    <li><b>Approved.</b> The editor clicks <span class="ui">Approve for the next issue</span>. The text is now locked for reporters.</li>
+    <li><b>Published.</b> The issue publisher reads every approved story, ticks each one, and publishes the issue. The website rebuilds within a few minutes.</li>
+  </ol>
+  <p>Changing a story that is already live works the same way: save the change, then an editor clicks <span class="ui">Approve changes for the next issue</span>. Readers keep seeing the old version until the next issue.</p>
+  <h3>The assignment board</h3>
+  <p><span class="ui">Assignment board</span> in the sidebar shows every story idea in four columns: <b>Unclaimed</b>, <b>Writing</b>, <b>In review</b> and <b>Waiting for the issue</b>. Filter by section or reporter to see who is doing what before deadline.</p>
+</section>
+
+<section class="chapter">
+  <h2>3. Reporters</h2>
+  <h3>Starting a story</h3>
+  <ul>
+    <li>Click <span class="ui">+ New story</span> in the sidebar. Pick a story template if one fits (event, game recap, profile…): it fills in a structure with <b>TK</b> notes to replace.</li>
+    <li>Fill in the <b>headline</b>, a one- or two-sentence <b>summary</b>, the <b>section</b>, <b>authors</b> and the <b>story</b>.</li>
+    <li>Save often. Saving never publishes anything.</li>
+  </ul>
+  <h3>Writing notes and style suggestions</h3>
+  <p>The panel on the right counts words and reading time and lists anything missing (summary, section, author, photo credit, picture descriptions, TK notes). Under <span class="ui">Style suggestions</span> it points out common newsroom-style problems:</p>
+  <div class="two">
+    <ul>
+      <li>Exclamation marks, capitals or a full stop in the headline</li>
+      <li>No one quoted or named as a source</li>
+      <li>Unnamed sources (they need an editor's approval)</li>
+      <li>Paragraphs over 80 words, sentences over 40</li>
+    </ul>
+    <ul>
+      <li>Dates: <b>Oct. 16</b>, not October 16th</li>
+      <li>Times: <b>7 p.m.</b>, not 7:00 PM</li>
+      <li>Percentages: <b>per cent</b> in stories</li>
+      <li>Exclamation marks, filler words, double spaces</li>
+    </ul>
+  </div>
+  <p>These are suggestions. They never stop you saving or submitting.</p>
+  <h3>Pictures</h3>
+  <ul>
+    <li><b>Lead image:</b> the photo at the top of the story and on the front page.</li>
+    <li>Every picture needs a <b>description</b> (alt text, for readers who can't see it), a <b>caption</b> (who, what, where) and a <b>credit</b> (the photographer).</li>
+    <li>Only use photos you or the paper took, or that you have permission to use.</li>
+  </ul>
+  <h3>Photo galleries and video</h3>
+  <ul>
+    <li>In the story editor, type <b>/</b> or use the <b>+</b> menu and choose <span class="ui">Photo gallery</span>. Add 2 to 20 photos and an optional title. Readers swipe through them; the print edition shows the first four.</li>
+    <li>Choose <span class="ui">YouTube video</span> and paste a YouTube link to embed a video. On paper it becomes a link.</li>
+  </ul>
+  <h3>Comments from editors</h3>
+  <p>Editors can highlight text and leave comments. Reply or fix the text, then the editor resolves the comment. A story can't be approved while comments are open.</p>
+  <div class="tip">When it's ready, click <span class="ui">Submit for review</span>. If the button is greyed out, save first.</div>
+</section>
+
+<section class="chapter">
+  <h2>4. Editors</h2>
+  <h3>Reviewing a story</h3>
+  <ol class="steps">
+    <li>Open stories <b>In review</b> from the dashboard or the assignment board.</li>
+    <li>Read it in full. Check names, titles, dates, numbers and quotes; check that every claim has a source; check the headline is fair.</li>
+    <li>Fix small things yourself. For bigger problems, comment on the text or use <span class="ui">Send back to reporter</span> with a clear note.</li>
+    <li>When it's right, <span class="ui">Approve for the next issue</span>.</li>
+  </ol>
+  <h3>Corrections</h3>
+  <p>When a published story has a mistake, add a row under <b>Corrections</b> with the date and what was wrong, fix the text, and approve the change. Published corrections can't be edited or removed: add a new one instead. Follow the corrections policy on the Our standards page.</p>
+  <h3>Reader submissions</h3>
+  <p><span class="ui">Reader submissions</span> holds letters, tips and correction requests from the contact form. Readers give a real name and a verified email. Turn a letter into a draft for the Letters section, a tip into an assignment, or open the story a correction request is about.</p>
+  <h3>Our standards</h3>
+  <p>The website's <b>/standards/</b> page sets out how the paper works: independence, accuracy, corrections, sources and anonymity, fairness, privacy, conflicts of interest, photos and AI. Editors are expected to know it and apply it.</p>
+</section>
+
+<section class="chapter">
+  <h2>5. Publishing an issue</h2>
+  <p class="lead">For people with the Issue permission.</p>
+  <ol class="steps">
+    <li>Go to <span class="ui">Issues</span> and create one (title, volume, number, date). Tick <b>Print edition</b> if there will be a paper copy.</li>
+    <li>Open it and choose <span class="ui">Review &amp; publish this issue</span>.</li>
+    <li>Read every story in full with <span class="ui">Read the full story</span>, then tick it. Each tick is recorded with your name and the time. If a story isn't right, send it back: it won't go out.</li>
+    <li>Check <b>Other changes going live</b>: sections, tags, custom pages, site settings, the site design and the banner. If it warns that a design changed on desktop since anyone checked the phone layout, open the designer and look at the phone view first.</li>
+    <li>Tick the publisher's declaration and click <span class="ui">Publish issue and rebuild the website</span>.</li>
+  </ol>
+  <p>The site rebuilds in a few minutes and the progress is shown. If publishing fails, the message names the story or setting that caused it and nothing is published.</p>
+  <h3>Rebuilds</h3>
+  <p>The site can be rebuilt <b>400 times a month</b>. The counter is at the top of the checklist. <span class="ui">Rebuild site now</span> on the dashboard rebuilds without publishing anything new, for example after a failed build.</p>
+  <h3>Emergency withdrawal</h3>
+  <div class="warn">If a published story must come down at once (a serious error, a legal or safety problem), an editor opens it and chooses <span class="ui">Emergency withdrawal…</span> with a reason. The site rebuilds without it straight away. Tell the editor-in-chief.</div>
+</section>
+
+<section class="chapter">
+  <h2>6. Live updates</h2>
+  <p class="lead">These go to the website within a minute, without waiting for an issue.</p>
+  <table>
+    <tr><th>Where</th><th>Who</th><th>What it does</th></tr>
+    <tr><td><span class="ui">Scores &amp; schedule</span></td><td>Reporters and up</td><td>Games, results and live scores on the front page and /scores/.</td></tr>
+    <tr><td><span class="ui">Calendar</span></td><td>Editors and up</td><td>School events on the front page and /calendar/.</td></tr>
+    <tr><td><span class="ui">Live coverage</span></td><td>Issue permission</td><td>A page of timed updates for big events (elections, games, emergencies). While it is <b>live</b>, a LIVE link appears on the front page.</td></tr>
+    <tr><td><span class="ui">Banner</span></td><td>Issue permission to publish</td><td>A short notice across the top of every page (snow day, deadline). Normally it goes live with the next issue; it can be published now, and given an end time.</td></tr>
+  </table>
+  <p>Every live change is recorded in the activity log with who made it. Live coverage skips the usual sign-off, so check each update before posting.</p>
+</section>
+
+<section class="chapter">
+  <h2>7. Print editions</h2>
+  <p class="lead">For people with the Print permission.</p>
+  <ol class="steps">
+    <li>Open the issue and tick <b>Print edition</b>. Use <span class="ui">Add all waiting stories</span>, then reorder them.</li>
+    <li>For each story choose its width (full, two thirds, half or one column) and whether to show its picture.</li>
+    <li>Choose the paper size, whether to include a contents box and the staff box, and an optional announcement.</li>
+    <li>After the issue is published, the PDF is made with the website and linked from the issue page.</li>
+  </ol>
+  <p>Check every page of the PDF before printing: headlines breaking badly, pictures cropped, empty space. The staff box lists people by position, most senior first.</p>
+</section>
+
+<section class="chapter">
+  <h2>8. The site designer</h2>
+  <p class="lead">For people with the Design permission. Like Canva, for the website.</p>
+  <h3>What you can design</h3>
+  <p>The menu at the top left of <span class="ui">Site designer</span> picks what you are editing:</p>
+  <ul>
+    <li><b>Header</b> and <b>Footer</b>: on every page. The header must keep its navigation bar, and the header or footer must keep Staff sign-in. You can restyle and move them, not remove them.</li>
+    <li><b>Front page</b> and <b>custom pages</b> (About us, Join us…): free canvases. <span class="ui">+ New page…</span> makes one at /p/its-name/; <span class="ui">Page settings</span> sets its title, address and whether it appears in the navigation or footer.</li>
+    <li><b>Page templates</b> for story, section, topic, author, issue and other pages: canvases <b>above</b>, <b>beside</b> and <b>below</b> content that is laid out automatically, plus the content's width, position and fonts, and which parts of a story show.</li>
+  </ul>
+  <h3>Adding things</h3>
+  <div class="two">
+    <ul>
+      <li><b>Text</b>: heading, subheading, body text</li>
+      <li><b>Shapes</b>, lines and arrows</li>
+      <li><b>Image</b>: crop, shape (circle, star…), filters, shadow, border, set as background</li>
+      <li><b>Icon</b>: search 5,000+ free icons</li>
+      <li><b>Table</b>: paste from a spreadsheet</li>
+    </ul>
+    <ul>
+      <li><b>Story</b>: a chosen story, or "newest in a section", which updates itself</li>
+      <li><b>List</b>: Latest, Most read, a section</li>
+      <li><b>Box</b>: Scores, This week, LIVE link, Latest issue</li>
+      <li><b>Site part</b>: navigation, search, date, site name, footer links…</li>
+    </ul>
+  </div>
+  <h3>Working on the canvas</h3>
+  <ul>
+    <li>Drag to move, corners to resize, the round handle to rotate (<kbd>Shift</kbd> for 15° steps). Double-click text to edit it.</li>
+    <li>Things snap to each other and to the page. Turn on <span class="ui">Rulers</span> and drag from them to add guide lines; drag a guide back onto the ruler to remove it.</li>
+    <li><span class="ui">Copy style</span> and <span class="ui">Paste style</span> carry a look from one item to others of the same kind.</li>
+    <li><span class="ui">History</span> goes back to any earlier step. <span class="ui">Templates</span> starts from Classic, Big photo, Breaking news or Feature, or a template your newsroom saved.</li>
+  </ul>
+  <h3>Phones</h3>
+  <p>Phones get their own layout, made automatically. Switch to <span class="ui">Phone</span> to check it and move things by hand, then mark it checked. Readability is checked as you go: text that is hard to read can't be saved, and the designer suggests a better colour.</p>
+  <h3>Saving and going live</h3>
+  <p>Changes save automatically as a draft and go live with the next issue. Someone with the Issue permission can use <span class="ui">Publish now</span> for something that can't wait (it uses one rebuild). One person edits at a time; others can watch or take over.</p>
+</section>
+
+<section class="chapter">
+  <h2>9. Site settings</h2>
+  <p class="lead">For people with the Design permission. Changes go live with the next issue.</p>
+  <ul>
+    <li><b>Site name, tagline, footer note, social links.</b></li>
+    <li><b>Look:</b> link colour, text colour, background, and the fonts for headlines and stories, labels, and the masthead. Hard-to-read colours are refused with a suggestion. Dark mode keeps a dark background automatically.</li>
+    <li><b>Editorial standards:</b> the /standards/ page. It starts with a suggested draft; edit it to match how your newsroom really works.</li>
+    <li><b>About page</b> and <b>Join us</b> text.</li>
+  </ul>
+  <p>Sections and topics (tags) are managed under <span class="ui">Site</span> in the sidebar.</p>
+</section>
+
+<section class="chapter">
+  <h2>10. People</h2>
+  <p class="lead">For people with the Staff permission and the super admin.</p>
+  <ul>
+    <li><b>New member:</b> <span class="ui">People</span> → create, with their name, school email, a temporary password and role (usually Reporter).</li>
+    <li><b>Positions:</b> choose their jobs (Editor-in-Chief, Sports Editor, Staff Writer…). The form shows the access those positions usually need; only the super admin changes role and permissions. With no title written, positions become the title under their byline.</li>
+    <li><b>Our Staff page</b> and the print staff box are grouped by position: masthead, section editors, copy and standards, visuals, print, digital, operations, reporters and writers.</li>
+    <li><b>Someone leaves:</b> untick <b>Active</b>. They can no longer sign in, and their bylines stay. People who signed off an issue can't be deleted, because that record is kept.</li>
+  </ul>
+</section>
+
+<section class="chapter">
+  <h2>11. Social media</h2>
+  <h3>Instagram images</h3>
+  <p>Open any story and find <b>Instagram images</b> in the sidebar:</p>
+  <ul>
+    <li><span class="ui">Post ↓</span> downloads a 1080 × 1350 image for the feed.</li>
+    <li><span class="ui">Story ↓</span> downloads a 1080 × 1920 image for Stories, with space at the bottom for a link sticker.</li>
+  </ul>
+  <p>Both use the story's current headline, section and lead image under the masthead. Add the link in your bio or a link sticker, and write a caption that adds something rather than repeating the headline.</p>
+  <h3>Link previews</h3>
+  <p>When anyone shares a story link (Instagram, iMessage, WhatsApp, email), the preview shows a picture made for that story with its photo, section and headline. Other pages show the masthead. These are made when the site is built.</p>
+  <h3>Following the paper</h3>
+  <p>The <b>/subscribe/</b> page explains feed readers and lists the feed addresses for the whole paper and each section.</p>
+</section>
+
+<section class="chapter">
+  <h2>12. Quick reference</h2>
+  <h3>Designer shortcuts</h3>
+  <table>
+    <tr><th>Keys</th><th>Does</th><th>Keys</th><th>Does</th></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Undo</td><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></td><td>Redo</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>V</kbd></td><td>Copy / paste</td><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>Duplicate</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd> / <kbd>V</kbd></td><td>Copy / paste style</td><td><kbd>Ctrl</kbd>+<kbd>G</kbd></td><td>Group (<kbd>Shift</kbd> to ungroup)</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>]</kbd> / <kbd>[</kbd></td><td>Forward / backward</td><td><kbd>Ctrl</kbd>+<kbd>A</kbd></td><td>Select all</td></tr>
+    <tr><td><kbd>T</kbd> <kbd>R</kbd> <kbd>O</kbd> <kbd>L</kbd></td><td>Add text, rectangle, circle, line</td><td>Arrow keys</td><td>Nudge (<kbd>Shift</kbd> for 10)</td></tr>
+    <tr><td><kbd>Delete</kbd></td><td>Delete</td><td><kbd>Esc</kbd></td><td>Deselect / finish editing</td></tr>
+  </table>
+  <h3>Limits</h3>
+  <ul>
+    <li>400 site rebuilds a month (each issue, withdrawal, Publish now and Rebuild site uses one).</li>
+    <li>Pictures up to about 4 MB each; they are converted and resized automatically.</li>
+    <li>Galleries: 2 to 20 photos. Tables: up to 30 rows.</li>
+  </ul>
+  <h3>When something goes wrong</h3>
+  <table>
+    <tr><th>Problem</th><th>What to do</th></tr>
+    <tr><td>"Nothing was published"</td><td>Read the rest of the message: it names the story or setting. Fix it and publish again.</td></tr>
+    <tr><td>A button is greyed out</td><td>Save first, or you don't have the role or permission. Ask an exec.</td></tr>
+    <tr><td>"Someone is editing the design"</td><td>Wait, or choose Take over if they've left.</td></tr>
+    <tr><td>The website didn't change</td><td>Changes wait for the next issue. Live updates take about a minute; refresh.</td></tr>
+    <tr><td>A rebuild failed</td><td>Use Rebuild site now on the dashboard. If it fails again, tell the Web &amp; Tech Lead.</td></tr>
+  </table>
+</section>
+
+</body>
+</html>
