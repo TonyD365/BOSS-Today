@@ -18,6 +18,7 @@ import { fontsUrl } from '@/design/fonts'
 import { Designed, designFonts, DesignedHome, Templated, templateFonts } from '@/design/render'
 import type { TemplateKind } from '@/design/types'
 import { siteInfo } from '@/design/siteInfo'
+import { cleanLook, lookCss, lookFonts } from '@/lib/look'
 
 import { rssFeed } from './feed'
 import { iconImage, siteShareImage, storyShareImage } from './shareImages'
@@ -153,6 +154,12 @@ const main = async () => {
     if (first === 'issues' && second !== 'index.html') return 'issue'
     return 'other'
   }
+  // Fonts chosen in Site settings beyond the three the site always loads.
+  const lookFontsUrl = fontsUrl(
+    lookFonts(cleanLook(site.settings.look)).filter(
+      (id) => !['newsreader', 'franklin', 'masthead'].includes(id),
+    ),
+  )
   const urls: string[] = []
   const page = async (file: string, meta: PageMeta, content: React.ReactNode) => {
     const kind = templateFor(file)
@@ -166,6 +173,7 @@ const main = async () => {
     )
     const fonts = fontsUrl(templateFonts(template))
     const styles = [
+      ...(lookFontsUrl ? [lookFontsUrl] : []),
       ...(chrome.fonts ? [chrome.fonts] : []),
       ...(fonts ? [fonts] : []),
       ...(meta.styles ?? []),
@@ -542,7 +550,12 @@ const main = async () => {
   // Dark mode is for the public site only; the print edition stays black on white.
   const theme = await fs.readFile(path.join(ROOT, 'src/site/theme.css'), 'utf8')
   const designCss = await fs.readFile(path.join(ROOT, 'src/design/design.css'), 'utf8')
-  await write('assets/styles.css', `${FONT_VARIABLES}\n\n${siteStyles}\n${theme}\n${designCss}`)
+  // The look from Site settings goes after the defaults, and its dark accent after the dark theme.
+  const look = lookCss(cleanLook(site.settings.look))
+  await write(
+    'assets/styles.css',
+    `${FONT_VARIABLES}\n\n${siteStyles}\n${look.light}\n${theme}\n${look.dark}\n${designCss}`,
+  )
   await write('assets/site.js', await fs.readFile(path.join(ROOT, 'src/site/site.js'), 'utf8'))
   await write(
     '_headers',

@@ -1,7 +1,8 @@
-import type { GlobalConfig } from 'payload'
+import { APIError, type Field, type GlobalBeforeChangeHook, type GlobalConfig } from 'payload'
 
 import { withPermission } from '../access'
 import { auditGlobal } from '../hooks/audit'
+import { cleanLook, DEFAULT_LOOK, FONT_OPTIONS, lookProblems } from '../lib/look'
 import { defaultStandards } from '../lib/standards'
 import { guardGlobalPublishing } from '../hooks/publishing'
 
@@ -19,6 +20,33 @@ const isEmpty = (value: unknown) => {
   const children = (value as { root?: { children?: { children?: unknown[] }[] } } | null)?.root
     ?.children
   return !children || children.every((child) => (child.children ?? []).length === 0)
+}
+
+const colorField = (name: string, label: string, defaultValue: string): Field => ({
+  name,
+  type: 'text',
+  label,
+  defaultValue,
+  admin: { width: '33%', placeholder: defaultValue, description: 'A colour like #326891' },
+  validate: (value: unknown) =>
+    !value || /^#[0-9a-f]{6}$/i.test(String(value)) || 'Use a colour like #326891',
+})
+
+const fontField = (name: string, label: string, defaultValue: string): Field => ({
+  name,
+  type: 'select',
+  label,
+  defaultValue,
+  options: FONT_OPTIONS,
+  admin: { width: '33%' },
+})
+
+/** Refuses colours that would make the site hard to read. */
+const checkLook: GlobalBeforeChangeHook = ({ data }) => {
+  if (!data.look) return data
+  const problems = lookProblems(cleanLook(data.look))
+  if (problems.length > 0) throw new APIError(problems.join(' '), 400, undefined, true)
+  return data
 }
 
 export const Settings: GlobalConfig = {
@@ -40,7 +68,7 @@ export const Settings: GlobalConfig = {
     update: withPermission('design'),
   },
   hooks: {
-    beforeChange: [guardGlobalPublishing('Site settings')],
+    beforeChange: [guardGlobalPublishing('Site settings'), checkLook],
     afterChange: [revalidate, auditGlobal('site settings')],
   },
   fields: [
@@ -55,6 +83,33 @@ export const Settings: GlobalConfig = {
       type: 'richText',
       label: 'About page',
       admin: { description: 'Shown at /about. Leave empty to hide the page.' },
+    },
+    {
+      name: 'look',
+      type: 'group',
+      label: 'Look',
+      admin: {
+        description:
+          'Colours and fonts for every page not drawn in the site designer. Dark mode keeps its own dark background and gets a lighter link colour automatically.',
+      },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            colorField('accent', 'Links and highlights', DEFAULT_LOOK.accent),
+            colorField('ink', 'Text', DEFAULT_LOOK.ink),
+            colorField('paper', 'Background', DEFAULT_LOOK.paper),
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            fontField('serif', 'Headlines and stories', DEFAULT_LOOK.serif),
+            fontField('sans', 'Labels, bylines and menus', DEFAULT_LOOK.sans),
+            fontField('masthead', 'Masthead', DEFAULT_LOOK.masthead),
+          ],
+        },
+      ],
     },
     {
       name: 'standards',

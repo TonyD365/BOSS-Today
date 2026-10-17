@@ -1,6 +1,7 @@
 import type { PaperSize } from '@/components/print/PrintEdition'
 import type { Design, Templates } from '@/design/types'
 import type { Author } from '@/lib/author'
+import type { Look } from '@/lib/look'
 import type { DArticle, DesignData, SiteInfo } from '@/design/render'
 import type { Article, Media } from '@/payload-types'
 
@@ -67,6 +68,7 @@ export type ExportMeta = {
     tagline: string
     about: unknown
     standards: unknown
+    look: Look
     socialLinks: { label: string; url: string }[]
     footerNote: string
     joinUs: unknown

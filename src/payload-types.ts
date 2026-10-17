@@ -1421,6 +1421,83 @@ export interface Setting {
     [k: string]: unknown;
   } | null;
   /**
+   * Colours and fonts for every page not drawn in the site designer. Dark mode keeps its own dark background and gets a lighter link colour automatically.
+   */
+  look?: {
+    /**
+     * A colour like #326891
+     */
+    accent?: string | null;
+    /**
+     * A colour like #326891
+     */
+    ink?: string | null;
+    /**
+     * A colour like #326891
+     */
+    paper?: string | null;
+    serif?:
+      | (
+          | 'newsreader'
+          | 'franklin'
+          | 'masthead'
+          | 'playfair'
+          | 'merriweather'
+          | 'lora'
+          | 'source-serif'
+          | 'inter'
+          | 'roboto'
+          | 'montserrat'
+          | 'oswald'
+          | 'bebas'
+          | 'anton'
+          | 'caveat'
+          | 'marker'
+          | 'mono'
+        )
+      | null;
+    sans?:
+      | (
+          | 'newsreader'
+          | 'franklin'
+          | 'masthead'
+          | 'playfair'
+          | 'merriweather'
+          | 'lora'
+          | 'source-serif'
+          | 'inter'
+          | 'roboto'
+          | 'montserrat'
+          | 'oswald'
+          | 'bebas'
+          | 'anton'
+          | 'caveat'
+          | 'marker'
+          | 'mono'
+        )
+      | null;
+    masthead?:
+      | (
+          | 'newsreader'
+          | 'franklin'
+          | 'masthead'
+          | 'playfair'
+          | 'merriweather'
+          | 'lora'
+          | 'source-serif'
+          | 'inter'
+          | 'roboto'
+          | 'montserrat'
+          | 'oswald'
+          | 'bebas'
+          | 'anton'
+          | 'caveat'
+          | 'marker'
+          | 'mono'
+        )
+      | null;
+  };
+  /**
    * Shown at /standards: how the paper works (independence, accuracy, corrections, sources…). Starts with a suggested draft; edit it to match how your newsroom works.
    */
   standards?: {
@@ -1516,6 +1593,16 @@ export interface SettingsSelect<T extends boolean = true> {
   siteName?: T;
   tagline?: T;
   about?: T;
+  look?:
+    | T
+    | {
+        accent?: T;
+        ink?: T;
+        paper?: T;
+        serif?: T;
+        sans?: T;
+        masthead?: T;
+      };
   standards?: T;
   joinUs?: T;
   socialLinks?:

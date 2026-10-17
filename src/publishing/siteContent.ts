@@ -1,6 +1,7 @@
 import type { Payload, PayloadRequest, Where } from 'payload'
 
 import { cleanDesign, cleanTemplates } from '../design/sanitize'
+import { cleanLook } from '../lib/look'
 import type { Design } from '../design/types'
 import type { Article, Media, User } from '../payload-types'
 
@@ -215,6 +216,7 @@ export const exportMeta = async (payload: Payload, cmsUrl: string) => {
       tagline: settings.tagline || 'The student newspaper of Bur Oak Secondary School.',
       about: settings.about ?? null,
       standards: settings.standards ?? null,
+      look: cleanLook(settings.look),
       socialLinks: (settings.socialLinks ?? []).map(({ label, url }) => ({ label, url })),
       footerNote: settings.footerNote ?? '',
       joinUs: settings.joinUs ?? null,
