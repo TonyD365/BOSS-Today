@@ -230,6 +230,14 @@ export const Articles: CollectionConfig = {
       },
     },
     {
+      name: 'instagramImages',
+      type: 'ui',
+      admin: {
+        position: 'sidebar',
+        components: { Field: '@/components/admin/InstagramImages#InstagramImages' },
+      },
+    },
+    {
       name: 'storyViews',
       type: 'ui',
       admin: {

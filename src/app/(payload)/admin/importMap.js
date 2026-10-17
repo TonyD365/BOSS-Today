@@ -24,6 +24,7 @@ import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { WorkflowPanel as WorkflowPanel_9168d7f4a9a9ae1abb1fc28b012db3f0 } from '@/components/admin/WorkflowPanel'
 import { WritingHints as WritingHints_ec2ad09aefe1f8058eb3d2127384f8c2 } from '@/components/admin/WritingHints'
+import { InstagramImages as InstagramImages_97d2345bf3068a19fb893f3925becd12 } from '@/components/admin/InstagramImages'
 import { StoryViews as StoryViews_074389d68fe34e163d06c4921703bbfd } from '@/components/admin/StoryViews'
 import { CommentsPanel as CommentsPanel_967efd053979d822fa47254ca73e25c0 } from '@/components/admin/CommentsPanel'
 import { Hidden as Hidden_41307c565f8fce656d97d4772c57ad1c } from '@/components/admin/Hidden'
@@ -74,6 +75,7 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#ItalicFeatureClient": ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@/components/admin/WorkflowPanel#WorkflowPanel": WorkflowPanel_9168d7f4a9a9ae1abb1fc28b012db3f0,
   "@/components/admin/WritingHints#WritingHints": WritingHints_ec2ad09aefe1f8058eb3d2127384f8c2,
+  "@/components/admin/InstagramImages#InstagramImages": InstagramImages_97d2345bf3068a19fb893f3925becd12,
   "@/components/admin/StoryViews#StoryViews": StoryViews_074389d68fe34e163d06c4921703bbfd,
   "@/components/admin/CommentsPanel#CommentsPanel": CommentsPanel_967efd053979d822fa47254ca73e25c0,
   "@/components/admin/Hidden#Hidden": Hidden_41307c565f8fce656d97d4772c57ad1c,
