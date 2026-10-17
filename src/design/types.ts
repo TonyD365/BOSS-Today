@@ -70,11 +70,45 @@ export type ShapeProps = {
   arrowEnd: boolean
 }
 
+export const IMAGE_MASKS = [
+  'none',
+  'circle',
+  'ellipse',
+  'triangle',
+  'hexagon',
+  'star',
+  'arch',
+] as const
+export type ImageMask = (typeof IMAGE_MASKS)[number]
+
 export type ImageProps = {
   mediaId: number | null
   fit: 'cover' | 'contain'
   radius: number
   link: string | null
+  /** Which part of the photo shows: a point to zoom in on (0–100 each way) and how far. */
+  crop: { x: number; y: number; zoom: number }
+  mask: ImageMask
+  /** Percentages (blur in design pixels); 100 means unchanged for the first three. */
+  filters: {
+    brightness: number
+    contrast: number
+    saturate: number
+    grayscale: number
+    sepia: number
+    blur: number
+  }
+  shadow: boolean
+  border: { color: Color; width: number } | null
+}
+
+/** An icon's drawing (24×24, stroked); a path given as [d, 1] is filled instead. */
+export type IconPath = string | [string, 1]
+export type IconProps = {
+  name: string
+  paths: IconPath[]
+  color: Color
+  strokeWidth: number
 }
 
 export type StoryProps = {
@@ -163,6 +197,7 @@ export type DesignElement =
   | (Base & { type: 'list'; props: ListProps })
   | (Base & { type: 'widget'; props: WidgetProps })
   | (Base & { type: 'site'; props: SiteProps })
+  | (Base & { type: 'icon'; props: IconProps })
 
 export type ElementType = DesignElement['type']
 

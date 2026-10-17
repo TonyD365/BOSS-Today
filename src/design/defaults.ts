@@ -4,6 +4,7 @@ import type {
   Design,
   DesignElement,
   ElementType,
+  IconProps,
   ImageProps,
   ListProps,
   ShapeKind,
@@ -54,8 +55,22 @@ export const imageDefaults = (overrides: Partial<ImageProps> = {}): ImageProps =
   fit: 'cover',
   radius: 0,
   link: null,
+  crop: { x: 50, y: 50, zoom: 1 },
+  mask: 'none',
+  filters: { ...NO_FILTERS },
+  shadow: false,
+  border: null,
   ...overrides,
 })
+
+export const NO_FILTERS = {
+  brightness: 100,
+  contrast: 100,
+  saturate: 100,
+  grayscale: 0,
+  sepia: 0,
+  blur: 0,
+}
 
 export const storyDefaults = (overrides: Partial<StoryProps> = {}): StoryProps => ({
   source: 'latest',
@@ -126,6 +141,7 @@ export const DEFAULT_SIZES: Record<ElementType, { w: number; h: number }> = {
   list: { w: 300, h: 360 },
   widget: { w: 300, h: 260 },
   site: { w: 600, h: 40 },
+  icon: { w: 96, h: 96 },
 }
 
 const base = (type: ElementType, x: number, y: number) => ({
@@ -167,6 +183,12 @@ export const makeElement = (
       return { ...base(type, at.x, at.y), type, props: widgetDefaults(props) }
     case 'site':
       return { ...base(type, at.x, at.y), type, props: siteDefaults(props) }
+    case 'icon':
+      return {
+        ...base(type, at.x, at.y),
+        type,
+        props: { name: 'star', paths: [], color: '#121212', strokeWidth: 2, ...props } as IconProps,
+      }
   }
 }
 

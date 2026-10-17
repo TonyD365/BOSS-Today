@@ -13,6 +13,8 @@ import { phoneLayout } from './phone'
 import { cleanParagraphs } from './richtext'
 import {
   ARTICLE_PARTS,
+  type IconPath,
+  IMAGE_MASKS,
   type Color,
   type Design,
   type DesignElement,
@@ -123,14 +125,58 @@ const cleanProps = (type: DesignElement['type'], raw: Record<string, unknown>) =
         arrowEnd: bool(raw.arrowEnd),
       }
     }
-    case 'image':
+    case 'icon': {
+      // Only plain path data: letters for commands, numbers, spaces, commas and signs.
+      const safe = (d: unknown) =>
+        typeof d === 'string' && d.length <= 4000 && /^[MmLlHhVvCcSsQqTtAaZz0-9.,\se+-]*$/.test(d)
+      const paths = (Array.isArray(raw.paths) ? raw.paths : [])
+        .slice(0, 40)
+        .flatMap((path: unknown): IconPath[] =>
+          safe(path)
+            ? [path as string]
+            : Array.isArray(path) && safe(path[0])
+              ? [[path[0] as string, 1 as const] as [string, 1]]
+              : [],
+        )
+      return {
+        name: typeof raw.name === 'string' ? raw.name.slice(0, 60) : 'icon',
+        paths,
+        color: color(raw.color, '#121212'),
+        strokeWidth: num(raw.strokeWidth, 0.5, 4, 2),
+      }
+    }
+    case 'image': {
+      type Loose = Record<string, unknown> | undefined
+      const cropRaw = raw.crop as Loose
+      const filtersRaw = raw.filters as Loose
+      const borderRaw = raw.border as Loose
       return {
         ...imageDefaults(),
         mediaId: ref(raw.mediaId),
         fit: pick(raw.fit, ['cover', 'contain'] as const, 'cover'),
         radius: num(raw.radius, 0, 600, 0),
         link: link(raw.link),
+        crop: {
+          x: num(cropRaw?.x, 0, 100, 50),
+          y: num(cropRaw?.y, 0, 100, 50),
+          zoom: num(cropRaw?.zoom, 1, 5, 1),
+        },
+        mask: pick(raw.mask, IMAGE_MASKS, 'none'),
+        filters: {
+          brightness: num(filtersRaw?.brightness, 0, 200, 100),
+          contrast: num(filtersRaw?.contrast, 0, 200, 100),
+          saturate: num(filtersRaw?.saturate, 0, 200, 100),
+          grayscale: num(filtersRaw?.grayscale, 0, 100, 0),
+          sepia: num(filtersRaw?.sepia, 0, 100, 0),
+          blur: num(filtersRaw?.blur, 0, 40, 0),
+        },
+        shadow: bool(raw.shadow, false),
+        border:
+          borderRaw && typeof borderRaw === 'object'
+            ? { color: color(borderRaw.color, '#121212'), width: num(borderRaw.width, 1, 40, 2) }
+            : null,
       }
+    }
     case 'story': {
       const d = storyDefaults()
       return {
@@ -190,7 +236,7 @@ const cleanElement = (value: unknown): DesignElement | null => {
   const raw = (value ?? {}) as Record<string, unknown>
   const type = pick(
     raw.type,
-    ['text', 'shape', 'image', 'story', 'list', 'widget', 'site'] as const,
+    ['text', 'shape', 'image', 'story', 'list', 'widget', 'site', 'icon'] as const,
     'text',
   )
   const elementId = id(raw.id)

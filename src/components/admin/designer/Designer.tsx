@@ -26,6 +26,7 @@ import {
 } from '@/design/types'
 
 import { DeployProgress } from '../DeployProgress'
+import { IconPicker } from './IconPicker'
 import { Inspector } from './Inspector'
 import { SITE_PART_NAMES } from './names'
 import {
@@ -143,6 +144,7 @@ export function Designer({
   // Only changes someone makes are saved; boxes resizing to fit their text are not.
   const [dirty, setDirty] = useState(false)
   const [clipboard, setClipboard] = useState<DesignElement[]>([])
+  const [iconsOpen, setIconsOpen] = useState(false)
   const stageBox = useRef<HTMLDivElement>(null)
   const savedJson = useRef(JSON.stringify(initial))
   const leaving = useRef(false)
@@ -766,6 +768,9 @@ export function Designer({
           <button type="button" onClick={() => add('image')}>
             Image
           </button>
+          <button type="button" onClick={() => setIconsOpen(true)} disabled={readOnly}>
+            Icon
+          </button>
           <button type="button" onClick={() => add('story')}>
             Story
           </button>
@@ -1320,6 +1325,15 @@ export function Designer({
         </aside>
       </div>
 
+      {iconsOpen && (
+        <IconPicker
+          onClose={() => setIconsOpen(false)}
+          onPick={(name, paths) => {
+            setIconsOpen(false)
+            add('icon', { name, paths })
+          }}
+        />
+      )}
       {menu && (
         <div
           className="dz-menu-backdrop"
@@ -1436,5 +1450,6 @@ const label = (el: DesignElement) => {
       el.props.kind
     ]
   if (el.type === 'site') return SITE_PART_NAMES[el.props.kind]
+  if (el.type === 'icon') return `Icon: ${el.props.name.replace(/-/g, ' ')}`
   return 'Image'
 }

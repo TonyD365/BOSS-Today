@@ -4,7 +4,16 @@ import React, { useEffect, useState } from 'react'
 
 import { FONTS } from '@/design/fonts'
 import type { DArticle, DImage } from '@/design/render'
-import { SHAPES, type Design, type DesignElement, type Geometry } from '@/design/types'
+import { NO_FILTERS } from '@/design/defaults'
+import {
+  type Design,
+  type DesignElement,
+  DESKTOP_WIDTH,
+  type Geometry,
+  IMAGE_MASKS,
+  type ImageProps,
+  SHAPES,
+} from '@/design/types'
 
 import { ColorField, FillField } from './ColorField'
 import { SITE_PART_NAMES } from './names'
@@ -103,6 +112,155 @@ function Choice<T extends string | number>({
         ))}
       </select>
     </label>
+  )
+}
+
+const PRESETS: { label: string; filters: ImageProps['filters'] }[] = [
+  { label: 'Original', filters: { ...NO_FILTERS } },
+  { label: 'B&W', filters: { ...NO_FILTERS, grayscale: 100, contrast: 110 } },
+  { label: 'Vintage', filters: { ...NO_FILTERS, sepia: 45, contrast: 90, saturate: 80 } },
+  { label: 'Vivid', filters: { ...NO_FILTERS, saturate: 140, contrast: 110 } },
+  { label: 'Soft', filters: { ...NO_FILTERS, brightness: 108, contrast: 88, saturate: 90 } },
+  { label: 'Dark', filters: { ...NO_FILTERS, brightness: 70 } },
+]
+
+/** Crop, shape, filters and frame for one image. */
+function ImageTools({
+  props,
+  set,
+  onBackground,
+}: {
+  props: ImageProps
+  set: (change: Record<string, unknown>) => void
+  onBackground: () => void
+}) {
+  const f = props.filters
+  const filter = (change: Partial<ImageProps['filters']>) => set({ filters: { ...f, ...change } })
+  const crop = (change: Partial<ImageProps['crop']>) => set({ crop: { ...props.crop, ...change } })
+  const pct = (v: number) => `${Math.round(v)}%`
+  return (
+    <>
+      <h4>Crop</h4>
+      <Slider
+        label="Zoom"
+        value={props.crop.zoom}
+        min={1}
+        max={5}
+        step={0.05}
+        format={(v) => `${v.toFixed(2)}×`}
+        onChange={(zoom) => crop({ zoom })}
+      />
+      <Slider
+        label="Left ↔ right"
+        value={props.crop.x}
+        min={0}
+        max={100}
+        format={pct}
+        onChange={(x) => crop({ x })}
+      />
+      <Slider
+        label="Up ↕ down"
+        value={props.crop.y}
+        min={0}
+        max={100}
+        format={pct}
+        onChange={(y) => crop({ y })}
+      />
+      <Choice
+        label="Shape"
+        value={props.mask}
+        options={IMAGE_MASKS.map((mask) => ({
+          value: mask,
+          label: mask === 'none' ? 'Rectangle' : mask[0].toUpperCase() + mask.slice(1),
+        }))}
+        onChange={(mask) => set({ mask })}
+      />
+      <h4>Filters</h4>
+      <div className="dz-presets">
+        {PRESETS.map((preset) => (
+          <button
+            key={preset.label}
+            type="button"
+            className="dz-button"
+            onClick={() => set({ filters: preset.filters })}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
+      <Slider
+        label="Brightness"
+        value={f.brightness}
+        min={0}
+        max={200}
+        format={pct}
+        onChange={(brightness) => filter({ brightness })}
+      />
+      <Slider
+        label="Contrast"
+        value={f.contrast}
+        min={0}
+        max={200}
+        format={pct}
+        onChange={(contrast) => filter({ contrast })}
+      />
+      <Slider
+        label="Saturation"
+        value={f.saturate}
+        min={0}
+        max={200}
+        format={pct}
+        onChange={(saturate) => filter({ saturate })}
+      />
+      <Slider
+        label="Black & white"
+        value={f.grayscale}
+        min={0}
+        max={100}
+        format={pct}
+        onChange={(grayscale) => filter({ grayscale })}
+      />
+      <Slider
+        label="Warmth (sepia)"
+        value={f.sepia}
+        min={0}
+        max={100}
+        format={pct}
+        onChange={(sepia) => filter({ sepia })}
+      />
+      <Slider label="Blur" value={f.blur} min={0} max={40} onChange={(blur) => filter({ blur })} />
+      <h4>Frame</h4>
+      <Toggle label="Shadow" value={props.shadow} onChange={(shadow) => set({ shadow })} />
+      <Toggle
+        label="Border"
+        value={Boolean(props.border)}
+        onChange={(on) => set({ border: on ? { color: '#121212', width: 2 } : null })}
+      />
+      {props.border && (
+        <>
+          <ColorField
+            label="Border colour"
+            value={props.border.color}
+            onChange={(color) => set({ border: { ...props.border!, color } })}
+          />
+          <Num
+            label="Border width"
+            value={props.border.width}
+            min={1}
+            max={40}
+            onChange={(width) => set({ border: { ...props.border!, width } })}
+          />
+        </>
+      )}
+      <button
+        type="button"
+        className="dz-button"
+        onClick={onBackground}
+        title="Fill the page with this image, behind everything, and lock it"
+      >
+        Set as background
+      </button>
+    </>
   )
 }
 
@@ -691,6 +849,27 @@ export function Inspector({
               }
             />
           </label>
+          <ImageTools
+            props={first.props}
+            set={set}
+            onBackground={() =>
+              onDesign((d) => {
+                const el = d.desktop.elements.find((x) => x.id === first.id)
+                if (!el) return d
+                const others = d.desktop.elements.filter((x) => x.id !== first.id)
+                const background = {
+                  ...el,
+                  x: 0,
+                  y: 0,
+                  w: d.desktop.width ?? DESKTOP_WIDTH,
+                  h: d.desktop.height,
+                  rotation: 0,
+                  locked: true,
+                }
+                return { ...d, desktop: { ...d.desktop, elements: [background, ...others] } }
+              })
+            }
+          />
         </div>
       )}
 
@@ -901,6 +1080,25 @@ export function Inspector({
           )}
         </div>
       )}
+      {same && first.type === 'icon' && (
+        <div className="dz-group">
+          <h4>Icon</h4>
+          <ColorField
+            label="Colour"
+            value={p.color as string}
+            onChange={(color) => set({ color })}
+          />
+          <Slider
+            label="Line width"
+            value={p.strokeWidth as number}
+            min={0.5}
+            max={4}
+            step={0.25}
+            onChange={(strokeWidth) => set({ strokeWidth })}
+          />
+        </div>
+      )}
+
       {same && first.type === 'site' && (
         <div className="dz-group">
           <h4>{SITE_PART_NAMES[first.props.kind]}</h4>

@@ -57,3 +57,6 @@ node_modules/
 
 # static public site build
 /site-dist
+
+# Built from @tabler/icons by scripts/icons.mjs
+/public/designer/icons.json

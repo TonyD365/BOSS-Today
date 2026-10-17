@@ -68,6 +68,11 @@ const autoGeometry = (el: DesignElement, y: number): Geometry => {
       }
       return { ...at, h: heights[el.props.kind], fontScale: scale }
     }
+    case 'icon': {
+      // Icons keep their size (up to the column width), centred.
+      const w = Math.min(el.w, CONTENT)
+      return { ...at, x: (PHONE_WIDTH - w) / 2, w, h: el.h * (w / el.w) }
+    }
     case 'widget':
       return {
         ...at,

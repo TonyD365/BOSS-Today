@@ -8,6 +8,7 @@ import {
   type Design,
   type DesignElement,
   DESKTOP_WIDTH,
+  type ImageMask,
   type PageTemplate,
   type Fill,
   type Geometry,
@@ -328,20 +329,65 @@ function ImageElement({
 }) {
   const p = el.props
   const media = p.mediaId ? data.media[p.mediaId] : undefined
+  const f = p.filters
+  const filter = [
+    f.brightness !== 100 && `brightness(${f.brightness}%)`,
+    f.contrast !== 100 && `contrast(${f.contrast}%)`,
+    f.saturate !== 100 && `saturate(${f.saturate}%)`,
+    f.grayscale > 0 && `grayscale(${f.grayscale}%)`,
+    f.sepia > 0 && `sepia(${f.sepia}%)`,
+    f.blur > 0 && `blur(calc(${f.blur} * var(--u)))`,
+  ]
+    .filter(Boolean)
+    .join(' ')
+  const origin = `${p.crop.x}% ${p.crop.y}%`
   const img = media ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={media.url}
       alt={media.alt}
       loading="lazy"
-      style={{ objectFit: p.fit, borderRadius: u(p.radius) }}
+      style={{
+        objectFit: p.fit,
+        objectPosition: origin,
+        transform: p.crop.zoom !== 1 ? `scale(${p.crop.zoom})` : undefined,
+        transformOrigin: origin,
+        filter: filter || undefined,
+      }}
     />
   ) : designer ? (
-    <div className="dc-image__empty" style={{ borderRadius: u(p.radius) }}>
-      Choose an image
-    </div>
+    <div className="dc-image__empty">Choose an image</div>
   ) : null
-  return <div className="dc-image">{p.link && media ? <a href={p.link}>{img}</a> : img}</div>
+  const frame: React.CSSProperties = {
+    borderRadius: p.mask === 'none' ? u(p.radius) : undefined,
+    clipPath: MASKS[p.mask],
+    border: p.border ? `calc(${p.border.width} * var(--u)) solid ${p.border.color}` : undefined,
+  }
+  return (
+    <div
+      className="dc-image"
+      style={{
+        filter: p.shadow
+          ? 'drop-shadow(0 calc(6 * var(--u)) calc(14 * var(--u)) rgba(0,0,0,0.3))'
+          : undefined,
+      }}
+    >
+      <div className="dc-image__frame" style={frame}>
+        {p.link && media ? <a href={p.link}>{img}</a> : img}
+      </div>
+    </div>
+  )
+}
+
+/** Shapes a photo can be cut to. */
+const MASKS: Record<ImageMask, string | undefined> = {
+  none: undefined,
+  circle: 'circle(closest-side)',
+  ellipse: 'ellipse(50% 50%)',
+  triangle: 'polygon(50% 0, 100% 100%, 0 100%)',
+  hexagon: 'polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%)',
+  star: 'polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
+  arch: 'inset(0 round 50% 50% 0 0 / 35% 35% 0 0)',
 }
 
 function StoryElement({
@@ -630,7 +676,37 @@ export function ElementContent({
       return <WidgetElement el={el} data={data} designer={!publicOnly} />
     case 'site':
       return <SiteElement el={el} data={data} designer={!publicOnly} />
+    case 'icon':
+      return <IconElement el={el} />
   }
+}
+
+/** A Tabler icon, drawn from the paths stored with it. */
+export function IconElement({ el }: { el: Extract<DesignElement, { type: 'icon' }> }) {
+  const p = el.props
+  return (
+    <svg
+      className="dc-icon"
+      viewBox="0 0 24 24"
+      width="100%"
+      height="100%"
+      fill="none"
+      stroke={p.color}
+      strokeWidth={p.strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      preserveAspectRatio="xMidYMid meet"
+    >
+      {p.paths.map((path, i) =>
+        typeof path === 'string' ? (
+          <path key={i} d={path} />
+        ) : (
+          <path key={i} d={path[0]} fill={p.color} stroke="none" />
+        ),
+      )}
+    </svg>
+  )
 }
 
 /** Position, rotation, flip and opacity for an element box. */

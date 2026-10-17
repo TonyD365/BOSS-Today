@@ -71,6 +71,18 @@
   overflow: visible;
 }
 
+.dc-image {
+  width: 100%;
+  height: 100%;
+}
+
+.dc-image__frame {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
 .dc-image img,
 .dc-image a {
   display: block;
@@ -455,4 +467,9 @@
 .tpl--no-tags .article__tags,
 .tpl--no-authors .article__authors {
   display: none;
+}
+
+.dc-icon {
+  display: block;
+  overflow: visible;
 }
