@@ -7,6 +7,7 @@ import { Header } from '@/components/site/Header'
 import { Picture } from '@/components/site/Picture'
 import { StoryCard } from '@/components/site/StoryCard'
 import { editionLabel, formatDate } from '@/lib/format'
+import { placeOf, POSITION_GROUPS } from '@/lib/positions'
 
 import {
   asArticle,
@@ -296,11 +297,23 @@ export function ArticlePage({
   )
 }
 
-const STAFF_GROUPS: { role: ExportStaff['role']; title: string }[] = [
-  { role: 'exec', title: 'Editorial board' },
-  { role: 'editor', title: 'Editors' },
-  { role: 'reporter', title: 'Reporters and writers' },
-]
+/** People without positions are listed by their role. */
+const ROLE_GROUP: Record<ExportStaff['role'], string> = {
+  exec: 'Masthead',
+  editor: 'Section editors',
+  reporter: 'Reporters and writers',
+}
+
+/** Staff grouped as on a newspaper's masthead, most senior first. */
+const staffGroups = (staff: ExportStaff[]) =>
+  POSITION_GROUPS.map((title) => ({
+    title,
+    people: staff
+      .map((person) => ({ person, place: placeOf(person.positions) }))
+      .filter(({ person, place }) => (place?.group ?? ROLE_GROUP[person.role]) === title)
+      .sort((a, b) => (a.place?.order ?? 999) - (b.place?.order ?? 999))
+      .map(({ person }) => person),
+  }))
 
 export function StaffView({
   staff,
@@ -320,11 +333,10 @@ export function StaffView({
         <h1>Our Staff</h1>
         <p>The students who report, edit and publish BOSS Today.</p>
       </header>
-      {STAFF_GROUPS.map(({ role, title }) => {
-        const people = staff.filter((person) => person.role === role)
+      {staffGroups(staff).map(({ title, people }) => {
         if (people.length === 0) return null
         return (
-          <section key={role} className="staff-group" aria-label={title}>
+          <section key={title} className="staff-group" aria-label={title}>
             <h2 className="section-block__title">{title}</h2>
             <ul className="staff-list">
               {people.map((person) => (

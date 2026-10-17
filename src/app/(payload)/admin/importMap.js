@@ -32,6 +32,7 @@ import { SubmissionActions as SubmissionActions_e9ec5204f3f131255fe163ab24536795
 import { StoryRowLabel as StoryRowLabel_8b2a60b2d92bff4132c96c6748202029 } from '@/components/admin/StoryRowLabel'
 import { PrintEditionLink as PrintEditionLink_444df7a4575e6b37272975c680a7085d } from '@/components/admin/PrintEditionLink'
 import { DesignSummary as DesignSummary_b65fb1509d134c4350934378b5e4a3b7 } from '@/components/admin/designer/DesignSummary'
+import { PositionAccess as PositionAccess_719b7a9b042f5e201ba5d685fd646e39 } from '@/components/admin/PositionAccess'
 import { PublishBannerNow as PublishBannerNow_74ff678f58701ea20c1043e171f0a8b5 } from '@/components/admin/PublishBannerNow'
 import { Icon as Icon_066c562e10ad4e70ff0de1a39f9b91f6 } from '@/components/admin/Brand'
 import { Logo as Logo_066c562e10ad4e70ff0de1a39f9b91f6 } from '@/components/admin/Brand'
@@ -83,6 +84,7 @@ export const importMap = {
   "@/components/admin/StoryRowLabel#StoryRowLabel": StoryRowLabel_8b2a60b2d92bff4132c96c6748202029,
   "@/components/admin/PrintEditionLink#PrintEditionLink": PrintEditionLink_444df7a4575e6b37272975c680a7085d,
   "@/components/admin/designer/DesignSummary#DesignSummary": DesignSummary_b65fb1509d134c4350934378b5e4a3b7,
+  "@/components/admin/PositionAccess#PositionAccess": PositionAccess_719b7a9b042f5e201ba5d685fd646e39,
   "@/components/admin/PublishBannerNow#PublishBannerNow": PublishBannerNow_74ff678f58701ea20c1043e171f0a8b5,
   "@/components/admin/Brand#Icon": Icon_066c562e10ad4e70ff0de1a39f9b91f6,
   "@/components/admin/Brand#Logo": Logo_066c562e10ad4e70ff0de1a39f9b91f6,

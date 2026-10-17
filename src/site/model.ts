@@ -14,7 +14,11 @@ export type ExportSection = {
   order: number
 }
 
-export type ExportStaff = Author & { photo: Media | null; role: 'reporter' | 'editor' | 'exec' }
+export type ExportStaff = Author & {
+  photo: Media | null
+  role: 'reporter' | 'editor' | 'exec'
+  positions: string[]
+}
 
 export type ExportTag = {
   id: number

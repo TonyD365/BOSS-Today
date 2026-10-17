@@ -328,7 +328,43 @@ export interface User {
    */
   isSuperAdmin?: boolean | null;
   /**
-   * Shown under the byline, e.g. "Sports Editor" or "Staff Writer".
+   * Their jobs on the paper. The Our Staff page and the print staff box are grouped by these.
+   */
+  positions?:
+    | (
+        | 'editor-in-chief'
+        | 'managing-editor'
+        | 'faculty-advisor'
+        | 'news-editor'
+        | 'opinion-editor'
+        | 'student-life-editor'
+        | 'sports-editor'
+        | 'arts-culture-editor'
+        | 'science-tech-editor'
+        | 'copy-chief'
+        | 'copy-editor'
+        | 'fact-checker'
+        | 'standards-editor'
+        | 'photo-editor'
+        | 'staff-photographer'
+        | 'graphics-editor'
+        | 'print-editor'
+        | 'layout-designer'
+        | 'digital-editor'
+        | 'video-producer'
+        | 'social-media-editor'
+        | 'recruitment-coordinator'
+        | 'web-tech-lead'
+        | 'archivist'
+        | 'senior-reporter'
+        | 'staff-writer'
+        | 'columnist'
+        | 'junior-reporter'
+        | 'contributing-writer'
+      )[]
+    | null;
+  /**
+   * Shown under the byline. Leave empty to use their positions, or write your own, e.g. "Sports Editor".
    */
   title?: string | null;
   bio?: string | null;
@@ -1218,6 +1254,7 @@ export interface UsersSelect<T extends boolean = true> {
   active?: T;
   permissions?: T;
   isSuperAdmin?: T;
+  positions?: T;
   title?: T;
   bio?: T;
   photo?: T;

@@ -21,6 +21,7 @@ import { SESSION_SECONDS } from '../auth/session'
 import { auditDelete, auditPeople, keepSignOffs } from '../hooks/audit'
 import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 import { slugFrom } from '../hooks/slug'
+import { POSITIONS } from '../lib/positions'
 
 /** Roles a staff-managing exec may hand out: anything below exec. */
 const STAFF_MANAGED_ROLES: Role[] = ['reader', 'reporter', 'editor']
@@ -276,9 +277,32 @@ export const Users: CollectionConfig = {
       },
     },
     {
+      name: 'positions',
+      type: 'select',
+      hasMany: true,
+      label: 'Positions',
+      access: {
+        create: ({ req }) => isSuperAdminUser(req.user) || canManageStaff(req.user),
+        update: ({ req }) => isSuperAdminUser(req.user) || canManageStaff(req.user),
+      },
+      options: POSITIONS.map(({ value, label }) => ({ value, label })),
+      admin: {
+        description:
+          'Their jobs on the paper. The Our Staff page and the print staff box are grouped by these.',
+      },
+    },
+    {
+      name: 'positionAccess',
+      type: 'ui',
+      admin: { components: { Field: '@/components/admin/PositionAccess#PositionAccess' } },
+    },
+    {
       name: 'title',
       type: 'text',
-      admin: { description: 'Shown under the byline, e.g. "Sports Editor" or "Staff Writer".' },
+      admin: {
+        description:
+          'Shown under the byline. Leave empty to use their positions, or write your own, e.g. "Sports Editor".',
+      },
     },
     { name: 'bio', type: 'textarea' },
     { name: 'photo', type: 'upload', relationTo: 'media' },

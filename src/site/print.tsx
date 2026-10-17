@@ -14,6 +14,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 
 import { PrintEdition } from '@/components/print/PrintEdition'
 import type { IssueStory } from '@/lib/data'
+import { placeOf } from '@/lib/positions'
 
 import { asArticle, editionSlug, type ExportArticle, type ExportMeta } from './model'
 import type { PrintLinks } from './views'
@@ -67,9 +68,12 @@ export const buildPrintEditions = async ({
 }): Promise<PrintLinks> => {
   const links: PrintLinks = new Map()
   const byId = new Map(articles.map((article) => [article.id, article]))
+  // The staff box lists the most senior positions first, as on a masthead.
   const staffBox = site.staff
     .filter((person) => person.title)
-    .map((person) => ({ name: person.name, title: person.title as string }))
+    .map((person) => ({ person, order: placeOf(person.positions)?.order ?? 999 }))
+    .sort((a, b) => a.order - b.order)
+    .map(({ person }) => ({ name: person.name, title: person.title as string }))
 
   let browser: Browser | null = null
   let browserFailed: string | null = null

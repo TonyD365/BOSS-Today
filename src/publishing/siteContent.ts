@@ -2,6 +2,7 @@ import type { Payload, PayloadRequest, Where } from 'payload'
 
 import { cleanDesign, cleanTemplates } from '../design/sanitize'
 import { cleanLook } from '../lib/look'
+import { positionTitle } from '../lib/positions'
 import type { Design } from '../design/types'
 import type { Article, Media, User } from '../payload-types'
 
@@ -18,7 +19,7 @@ const publicAuthor = (user: User | number | null | undefined) =>
     ? {
         id: user.id,
         name: user.name,
-        title: user.title ?? null,
+        title: user.title || positionTitle(user.positions ?? []) || null,
         bio: user.bio ?? null,
         slug: user.slug ?? null,
         photo: user.photo && typeof user.photo === 'object' ? (user.photo as Media) : null,
@@ -231,7 +232,11 @@ export const exportMeta = async (payload: Payload, cmsUrl: string) => {
       ),
     },
     // Public profile fields only, grouped on the Our Staff page by role.
-    staff: staff.docs.map((user) => ({ ...publicAuthor(user)!, role: user.role })),
+    staff: staff.docs.map((user) => ({
+      ...publicAuthor(user)!,
+      role: user.role,
+      positions: user.positions ?? [],
+    })),
     tags: tags.docs.map(({ id, name, slug, description, image }) => ({
       id,
       name,
