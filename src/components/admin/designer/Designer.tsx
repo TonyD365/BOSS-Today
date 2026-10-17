@@ -48,6 +48,7 @@ import {
   type View,
 } from './operations'
 import { Stage } from './Stage'
+import { TemplatePicker } from './TemplatePicker'
 import { format, formatColor, formatSize } from './textEditing'
 import '@/design/design.css'
 import './designer.css'
@@ -107,6 +108,42 @@ type Props = {
 }
 
 const HISTORY = 100
+
+/** What an element shows rather than how it looks; copying a style leaves these alone. */
+const CONTENT_KEYS: Partial<Record<ElementType, string[]>> = {
+  text: ['paragraphs'],
+  image: ['mediaId', 'link', 'crop'],
+  story: ['source', 'articleId', 'sectionId', 'index'],
+  list: ['kind', 'sectionId', 'title', 'count'],
+  widget: ['kind', 'title', 'count'],
+  site: ['kind'],
+  icon: ['name', 'paths'],
+  table: ['rows'],
+}
+
+/** When each design in the history was made, for the History panel. */
+const madeAt = new WeakMap<Design, number>()
+
+const describeChange = (before: Design, after: Design) => {
+  const a = before.desktop.elements
+  const b = after.desktop.elements
+  const kept = new Set(a.map((el) => el.id))
+  if (a.length > 0 && b.length > 0 && !b.some((el) => kept.has(el.id)))
+    return 'Replaced the whole layout'
+  if (b.length > a.length)
+    return `Added ${b.length - a.length === 1 ? 'an item' : `${b.length - a.length} items`}`
+  if (b.length < a.length)
+    return `Deleted ${a.length - b.length === 1 ? 'an item' : `${a.length - b.length} items`}`
+  const old = new Map(a.map((el) => [el.id, JSON.stringify(el)]))
+  const changed = b.filter((el) => old.get(el.id) !== JSON.stringify(el))
+  if (changed.length === 0) {
+    if (JSON.stringify(before.guides) !== JSON.stringify(after.guides)) return 'Moved a guide'
+    if (JSON.stringify(before.phone) !== JSON.stringify(after.phone)) return 'Phone layout'
+    return 'Page settings'
+  }
+  if (changed.length > 1) return `Changed ${changed.length} items`
+  return `Changed ${label(changed[0])}`
+}
 const empty: DesignData = { articles: [], byId: {}, media: {}, issue: null }
 
 /** The site designer: a Canva-style canvas for the front page. */
@@ -134,6 +171,7 @@ export function Designer({
   const [sections, setSections] = useState<{ id: number; name: string }[]>([])
   const [pages, setPages] = useState<{ id: number; title: string }[]>([])
   const [showGrid, setShowGrid] = useState(false)
+  const [rulers, setRulers] = useState(false)
   const [menu, setMenu] = useState<{ x: number; y: number; id: string | null } | null>(null)
   const [status, setStatus] = useState<'saved' | 'unsaved' | 'saving' | 'error'>('saved')
   const [message, setMessage] = useState<string | null>(null)
@@ -145,6 +183,12 @@ export function Designer({
   const [dirty, setDirty] = useState(false)
   const [clipboard, setClipboard] = useState<DesignElement[]>([])
   const [iconsOpen, setIconsOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [templatesOpen, setTemplatesOpen] = useState(false)
+  const [copiedStyle, setCopiedStyle] = useState<{
+    type: ElementType
+    style: Record<string, unknown>
+  } | null>(null)
   const stageBox = useRef<HTMLDivElement>(null)
   const savedJson = useRef(JSON.stringify(initial))
   const leaving = useRef(false)
@@ -162,6 +206,7 @@ export function Designer({
   const commit = useCallback((next: Design, before: Design) => {
     setPast((p) => [...p.slice(-HISTORY + 1), before])
     setFuture([])
+    madeAt.set(next, Date.now())
     setDesign(next)
     setDirty(true)
   }, [])
@@ -447,6 +492,43 @@ export function Designer({
   }
 
   const copy = () => setClipboard(structuredClone(selected))
+  // Copy style / paste style, like Canva's format painter.
+  const copyStyle = () => {
+    if (selected.length !== 1) return
+    const el = selected[0]
+    const skip = new Set(CONTENT_KEYS[el.type] ?? [])
+    const style = Object.fromEntries(Object.entries(el.props).filter(([key]) => !skip.has(key)))
+    setCopiedStyle({ type: el.type, style: { ...structuredClone(style), opacity: el.opacity } })
+    setMessage(null)
+  }
+  const pasteStyle = () => {
+    if (!copiedStyle || readOnly) return
+    const targets = selected.filter((el) => el.type === copiedStyle.type).map((el) => el.id)
+    if (targets.length === 0) {
+      setMessage(`That style is for ${copiedStyle.type} items; select one of those to paste it.`)
+      return
+    }
+    const { opacity, ...props } = copiedStyle.style
+    change((d) =>
+      updateElements(
+        d,
+        targets,
+        (el) =>
+          ({
+            ...el,
+            opacity: opacity as number,
+            props: { ...el.props, ...props },
+          }) as DesignElement,
+      ),
+    )
+  }
+  // Going back to any point in the history; later steps stay available to redo.
+  const jumpTo = (index: number) => {
+    setFuture((f) => [...past.slice(index + 1), design, ...f])
+    setDesign(past[index])
+    setPast((p) => p.slice(0, index))
+    setDirty(true)
+  }
   const paste = () => {
     if (clipboard.length === 0 || readOnly) return
     const copies = duplicates(clipboard)
@@ -503,6 +585,12 @@ export function Designer({
       } else if (mod && key === 's') {
         e.preventDefault()
         save()
+      } else if (mod && e.altKey && key === 'c') {
+        e.preventDefault()
+        copyStyle()
+      } else if (mod && e.altKey && key === 'v') {
+        e.preventDefault()
+        pasteStyle()
       } else if (mod && key === 'c') copy()
       else if (mod && key === 'v') {
         e.preventDefault()
@@ -771,6 +859,9 @@ export function Designer({
           <button type="button" onClick={() => setIconsOpen(true)} disabled={readOnly}>
             Icon
           </button>
+          <button type="button" onClick={() => add('table')}>
+            Table
+          </button>
           <button type="button" onClick={() => add('story')}>
             Story
           </button>
@@ -829,6 +920,21 @@ export function Designer({
           >
             ↷
           </button>
+          <button
+            type="button"
+            onClick={() => setTemplatesOpen(true)}
+            title="Start from a template"
+          >
+            Templates
+          </button>
+          <button
+            type="button"
+            className={historyOpen ? 'dz-on' : ''}
+            onClick={() => setHistoryOpen(!historyOpen)}
+            title="History: go back to any earlier step"
+          >
+            History
+          </button>
           <span className="dz-sep" />
           <button
             type="button"
@@ -873,6 +979,15 @@ export function Designer({
             title="Grid and snapping to it"
           >
             Grid
+          </button>
+          <button
+            type="button"
+            className={rulers ? 'dz-on' : ''}
+            onClick={() => setRulers(!rulers)}
+            title="Rulers: drag from them to add guide lines"
+            disabled={view !== 'desktop'}
+          >
+            Rulers
           </button>
           <span className="dz-sep" />
           <span className={`dz-status dz-status--${shown}`}>
@@ -981,6 +1096,16 @@ export function Designer({
               <button type="button" onClick={duplicate} title="Duplicate (Ctrl+D)">
                 Duplicate
               </button>
+              {selected.length === 1 && (
+                <button type="button" onClick={copyStyle} title="Copy style (Ctrl+Alt+C)">
+                  Copy style
+                </button>
+              )}
+              {copiedStyle && (
+                <button type="button" onClick={pasteStyle} title="Paste style (Ctrl+Alt+V)">
+                  Paste style
+                </button>
+              )}
               <button type="button" onClick={toggleLock}>
                 {selected.every((el) => el.locked) ? 'Unlock' : 'Lock'}
               </button>
@@ -1131,6 +1256,42 @@ export function Designer({
 
       <div className="dz-body">
         <aside className="dz-layers" aria-label="Layers">
+          {historyOpen && (
+            <div className="dz-history">
+              <h3>History</h3>
+              <ol>
+                {past.map((d, i) => (
+                  <li key={i}>
+                    <button
+                      type="button"
+                      className="dz-layer"
+                      onClick={() => jumpTo(i)}
+                      disabled={readOnly}
+                    >
+                      {i === 0 ? 'Opened' : describeChange(past[i - 1], d)}
+                      {madeAt.get(d) && (
+                        <span className="dz-history__time">
+                          {new Date(madeAt.get(d)!).toLocaleTimeString('en-CA', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+                <li className="dz-on">
+                  <span className="dz-layer">
+                    {past.length === 0 ? 'Opened' : describeChange(past[past.length - 1], design)}{' '}
+                    (now)
+                  </span>
+                </li>
+              </ol>
+              {future.length > 0 && (
+                <p className="dz-hint">{future.length} undone step(s) can be redone.</p>
+              )}
+            </div>
+          )}
           <h3>Layers</h3>
           <ol>
             {layers.map((el) => {
@@ -1200,6 +1361,9 @@ export function Designer({
                     onClick={() =>
                       change((d) =>
                         updateElements(d, [pr.id], (el) => {
+                          if (el.type === 'table' && pr.label === 'Table header') {
+                            return { ...el, props: { ...el.props, headerColor: pr.suggestion } }
+                          }
                           if (el.type === 'text') {
                             return {
                               ...el,
@@ -1266,6 +1430,7 @@ export function Designer({
               onContextMenu={(at, id) => setMenu({ ...at, id })}
               readOnly={readOnly}
               showGrid={showGrid}
+              rulers={rulers && view === 'desktop'}
               overflow={overflow}
               onOverflow={setOverflow}
             />
@@ -1325,6 +1490,26 @@ export function Designer({
         </aside>
       </div>
 
+      {templatesOpen && (
+        <TemplatePicker
+          current={cleanDesign(design)}
+          data={data}
+          sections={sections}
+          canEdit={!readOnly}
+          onClose={() => setTemplatesOpen(false)}
+          onUse={(next) => {
+            change(() => ({
+              ...next,
+              desktop: {
+                ...next.desktop,
+                ...(design.desktop.width ? { width: design.desktop.width } : {}),
+              },
+              guides: design.guides,
+            }))
+            setSelection([])
+          }}
+        />
+      )}
       {iconsOpen && (
         <IconPicker
           onClose={() => setIconsOpen(false)}
@@ -1353,6 +1538,13 @@ export function Designer({
                 ['Copy', 'Ctrl+C', copy, selection.length > 0],
                 ['Paste', 'Ctrl+V', paste, clipboard.length > 0 && !readOnly],
                 ['Duplicate', 'Ctrl+D', duplicate, selection.length > 0 && !readOnly],
+                ['Copy style', 'Ctrl+Alt+C', copyStyle, selected.length === 1],
+                [
+                  'Paste style',
+                  'Ctrl+Alt+V',
+                  pasteStyle,
+                  Boolean(copiedStyle) && selection.length > 0 && !readOnly,
+                ],
                 ['Delete', 'Del', removeSelected, selection.length > 0 && !readOnly],
                 null,
                 [
@@ -1450,6 +1642,7 @@ const label = (el: DesignElement) => {
       el.props.kind
     ]
   if (el.type === 'site') return SITE_PART_NAMES[el.props.kind]
+  if (el.type === 'table') return `Table (${el.props.rows.length} rows)`
   if (el.type === 'icon') return `Icon: ${el.props.name.replace(/-/g, ' ')}`
   return 'Image'
 }

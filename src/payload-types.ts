@@ -78,6 +78,7 @@ export interface Config {
     issues: Issue;
     sections: Section;
     pages: Page;
+    'design-templates': DesignTemplate;
     tags: Tag;
     media: Media;
     users: User;
@@ -103,6 +104,7 @@ export interface Config {
     issues: IssuesSelect<false> | IssuesSelect<true>;
     sections: SectionsSelect<false> | SectionsSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
+    'design-templates': DesignTemplatesSelect<false> | DesignTemplatesSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
@@ -680,6 +682,25 @@ export interface Page {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "design-templates".
+ */
+export interface DesignTemplate {
+  id: number;
+  name: string;
+  design:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Every publish, withdrawal, deletion and staff change. Visible to the super admin only.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -817,6 +838,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'pages';
         value: number | Page;
+      } | null)
+    | ({
+        relationTo: 'design-templates';
+        value: number | DesignTemplate;
       } | null)
     | ({
         relationTo: 'tags';
@@ -1103,6 +1128,16 @@ export interface PagesSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "design-templates_select".
+ */
+export interface DesignTemplatesSelect<T extends boolean = true> {
+  name?: T;
+  design?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

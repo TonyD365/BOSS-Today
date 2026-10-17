@@ -20,6 +20,7 @@ import { IssueChecks } from './collections/IssueChecks'
 import { Issues } from './collections/Issues'
 import { LiveBlogs } from './collections/LiveBlogs'
 import { Media } from './collections/Media'
+import { DesignTemplates } from './collections/DesignTemplates'
 import { Pages } from './collections/Pages'
 import { PageViews } from './collections/PageViews'
 import { Sections } from './collections/Sections'
@@ -104,6 +105,7 @@ export default buildConfig({
     Issues,
     Sections,
     Pages,
+    DesignTemplates,
     Tags,
     Media,
     Users,

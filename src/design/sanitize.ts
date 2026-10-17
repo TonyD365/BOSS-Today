@@ -5,6 +5,7 @@ import {
   shapeDefaults,
   siteDefaults,
   storyDefaults,
+  tableDefaults,
   textDefaults,
   widgetDefaults,
 } from './defaults'
@@ -125,6 +126,29 @@ const cleanProps = (type: DesignElement['type'], raw: Record<string, unknown>) =
         arrowEnd: bool(raw.arrowEnd),
       }
     }
+    case 'table': {
+      const d = tableDefaults()
+      const rows = (Array.isArray(raw.rows) ? raw.rows : d.rows)
+        .slice(0, 30)
+        .map((row: unknown) =>
+          (Array.isArray(row) ? row : [])
+            .slice(0, 10)
+            .map((cell: unknown) => String(cell ?? '').slice(0, 200)),
+        )
+      return {
+        rows: rows.length > 0 ? rows : d.rows,
+        header: bool(raw.header, true),
+        font: isFont(raw.font) ? raw.font : d.font,
+        size: num(raw.size, 8, 60, d.size),
+        color: color(raw.color, d.color),
+        fill: raw.fill === null ? null : color(raw.fill, '#ffffff'),
+        headerFill: color(raw.headerFill, d.headerFill),
+        headerColor: color(raw.headerColor, d.headerColor),
+        lines: color(raw.lines, d.lines),
+        stripes: bool(raw.stripes, true),
+        align: pick(raw.align, ['left', 'center'] as const, 'left'),
+      }
+    }
     case 'icon': {
       // Only plain path data: letters for commands, numbers, spaces, commas and signs.
       const safe = (d: unknown) =>
@@ -236,7 +260,7 @@ const cleanElement = (value: unknown): DesignElement | null => {
   const raw = (value ?? {}) as Record<string, unknown>
   const type = pick(
     raw.type,
-    ['text', 'shape', 'image', 'story', 'list', 'widget', 'site', 'icon'] as const,
+    ['text', 'shape', 'image', 'story', 'list', 'widget', 'site', 'icon', 'table'] as const,
     'text',
   )
   const elementId = id(raw.id)
@@ -276,6 +300,12 @@ const cleanGeometry = (value: unknown): (Geometry & { auto?: boolean }) | null =
 }
 
 /** Accepts only what the renderer understands. Anything else is dropped or reset. */
+const lines = (value: unknown, max: number) =>
+  (Array.isArray(value) ? value : [])
+    .filter((v): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= max)
+    .slice(0, 30)
+    .map((v) => Math.round(v))
+
 export const cleanDesign = (value: unknown): Design => {
   const raw = (value ?? {}) as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
   const elements = (Array.isArray(raw.desktop?.elements) ? raw.desktop.elements : [])
@@ -305,6 +335,14 @@ export const cleanDesign = (value: unknown): Design => {
     phone: { height: num(raw.phone?.height, 200, MAX_HEIGHT * 3, 2000), overrides },
     desktopChangedAt: date(raw.desktopChangedAt),
     phoneCheckedAt: date(raw.phoneCheckedAt),
+    ...(raw.guides && typeof raw.guides === 'object'
+      ? {
+          guides: {
+            x: lines(raw.guides.x, DESKTOP_WIDTH),
+            y: lines(raw.guides.y, MAX_HEIGHT),
+          },
+        }
+      : {}),
   }
 }
 
@@ -384,6 +422,25 @@ export const contrastProblems = (design: Design): ContrastProblem[] => {
           }
         }
         if (el.props.outline || el.props.shadow) return // Effects make contrast a judgement call.
+      } else if (el.type === 'table') {
+        const behind = backgroundAt(elements, index, geometry, page)
+        if (behind === 'image' && !el.props.fill) return
+        background = el.props.fill
+          ? flatten(el.props.fill, behind === 'image' ? '#ffffff' : behind)
+          : behind
+        checks.push({ color: el.props.color, size: el.props.size, bold: false })
+        if (el.props.header && contrast(el.props.headerColor, el.props.headerFill) < 4.5) {
+          problems.push({
+            id: el.id,
+            label: 'Table header',
+            view,
+            color: el.props.headerColor,
+            ratio: Math.round(contrast(el.props.headerColor, el.props.headerFill) * 100) / 100,
+            needed: 4.5,
+            background: el.props.headerFill,
+            suggestion: readableNear(el.props.headerColor, el.props.headerFill, 4.5),
+          })
+        }
       } else if (
         el.type === 'story' ||
         el.type === 'list' ||

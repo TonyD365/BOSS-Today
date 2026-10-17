@@ -111,6 +111,21 @@ export type IconProps = {
   strokeWidth: number
 }
 
+/** A simple table: scores, line-ups, results. The first row can be a header. */
+export type TableProps = {
+  rows: string[][]
+  header: boolean
+  font: string
+  size: number
+  color: Color
+  fill: Color | null
+  headerFill: Color
+  headerColor: Color
+  lines: Color
+  stripes: boolean
+  align: 'left' | 'center'
+}
+
 export type StoryProps = {
   source: 'pick' | 'latest' | 'section'
   articleId: number | null
@@ -198,6 +213,7 @@ export type DesignElement =
   | (Base & { type: 'widget'; props: WidgetProps })
   | (Base & { type: 'site'; props: SiteProps })
   | (Base & { type: 'icon'; props: IconProps })
+  | (Base & { type: 'table'; props: TableProps })
 
 export type ElementType = DesignElement['type']
 
@@ -214,6 +230,8 @@ export type Design = {
   phone: { height: number; overrides: Record<string, Geometry & { auto?: boolean }> }
   desktopChangedAt: string | null
   phoneCheckedAt: string | null
+  /** Designer only: guide lines dragged from the rulers (desktop canvas). */
+  guides?: { x: number[]; y: number[] }
 }
 
 /** Pages whose content is filled in automatically; each kind shares one template. */

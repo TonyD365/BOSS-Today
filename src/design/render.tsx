@@ -678,7 +678,57 @@ export function ElementContent({
       return <SiteElement el={el} data={data} designer={!publicOnly} />
     case 'icon':
       return <IconElement el={el} />
+    case 'table':
+      return <TableElement el={el} />
   }
+}
+
+export function TableElement({ el }: { el: Extract<DesignElement, { type: 'table' }> }) {
+  const p = el.props
+  const head = p.header ? p.rows[0] : null
+  const body = p.header ? p.rows.slice(1) : p.rows
+  const cell: React.CSSProperties = {
+    padding: `calc(${p.size * 0.35} * var(--fs, 1) * var(--u)) calc(${p.size * 0.6} * var(--fs, 1) * var(--u))`,
+    borderBottom: `1px solid ${p.lines}`,
+    textAlign: p.align,
+  }
+  return (
+    <table
+      className="dc-table"
+      style={{
+        fontFamily: fontFamily(p.font),
+        fontSize: `calc(${p.size} * var(--fs, 1) * var(--u))`,
+        color: p.color,
+        background: p.fill ?? undefined,
+      }}
+    >
+      {head && (
+        <thead>
+          <tr style={{ background: p.headerFill, color: p.headerColor }}>
+            {head.map((text, i) => (
+              <th key={i} style={cell}>
+                {text}
+              </th>
+            ))}
+          </tr>
+        </thead>
+      )}
+      <tbody>
+        {body.map((row, r) => (
+          <tr
+            key={r}
+            style={{ background: p.stripes && r % 2 === 1 ? 'rgba(0,0,0,0.04)' : undefined }}
+          >
+            {row.map((text, i) => (
+              <td key={i} style={cell}>
+                {text}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
 }
 
 /** A Tabler icon, drawn from the paths stored with it. */

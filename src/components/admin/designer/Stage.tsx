@@ -56,6 +56,7 @@ export function Stage({
   onContextMenu,
   readOnly,
   showGrid,
+  rulers,
   overflow,
   onOverflow,
 }: {
@@ -76,6 +77,8 @@ export function Stage({
   onContextMenu: (at: { x: number; y: number }, id: string | null) => void
   readOnly: boolean
   showGrid: boolean
+  /** Rulers along the canvas, for dragging out guide lines (desktop only). */
+  rulers: boolean
   overflow: Set<string>
   onOverflow: (ids: Set<string>) => void
 }) {
@@ -221,7 +224,13 @@ export function Stage({
       const shifted = { ...moving, x: moving.x + dx, y: moving.y + dy }
       const snap = event.altKey
         ? { dx: 0, dy: 0, guides: [] }
-        : snapMove(shifted, others, { w: size.width, h: size.height }, 6 / zoom)
+        : snapMove(
+            shifted,
+            others,
+            { w: size.width, h: size.height },
+            6 / zoom,
+            view === 'desktop' ? design.guides : undefined,
+          )
       if (snap.guides.length === 0 && showGrid && !event.altKey) {
         snap.dx = snapToGrid(shifted.x, 10) - shifted.x
         snap.dy = snapToGrid(shifted.y, 10) - shifted.y
@@ -526,6 +535,16 @@ export function Stage({
             )}
           </div>
         )}
+        {view === 'desktop' && (
+          <UserGuides
+            design={design}
+            zoom={zoom}
+            size={size}
+            rulers={rulers && !readOnly}
+            toCanvas={toCanvas}
+            onCommit={onCommit}
+          />
+        )}
         {guides.map((g, i) => (
           <div
             key={i}
@@ -560,5 +579,115 @@ export function Stage({
         )}
       </div>
     </div>
+  )
+}
+
+/**
+ * Rulers along the top and left of the canvas, and the guide lines dragged
+ * out of them. Drag a guide back off the canvas to remove it.
+ */
+function UserGuides({
+  design,
+  zoom,
+  size,
+  rulers,
+  toCanvas,
+  onCommit,
+}: {
+  design: Design
+  zoom: number
+  size: { width: number; height: number }
+  rulers: boolean
+  toCanvas: (event: { clientX: number; clientY: number }) => Point
+  onCommit: (design: Design, before: Design) => void
+}) {
+  const [dragging, setDragging] = useState<{
+    axis: 'x' | 'y'
+    index: number | null
+    at: number
+  } | null>(null)
+  const lines = design.guides ?? { x: [], y: [] }
+  const limit = { x: size.width, y: size.height }
+
+  const start = (axis: 'x' | 'y', index: number | null) => (event: React.PointerEvent) => {
+    if (!rulers) return
+    event.stopPropagation()
+    event.preventDefault()
+    try {
+      ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
+    } catch {
+      // Not every pointer can be captured; the drag still works over the ruler and canvas.
+    }
+    const p = toCanvas(event)
+    setDragging({ axis, index, at: axis === 'x' ? p.x : p.y })
+  }
+  const move = (event: React.PointerEvent) => {
+    if (!dragging) return
+    const p = toCanvas(event)
+    setDragging({ ...dragging, at: Math.round(dragging.axis === 'x' ? p.x : p.y) })
+  }
+  const end = () => {
+    if (!dragging) return
+    const { axis, index, at } = dragging
+    setDragging(null)
+    const list = [...lines[axis]]
+    if (index !== null) list.splice(index, 1)
+    if (at >= 0 && at <= limit[axis]) list.push(at)
+    onCommit({ ...design, guides: { ...lines, [axis]: list } }, design)
+  }
+  const handlers = { onPointerMove: move, onPointerUp: end, onPointerCancel: end }
+  const step = zoom < 0.4 ? 200 : 100
+  const ticks = (length: number) =>
+    Array.from({ length: Math.floor(length / step) + 1 }, (_, i) => i * step)
+
+  const line = (axis: 'x' | 'y', at: number, index: number | null, live = false) => (
+    <div
+      key={`${axis}-${index ?? 'new'}`}
+      className={`dz-userguide dz-userguide--${axis}${live ? ' dz-userguide--live' : ''}`}
+      style={axis === 'x' ? { left: at * zoom } : { top: at * zoom }}
+      onPointerDown={start(axis, index)}
+      {...handlers}
+      title={rulers ? 'Drag to move; drag off the page to remove' : undefined}
+    />
+  )
+
+  return (
+    <>
+      {lines.x.map((at, i) =>
+        dragging?.axis === 'x' && dragging.index === i ? null : line('x', at, i),
+      )}
+      {lines.y.map((at, i) =>
+        dragging?.axis === 'y' && dragging.index === i ? null : line('y', at, i),
+      )}
+      {dragging && line(dragging.axis, dragging.at, null, true)}
+      {rulers && (
+        <>
+          <div
+            className="dz-ruler dz-ruler--top"
+            onPointerDown={start('y', null)}
+            {...handlers}
+            title="Drag down to add a guide"
+          >
+            {ticks(size.width).map((t) => (
+              <span key={t} style={{ left: t * zoom }}>
+                {t}
+              </span>
+            ))}
+          </div>
+          <div
+            className="dz-ruler dz-ruler--left"
+            onPointerDown={start('x', null)}
+            {...handlers}
+            title="Drag right to add a guide"
+          >
+            {ticks(size.height).map((t) => (
+              <span key={t} style={{ top: t * zoom }}>
+                {t}
+              </span>
+            ))}
+          </div>
+        </>
+      )}
+    </>
   )
 }

@@ -711,6 +711,7 @@
 }
 
 .dz-icons__grid {
+  min-height: 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
   gap: 4px;
@@ -731,4 +732,153 @@
 .dz-icons__grid button:hover {
   border-color: var(--theme-elevation-200);
   background: var(--theme-elevation-50);
+}
+
+.dz-row--stack {
+  display: grid;
+  gap: 4px;
+}
+
+.dz-table-text {
+  width: 100%;
+  font:
+    12px/1.5 ui-monospace,
+    monospace;
+}
+
+/* Rulers and the guide lines dragged out of them */
+.dz-ruler {
+  position: absolute;
+  z-index: 30;
+  overflow: hidden;
+  background: var(--theme-elevation-50);
+  color: var(--theme-elevation-500);
+  font:
+    9px/1 ui-monospace,
+    monospace;
+  cursor: copy;
+}
+
+.dz-ruler--top {
+  top: -20px;
+  left: 0;
+  right: 0;
+  height: 18px;
+  border-bottom: 1px solid var(--theme-elevation-200);
+  cursor: row-resize;
+}
+
+.dz-ruler--left {
+  top: 0;
+  bottom: 0;
+  left: -22px;
+  width: 20px;
+  border-right: 1px solid var(--theme-elevation-200);
+  cursor: col-resize;
+}
+
+.dz-ruler span {
+  position: absolute;
+  padding: 2px;
+}
+
+.dz-ruler--top span {
+  bottom: 0;
+  border-left: 1px solid currentColor;
+}
+
+.dz-ruler--left span {
+  left: 0;
+  border-top: 1px solid currentColor;
+  writing-mode: vertical-rl;
+}
+
+.dz-userguide {
+  position: absolute;
+  z-index: 25;
+}
+
+.dz-userguide::after {
+  content: '';
+  position: absolute;
+  background: #00a3bf;
+}
+
+.dz-userguide--x {
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  margin-left: -3px;
+  cursor: col-resize;
+}
+
+.dz-userguide--x::after {
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 1px;
+}
+
+.dz-userguide--y {
+  left: 0;
+  right: 0;
+  height: 7px;
+  margin-top: -3px;
+  cursor: row-resize;
+}
+
+.dz-userguide--y::after {
+  left: 0;
+  right: 0;
+  top: 3px;
+  height: 1px;
+}
+
+.dz-userguide--live::after {
+  background: #ff3b7f;
+}
+
+.dz-history {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--theme-elevation-150);
+}
+
+.dz-history ol {
+  max-height: 240px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.dz-history__time {
+  float: right;
+  opacity: 0.6;
+  font-size: 11px;
+}
+
+.dz-templates {
+  width: min(980px, 94vw);
+  overflow-y: auto;
+}
+
+.dz-templates__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.dz-template {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+}
+
+.dz-template__thumb {
+  overflow: hidden;
+  border: 1px solid var(--theme-elevation-150);
+  background: #fff;
+  pointer-events: none;
 }

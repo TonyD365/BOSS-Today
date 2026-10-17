@@ -120,9 +120,15 @@ export const snapMove = (
   others: Box[],
   canvas: { w: number; h: number },
   threshold: number,
+  lines: { x: number[]; y: number[] } = { x: [], y: [] },
 ): { dx: number; dy: number; guides: Guide[] } => {
-  const targetsX: { at: number; box?: Box }[] = [{ at: 0 }, { at: canvas.w / 2 }, { at: canvas.w }]
-  const targetsY: { at: number; box?: Box }[] = [{ at: 0 }]
+  const targetsX: { at: number; box?: Box }[] = [
+    { at: 0 },
+    { at: canvas.w / 2 },
+    { at: canvas.w },
+    ...lines.x.map((at) => ({ at })),
+  ]
+  const targetsY: { at: number; box?: Box }[] = [{ at: 0 }, ...lines.y.map((at) => ({ at }))]
   for (const b of others) {
     targetsX.push({ at: b.x, box: b }, { at: b.x + b.w / 2, box: b }, { at: b.x + b.w, box: b })
     targetsY.push({ at: b.y, box: b }, { at: b.y + b.h / 2, box: b }, { at: b.y + b.h, box: b })

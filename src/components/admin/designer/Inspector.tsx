@@ -1080,6 +1080,81 @@ export function Inspector({
           )}
         </div>
       )}
+      {selected.length === 1 && first.type === 'table' && (
+        <div className="dz-group">
+          <h4>Table</h4>
+          <label className="dz-row dz-row--stack">
+            <span className="dz-label">
+              Cells: one row per line, columns split by | (or paste from a spreadsheet)
+            </span>
+            <textarea
+              key={first.id}
+              className="dz-input dz-table-text"
+              rows={Math.min(12, first.props.rows.length + 2)}
+              defaultValue={first.props.rows.map((row) => row.join(' | ')).join('\n')}
+              onBlur={(e) =>
+                set({
+                  rows: e.target.value
+                    .split('\n')
+                    .filter((line) => line.trim())
+                    .map((line) =>
+                      line.split(line.includes('\t') ? '\t' : '|').map((c) => c.trim()),
+                    ),
+                })
+              }
+            />
+          </label>
+          <Toggle
+            label="First row is a header"
+            value={first.props.header}
+            onChange={(header) => set({ header })}
+          />
+          <Toggle
+            label="Shaded rows"
+            value={first.props.stripes}
+            onChange={(stripes) => set({ stripes })}
+          />
+          <Choice
+            label="Font"
+            value={first.props.font}
+            options={fontOptions}
+            onChange={(font) => set({ font })}
+          />
+          <Num
+            label="Size"
+            value={first.props.size}
+            min={8}
+            max={60}
+            onChange={(size) => set({ size })}
+          />
+          <Choice
+            label="Align"
+            value={first.props.align}
+            options={[
+              { value: 'left', label: 'Left' },
+              { value: 'center', label: 'Centre' },
+            ]}
+            onChange={(align) => set({ align })}
+          />
+          <ColorField label="Text" value={first.props.color} onChange={(color) => set({ color })} />
+          <ColorField
+            label="Header"
+            value={first.props.headerFill}
+            onChange={(headerFill) => set({ headerFill })}
+          />
+          <ColorField
+            label="Header text"
+            value={first.props.headerColor}
+            onChange={(headerColor) => set({ headerColor })}
+          />
+          <ColorField
+            label="Lines"
+            value={first.props.lines}
+            onChange={(lines) => set({ lines })}
+          />
+        </div>
+      )}
+
       {same && first.type === 'icon' && (
         <div className="dz-group">
           <h4>Icon</h4>

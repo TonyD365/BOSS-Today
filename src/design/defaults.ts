@@ -12,6 +12,7 @@ import type {
   SitePart,
   SiteProps,
   StoryProps,
+  TableProps,
   TextProps,
   WidgetProps,
 } from './types'
@@ -60,6 +61,25 @@ export const imageDefaults = (overrides: Partial<ImageProps> = {}): ImageProps =
   filters: { ...NO_FILTERS },
   shadow: false,
   border: null,
+  ...overrides,
+})
+
+export const tableDefaults = (overrides: Partial<TableProps> = {}): TableProps => ({
+  rows: [
+    ['Team', 'W', 'L'],
+    ['Raptors', '5', '1'],
+    ['Hawks', '3', '3'],
+  ],
+  header: true,
+  font: DEFAULT_SANS,
+  size: 16,
+  color: '#121212',
+  fill: '#ffffff',
+  headerFill: '#121212',
+  headerColor: '#ffffff',
+  lines: '#dfdfdf',
+  stripes: true,
+  align: 'left',
   ...overrides,
 })
 
@@ -142,6 +162,7 @@ export const DEFAULT_SIZES: Record<ElementType, { w: number; h: number }> = {
   widget: { w: 300, h: 260 },
   site: { w: 600, h: 40 },
   icon: { w: 96, h: 96 },
+  table: { w: 420, h: 180 },
 }
 
 const base = (type: ElementType, x: number, y: number) => ({
@@ -183,6 +204,8 @@ export const makeElement = (
       return { ...base(type, at.x, at.y), type, props: widgetDefaults(props) }
     case 'site':
       return { ...base(type, at.x, at.y), type, props: siteDefaults(props) }
+    case 'table':
+      return { ...base(type, at.x, at.y), type, props: tableDefaults(props) }
     case 'icon':
       return {
         ...base(type, at.x, at.y),
@@ -371,3 +394,117 @@ export const pageStarter = (title: string): Design => {
   ]
   return design
 }
+
+/** Builds a design from boxes placed on a 1200-wide page. */
+const layout = (
+  height: number,
+  boxes: [ElementType, number, number, number, number, Record<string, unknown>][],
+) => {
+  const design = emptyDesign()
+  design.desktop.height = height
+  design.desktop.elements = boxes.map(([type, x, y, w, h, props]) => at(type, x, y, w, h, props))
+  return design
+}
+
+/** Ready-made front pages to start from (besides the classic one). */
+export const builtInTemplates = (
+  sections: { id: number; name: string }[],
+): { id: string; name: string; description: string; design: Design }[] => [
+  {
+    id: 'classic',
+    name: 'Classic',
+    description: 'Lead story, three below, Latest and Most read on the right, a strip per section.',
+    design: classicDesign(sections),
+  },
+  {
+    id: 'big-photo',
+    name: 'Big photo',
+    description: 'One story across the whole page with a large photo, then four below.',
+    design: layout(1820, [
+      [
+        'story',
+        0,
+        0,
+        1200,
+        1080,
+        { index: 1, headlineSize: 56, imagePosition: 'top', font: 'playfair' },
+      ],
+      [
+        'shape',
+        0,
+        1110,
+        1200,
+        20,
+        { kind: 'line', stroke: { color: '#121212', width: 2, dash: 'solid' } },
+      ],
+      ['story', 0, 1150, 280, 460, { index: 2, headlineSize: 20 }],
+      ['story', 307, 1150, 280, 460, { index: 3, headlineSize: 20 }],
+      ['story', 613, 1150, 280, 460, { index: 4, headlineSize: 20 }],
+      ['story', 920, 1150, 280, 460, { index: 5, headlineSize: 20 }],
+      ['list', 0, 1640, 1200, 160, { kind: 'mostread', count: 5, title: 'Most read this week' }],
+    ]),
+  },
+  {
+    id: 'breaking',
+    name: 'Breaking news',
+    description:
+      'A red banner over the top story, with live coverage and the latest updates beside it.',
+    design: layout(1360, [
+      ['shape', 0, 0, 1200, 64, { kind: 'rect', fill: { type: 'solid', color: '#b3261e' } }],
+      [
+        'text',
+        24,
+        14,
+        1152,
+        36,
+        {
+          paragraphs: plainParagraphs('BREAKING NEWS'),
+          font: DEFAULT_SANS,
+          size: 26,
+          weight: 700,
+          color: '#ffffff',
+          letterSpacing: 3,
+        },
+      ],
+      ['story', 0, 96, 820, 780, { index: 1, headlineSize: 48, imagePosition: 'top' }],
+      ['widget', 860, 96, 340, 64, { kind: 'live', title: '' }],
+      [
+        'list',
+        860,
+        180,
+        340,
+        640,
+        { kind: 'latest', count: 8, title: 'Latest updates', showImage: false },
+      ],
+      ['story', 0, 910, 390, 420, { index: 2, headlineSize: 22 }],
+      ['story', 410, 910, 390, 420, { index: 3, headlineSize: 22 }],
+      ['widget', 860, 910, 340, 260, { kind: 'scores', count: 4, title: 'Scores' }],
+    ]),
+  },
+  {
+    id: 'feature',
+    name: 'Feature',
+    description: 'A magazine-style cover story with a big centred headline, then three more.',
+    design: layout(1480, [
+      [
+        'story',
+        150,
+        0,
+        900,
+        900,
+        { index: 1, headlineSize: 60, imagePosition: 'top', font: 'playfair', showByline: true },
+      ],
+      [
+        'shape',
+        0,
+        940,
+        1200,
+        20,
+        { kind: 'line', stroke: { color: '#121212', width: 1, dash: 'solid' } },
+      ],
+      ['story', 0, 980, 380, 460, { index: 2, headlineSize: 22 }],
+      ['story', 410, 980, 380, 460, { index: 3, headlineSize: 22 }],
+      ['story', 820, 980, 380, 460, { index: 4, headlineSize: 22 }],
+    ]),
+  },
+]

@@ -68,6 +68,15 @@ const autoGeometry = (el: DesignElement, y: number): Geometry => {
       }
       return { ...at, h: heights[el.props.kind], fontScale: scale }
     }
+    case 'table': {
+      // Text shrinks a little on phones; each row is about two lines tall.
+      const scale = Math.min(1, 15 / el.props.size)
+      return {
+        ...at,
+        h: Math.ceil(el.props.rows.length * el.props.size * scale * 2.1) + 4,
+        fontScale: scale,
+      }
+    }
     case 'icon': {
       // Icons keep their size (up to the column width), centred.
       const w = Math.min(el.w, CONTENT)
