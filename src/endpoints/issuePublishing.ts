@@ -814,9 +814,24 @@ const issueStories = async (req: PayloadRequest, issueId: string) => {
     req,
   })
   if (!issue) return null
-  const ids = (issue.stories ?? []).map((s) =>
-    typeof s.article === 'object' ? s.article?.id : s.article,
-  )
+  // Every story the publisher signed off for this issue, plus the print edition's list.
+  const checks = await req.payload.find({
+    collection: 'issue-checks',
+    where: { and: [{ issue: { equals: issue.id } }, { kind: { equals: 'checked' } }] },
+    limit: 0,
+    pagination: false,
+    depth: 0,
+    overrideAccess: true,
+    req,
+    select: { article: true },
+  })
+  const ids = [
+    ...new Set(
+      [...checks.docs.map((c) => c.article), ...(issue.stories ?? []).map((s) => s.article)]
+        .map((a) => (a && typeof a === 'object' ? a.id : a))
+        .filter((a): a is number => typeof a === 'number'),
+    ),
+  ]
   if (ids.length === 0) return { issue, stories: [] }
   const [live, latest] = await Promise.all([
     req.payload.find({

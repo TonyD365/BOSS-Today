@@ -27,7 +27,15 @@ export function IssueTakedown() {
   }, [id])
   useEffect(load, [load])
 
-  if (!id || !canIssue || !counts || counts.live === 0) return null
+  if (!id || !canIssue || !counts) return null
+  if (counts.live === 0) {
+    return (
+      <div style={{ display: 'grid', gap: 8, marginBottom: 24 }}>
+        <strong style={{ fontSize: 13 }}>Take this issue down</strong>
+        <p style={hint}>None of this issue’s stories are on the website.</p>
+      </div>
+    )
+  }
 
   const send = async (body: { note?: string; keep?: boolean }) => {
     setBusy(true)
