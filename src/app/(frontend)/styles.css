@@ -1163,3 +1163,76 @@ img {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Photo galleries in stories */
+
+.gallery {
+  max-width: 820px;
+  margin: 28px auto;
+}
+
+.gallery__title {
+  margin: 0 0 8px;
+  font: 700 13px / 1.2 var(--font-sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gallery__track {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  padding: 0 0 8px;
+  overflow-x: auto;
+  list-style: none;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+}
+
+.gallery__item {
+  position: relative;
+  flex: 0 0 88%;
+  scroll-snap-align: center;
+}
+
+.gallery__item img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  background: var(--placeholder);
+}
+
+.gallery__caption {
+  display: block;
+  margin-top: 6px;
+  color: var(--ink-muted);
+  font: 13px / 1.4 var(--font-sans);
+}
+
+.gallery__count {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font: 600 12px / 1.6 var(--font-sans);
+}
+
+.gallery__hint {
+  color: var(--ink-muted);
+  font: 12px / 1.4 var(--font-sans);
+}
+
+.gallery--print .gallery__track {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: visible;
+}
+
+.gallery--print .gallery__count {
+  display: none;
+}

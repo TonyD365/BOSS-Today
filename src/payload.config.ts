@@ -7,6 +7,7 @@ import { buildConfig } from 'payload'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 
+import { Gallery } from './blocks/Gallery'
 import { YouTube } from './blocks/YouTube'
 import { Articles } from './collections/Articles'
 import { Assignments } from './collections/Assignments'
@@ -114,7 +115,10 @@ export default buildConfig({
   globals: [SiteDesign, FrontPage, Banner, Settings],
   endpoints: [siteExportEndpoint, dailyCronEndpoint],
   editor: lexicalEditor({
-    features: ({ defaultFeatures }) => [...defaultFeatures, BlocksFeature({ blocks: [YouTube] })],
+    features: ({ defaultFeatures }) => [
+      ...defaultFeatures,
+      BlocksFeature({ blocks: [YouTube, Gallery] }),
+    ],
   }),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
