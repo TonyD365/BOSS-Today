@@ -548,19 +548,7 @@ export const issuePublishEndpoint: Endpoint = {
         }
         for (const story of pending.takedowns) {
           step = `taking down “${story.title}”`
-          await req.payload.update({
-            collection: 'articles',
-            id: story.id,
-            data: { _status: 'draft', workflow: 'withdrawn' },
-            req,
-            overrideAccess: true,
-            context: {
-              ...context,
-              withdrawal: true,
-              workflowAction: 'takedown',
-              workflowNote: `Taken down with the issue: ${story.reason}`,
-            },
-          })
+          await takeDown(req, story, 'Taken down with the issue')
         }
         for (const page of pending.pages) {
           step = `the page “${page.title}”`
@@ -698,15 +686,63 @@ export const issuePublishEndpoint: Endpoint = {
   },
 }
 
-/** POST /api/deployments/rebuild — rebuilds the site without publishing anything new. */
+/** Takes one story marked to come down off the website, recording why. */
+const takeDown = (
+  req: PayloadRequest,
+  story: { id: number; title: string; reason: string },
+  when: string,
+) =>
+  req.payload.update({
+    collection: 'articles',
+    id: story.id,
+    data: { _status: 'draft', workflow: 'withdrawn' },
+    req,
+    overrideAccess: true,
+    context: {
+      issuePublish: true,
+      withdrawal: true,
+      workflowAction: 'takedown',
+      workflowNote: `${when}: ${story.reason}`,
+    },
+  })
+
+/** Stories an editor marked to come down with the next issue or rebuild. */
+const markedForTakedown = async (req: PayloadRequest) =>
+  (
+    await req.payload.find({
+      collection: 'articles',
+      draft: true,
+      where: { workflow: { equals: 'takedown' } },
+      limit: 200,
+      depth: 0,
+      overrideAccess: true,
+      req,
+      select: { title: true, reviewNotes: true },
+    })
+  ).docs.map((story) => ({ id: story.id, title: story.title, reason: story.reviewNotes ?? '' }))
+
+/**
+ * POST /api/deployments/rebuild — rebuilds the site without publishing anything
+ * new. Stories marked to come down are taken off first.
+ */
 export const rebuildEndpoint: Endpoint = {
   path: '/rebuild',
   method: 'post',
   handler: async (req) => {
     if (!canPublishIssues(req.user)) return json({ message: 'You need the Issue permission.' }, 403)
     try {
+      await assertDeployBudget(req.payload, 'rebuild', req)
+      const takedowns = await markedForTakedown(req)
+      for (const story of takedowns) await takeDown(req, story, 'Taken down with a rebuild')
+      if (takedowns.length > 0) {
+        await audit(req, {
+          action: 'withdraw',
+          summary: `Took down ${takedowns.length} ${takedowns.length === 1 ? 'story' : 'stories'} with a rebuild: ${takedowns.map((s) => `“${s.title}”`).join(', ')}`,
+          target: 'site:rebuild',
+        })
+      }
       const deploy = await triggerDeploy(req, { reason: 'rebuild' })
-      return json({ ok: true, deploy })
+      return json({ ok: true, deploy, takenDown: takedowns.length })
     } catch (error) {
       return errorResponse(error)
     }
@@ -764,5 +800,115 @@ export const latestDeploymentEndpoint: Endpoint = {
       overrideAccess: true,
     })
     return json({ id: docs[0]?.id ?? null })
+  },
+}
+
+/** The issue's stories that are on the website now, with their review state. */
+const issueStories = async (req: PayloadRequest, issueId: string) => {
+  const issue = await req.payload.findByID({
+    collection: 'issues',
+    id: issueId,
+    depth: 0,
+    overrideAccess: true,
+    disableErrors: true,
+    req,
+  })
+  if (!issue) return null
+  const ids = (issue.stories ?? []).map((s) =>
+    typeof s.article === 'object' ? s.article?.id : s.article,
+  )
+  if (ids.length === 0) return { issue, stories: [] }
+  const [live, latest] = await Promise.all([
+    req.payload.find({
+      collection: 'articles',
+      where: { and: [{ id: { in: ids } }, { _status: { equals: 'published' } }] },
+      limit: ids.length,
+      depth: 0,
+      overrideAccess: true,
+      req,
+      select: { title: true },
+    }),
+    req.payload.find({
+      collection: 'articles',
+      draft: true,
+      where: { id: { in: ids } },
+      limit: ids.length,
+      depth: 0,
+      overrideAccess: true,
+      req,
+      select: { workflow: true },
+    }),
+  ])
+  const state = new Map(latest.docs.map((d) => [String(d.id), d.workflow]))
+  return {
+    issue,
+    stories: live.docs.map((d) => ({ id: d.id, title: d.title, state: state.get(String(d.id)) })),
+  }
+}
+
+/**
+ * GET  /api/issues/:id/takedown          how many of the issue's stories are live / coming down
+ * POST /api/issues/:id/takedown { note }  mark all of them to come down with the next issue or rebuild
+ * POST /api/issues/:id/takedown { keep }  keep them all on the site after all
+ */
+export const issueTakedownEndpoint: Endpoint = {
+  path: '/:id/takedown',
+  method: 'post',
+  handler: async (req) => {
+    if (!canPublishIssues(req.user)) return json({ message: 'You need the Issue permission.' }, 403)
+    const body = (req.json ? await req.json().catch(() => ({})) : {}) as {
+      note?: string
+      keep?: boolean
+    }
+    const found = await issueStories(req, req.routeParams?.id as string)
+    if (!found) return json({ message: 'Issue not found.' }, 404)
+    const note = typeof body.note === 'string' ? body.note.trim().slice(0, 2000) : ''
+    if (!body.keep && !note) return json({ message: 'Say why these stories are coming down.' }, 400)
+    const targets = found.stories.filter((s) =>
+      body.keep ? s.state === 'takedown' : s.state !== 'takedown',
+    )
+    try {
+      for (const story of targets) {
+        await req.payload.update({
+          collection: 'articles',
+          id: story.id,
+          data: body.keep
+            ? { workflow: 'published', reviewNotes: null }
+            : { workflow: 'takedown', reviewNotes: note },
+          draft: true,
+          req,
+          overrideAccess: true,
+          context: {
+            workflowAction: body.keep ? 'keep' : 'takedown',
+            workflowNote: body.keep ? null : note,
+            draftSave: true,
+          },
+        })
+      }
+      await audit(req, {
+        action: 'withdraw',
+        summary: body.keep
+          ? `Kept ${targets.length} stories of “${found.issue.title}” on the site`
+          : `Marked ${targets.length} stories of “${found.issue.title}” to come down: ${note}`,
+        target: `issue:${found.issue.id}`,
+      })
+      return json({ ok: true, changed: targets.length })
+    } catch (error) {
+      return errorResponse(error)
+    }
+  },
+}
+
+export const issueTakedownStatusEndpoint: Endpoint = {
+  path: '/:id/takedown',
+  method: 'get',
+  handler: async (req) => {
+    if (!canPublishIssues(req.user)) return json({ message: 'You need the Issue permission.' }, 403)
+    const found = await issueStories(req, req.routeParams?.id as string)
+    if (!found) return json({ message: 'Issue not found.' }, 404)
+    return json({
+      live: found.stories.length,
+      comingDown: found.stories.filter((s) => s.state === 'takedown').length,
+    })
   },
 }

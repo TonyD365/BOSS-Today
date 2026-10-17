@@ -6,6 +6,8 @@ import {
   issueCheckEndpoint,
   issuePublishEndpoint,
   issueReviewEndpoint,
+  issueTakedownEndpoint,
+  issueTakedownStatusEndpoint,
 } from '../endpoints/issuePublishing'
 import { auditDelete, auditPublishing } from '../hooks/audit'
 import { guardPublishing } from '../hooks/publishing'
@@ -73,6 +75,8 @@ export const Issues: CollectionConfig = {
     issueAddWaitingEndpoint,
     issueCheckEndpoint,
     issuePublishEndpoint,
+    issueTakedownEndpoint,
+    issueTakedownStatusEndpoint,
   ],
   hooks: {
     beforeChange: [guardPublishing('An issue'), uniqueEdition],
@@ -215,6 +219,14 @@ export const Issues: CollectionConfig = {
       admin: {
         position: 'sidebar',
         components: { Field: '@/components/admin/PrintEditionLink#PrintEditionLink' },
+      },
+    },
+    {
+      name: 'takedown',
+      type: 'ui',
+      admin: {
+        position: 'sidebar',
+        components: { Field: '@/components/admin/IssueTakedown#IssueTakedown' },
       },
     },
   ],

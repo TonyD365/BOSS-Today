@@ -12,7 +12,23 @@ export function RebuildButton() {
   const [deploymentId, setDeploymentId] = useState<number | null>(null)
 
   const rebuild = async () => {
-    if (!window.confirm('Rebuild the public website now? This uses one of this month’s rebuilds.'))
+    // Stories marked to come down are taken off with the rebuild; say so first.
+    const marked = await fetch(
+      '/api/articles?draft=true&limit=0&depth=0&where[workflow][equals]=takedown',
+      { credentials: 'include' },
+    )
+      .then((r) => (r.ok ? r.json() : { totalDocs: 0 }))
+      .then((body: { totalDocs?: number }) => body.totalDocs ?? 0)
+      .catch(() => 0)
+    const down =
+      marked > 0
+        ? `\n\n${marked} ${marked === 1 ? 'story marked to come down is' : 'stories marked to come down are'} taken off the website with it.`
+        : ''
+    if (
+      !window.confirm(
+        `Rebuild the public website now? This uses one of this month’s rebuilds.${down}`,
+      )
+    )
       return
     setBusy(true)
     const response = await fetch('/api/deployments/rebuild', {

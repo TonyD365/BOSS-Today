@@ -175,7 +175,8 @@ export function WorkflowPanel() {
 
       {state === 'takedown' && (
         <p style={hint}>
-          It stays on the website until the next issue is published, then comes down.
+          It stays on the website until the next issue is published or the site is rebuilt, then
+          comes down.
         </p>
       )}
       {isEditor && state === 'takedown' && (
