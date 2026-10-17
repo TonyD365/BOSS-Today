@@ -21,6 +21,7 @@ import * as migration_20261017_012600_site_look from './20261017_012600_site_loo
 import * as migration_20261017_133000_design_templates from './20261017_133000_design_templates';
 import * as migration_20261017_134040_staff_positions from './20261017_134040_staff_positions';
 import * as migration_20261017_164006_google_and_qr from './20261017_164006_google_and_qr';
+import * as migration_20261017_170227_story_takedown from './20261017_170227_story_takedown';
 
 export const migrations = [
   {
@@ -136,6 +137,11 @@ export const migrations = [
   {
     up: migration_20261017_164006_google_and_qr.up,
     down: migration_20261017_164006_google_and_qr.down,
-    name: '20261017_164006_google_and_qr'
+    name: '20261017_164006_google_and_qr',
+  },
+  {
+    up: migration_20261017_170227_story_takedown.up,
+    down: migration_20261017_170227_story_takedown.down,
+    name: '20261017_170227_story_takedown'
   },
 ];

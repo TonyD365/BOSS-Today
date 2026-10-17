@@ -5,8 +5,8 @@ import React, { useState } from 'react'
 
 import { DeployProgress } from './DeployProgress'
 
-type State = 'draft' | 'review' | 'changes' | 'approved' | 'published' | 'withdrawn'
-type Action = 'submit' | 'return' | 'approve' | 'withdraw'
+type State = 'draft' | 'review' | 'changes' | 'approved' | 'published' | 'takedown' | 'withdrawn'
+type Action = 'submit' | 'return' | 'approve' | 'takedown' | 'keep' | 'withdraw'
 
 const LABELS: Record<State, string> = {
   draft: 'Draft',
@@ -14,6 +14,7 @@ const LABELS: Record<State, string> = {
   changes: 'Changes requested',
   approved: 'Waiting for the next issue',
   published: 'Published',
+  takedown: 'Coming down with the next issue',
   withdrawn: 'Withdrawn',
 }
 
@@ -23,6 +24,7 @@ const COLORS: Record<State, string> = {
   changes: 'var(--theme-error-500)',
   approved: 'var(--theme-success-250, var(--theme-success-500))',
   published: 'var(--theme-success-500)',
+  takedown: 'var(--theme-warning-500)',
   withdrawn: 'var(--theme-elevation-500)',
 }
 
@@ -42,7 +44,7 @@ export function WorkflowPanel() {
   const state = (useFormFields(([fields]) => fields.workflow?.value) ?? 'draft') as State
   const modified = useFormModified()
   const [note, setNote] = useState('')
-  const [mode, setMode] = useState<'return' | 'withdraw' | null>(null)
+  const [mode, setMode] = useState<'return' | 'takedown' | 'withdraw' | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [withdrawnDeploy, setWithdrawnDeploy] = useState<number | null>(null)
@@ -125,7 +127,7 @@ export function WorkflowPanel() {
 
   return (
     <Panel state={state}>
-      {hasPublishedDoc && state !== 'published' && (
+      {hasPublishedDoc && state !== 'published' && state !== 'takedown' && (
         <p style={hint}>
           An earlier version is on the website. These changes go live with the next issue once
           approved.
@@ -146,6 +148,7 @@ export function WorkflowPanel() {
 
       {isEditor &&
         state !== 'approved' &&
+        state !== 'takedown' &&
         (state !== 'published' || unpublishedVersionCount > 0) && (
           <Button
             buttonStyle="primary"
@@ -167,6 +170,28 @@ export function WorkflowPanel() {
           onClick={() => setMode('return')}
         >
           Send back to reporter
+        </Button>
+      )}
+
+      {state === 'takedown' && (
+        <p style={hint}>
+          It stays on the website until the next issue is published, then comes down.
+        </p>
+      )}
+      {isEditor && state === 'takedown' && (
+        <Button buttonStyle="secondary" size="small" disabled={busy} onClick={() => act('keep')}>
+          Keep it on the site
+        </Button>
+      )}
+
+      {isEditor && hasPublishedDoc && state !== 'takedown' && !mode && (
+        <Button
+          buttonStyle="secondary"
+          size="small"
+          disabled={busy || modified}
+          onClick={() => setMode('takedown')}
+        >
+          Take down with the next issue…
         </Button>
       )}
 
@@ -195,7 +220,9 @@ export function WorkflowPanel() {
             placeholder={
               mode === 'return'
                 ? 'What should the reporter change?'
-                : 'Why is this being withdrawn?'
+                : mode === 'takedown'
+                  ? 'Why is it coming down? The issue publisher will see this.'
+                  : 'Why is this being withdrawn?'
             }
             rows={3}
             style={{ width: '100%', font: 'inherit', padding: 8 }}
@@ -207,7 +234,11 @@ export function WorkflowPanel() {
               disabled={busy || !note.trim()}
               onClick={() => act(mode)}
             >
-              {mode === 'return' ? 'Send back' : 'Withdraw now'}
+              {mode === 'return'
+                ? 'Send back'
+                : mode === 'takedown'
+                  ? 'Take down with the next issue'
+                  : 'Withdraw now'}
             </Button>
             <Button
               buttonStyle="secondary"

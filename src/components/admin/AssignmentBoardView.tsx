@@ -23,6 +23,7 @@ const columnFor = (
     case 'approved':
       return 'waiting'
     case 'published':
+    case 'takedown':
     case 'withdrawn':
       return 'done'
     default:

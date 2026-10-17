@@ -29,6 +29,7 @@ type Review = {
   sections: { id: number; name: string }[]
   tags: { id: number; name: string }[]
   pages: { id: number; title: string }[]
+  takedowns: { id: number; title: string; reason: string }[]
   frontPage: boolean
   settings: boolean
   banner: boolean
@@ -188,6 +189,7 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
   const hasStructure =
     review.sections.length > 0 ||
     review.tags.length > 0 ||
+    review.takedowns.length > 0 ||
     review.pages.length > 0 ||
     review.frontPage ||
     review.settings ||
@@ -360,6 +362,13 @@ export function PublishChecklist({ issueId }: { issueId: string }) {
             {review.tags.map((tag) => (
               <li key={`tag-${tag.id}`}>
                 Tag: <a href={`/admin/collections/tags/${tag.id}`}>{tag.name}</a>
+              </li>
+            ))}
+            {review.takedowns.map((story) => (
+              <li key={`down-${story.id}`}>
+                <strong style={{ color: 'var(--theme-error-500)' }}>Coming down:</strong>{' '}
+                <a href={`/admin/collections/articles/${story.id}`}>{story.title}</a>
+                {story.reason && <span> — {story.reason}</span>}
               </li>
             ))}
             {review.pages.map((page) => (

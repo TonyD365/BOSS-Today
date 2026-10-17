@@ -198,7 +198,7 @@ export interface Article {
         id?: string | null;
       }[]
     | null;
-  workflow?: ('draft' | 'review' | 'changes' | 'approved' | 'published' | 'withdrawn') | null;
+  workflow?: ('draft' | 'review' | 'changes' | 'approved' | 'published' | 'takedown' | 'withdrawn') | null;
   reviewNotes?: string | null;
   section: number | Section;
   authors: (number | User)[];
@@ -217,7 +217,7 @@ export interface Article {
   slug?: string | null;
   history?:
     | {
-        status?: ('draft' | 'review' | 'changes' | 'approved' | 'published' | 'withdrawn') | null;
+        status?: ('draft' | 'review' | 'changes' | 'approved' | 'published' | 'takedown' | 'withdrawn') | null;
         by?: (number | null) | User;
         at?: string | null;
         note?: string | null;

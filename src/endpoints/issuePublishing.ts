@@ -55,7 +55,7 @@ export const pendingChanges = async (
   issueId?: number | string,
   req?: PayloadRequest,
 ) => {
-  const [articles, sections, tags, pages, frontPage, settings, banner, design, issue] =
+  const [articles, sections, tags, takedowns, pages, frontPage, settings, banner, design, issue] =
     await Promise.all([
       payload.find({
         collection: 'articles',
@@ -91,6 +91,16 @@ export const pendingChanges = async (
         limit: 500,
         overrideAccess: true,
         req,
+      }),
+      payload.find({
+        collection: 'articles',
+        draft: true,
+        where: { workflow: { equals: 'takedown' } },
+        limit: 200,
+        depth: 0,
+        overrideAccess: true,
+        req,
+        select: { title: true, reviewNotes: true, updatedAt: true },
       }),
       payload.find({
         collection: 'pages',
@@ -162,6 +172,12 @@ export const pendingChanges = async (
     banner: banner._status === 'draft',
     design: design._status === 'draft',
     /** The desktop canvas changed after someone last looked at the phone layout. */
+    /** Published stories an editor asked to take down with this issue. */
+    takedowns: takedowns.docs.map((story) => ({
+      id: story.id,
+      title: story.title,
+      reason: story.reviewNotes ?? '',
+    })),
     pages: pages.docs.map((page) => ({
       id: page.id,
       title: page.title,
@@ -193,6 +209,7 @@ const phoneUnchecked = (value: unknown) => {
 const hasStructureChanges = (pending: Awaited<ReturnType<typeof pendingChanges>>) =>
   pending.sections.length > 0 ||
   pending.tags.length > 0 ||
+  pending.takedowns.length > 0 ||
   pending.pages.length > 0 ||
   pending.frontPage ||
   pending.settings ||
@@ -223,6 +240,7 @@ export const issueReviewEndpoint: Endpoint = {
         sections: pending.sections,
         tags: pending.tags,
         pages: pending.pages,
+        takedowns: pending.takedowns,
         frontPage: pending.frontPage,
         settings: pending.settings,
         banner: pending.banner,
@@ -526,6 +544,22 @@ export const issuePublishEndpoint: Endpoint = {
             req,
             overrideAccess: true,
             context,
+          })
+        }
+        for (const story of pending.takedowns) {
+          step = `taking down “${story.title}”`
+          await req.payload.update({
+            collection: 'articles',
+            id: story.id,
+            data: { _status: 'draft', workflow: 'withdrawn' },
+            req,
+            overrideAccess: true,
+            context: {
+              ...context,
+              withdrawal: true,
+              workflowAction: 'takedown',
+              workflowNote: `Taken down with the issue: ${story.reason}`,
+            },
           })
         }
         for (const page of pending.pages) {

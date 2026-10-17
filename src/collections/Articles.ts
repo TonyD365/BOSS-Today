@@ -266,6 +266,7 @@ export const Articles: CollectionConfig = {
           changes: 'Changes requested',
           approved: 'Waiting for the next issue',
           published: 'Published',
+          takedown: 'Coming down with the next issue',
           withdrawn: 'Withdrawn',
         }[value],
       })),

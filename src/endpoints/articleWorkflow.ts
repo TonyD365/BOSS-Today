@@ -16,11 +16,12 @@ export const WORKFLOW_STATES = [
   'changes',
   'approved',
   'published',
+  'takedown',
   'withdrawn',
 ] as const
 export type WorkflowState = (typeof WORKFLOW_STATES)[number]
 
-export type WorkflowAction = 'submit' | 'return' | 'approve' | 'withdraw'
+export type WorkflowAction = 'submit' | 'return' | 'approve' | 'takedown' | 'keep' | 'withdraw'
 
 const json = (body: unknown, status = 200) => Response.json(body, { status })
 
@@ -34,8 +35,11 @@ const errorMessage = (error: unknown) =>
  *                                            │                    │                                  │
  *                                            └──────return────────┴──▶ changes            withdraw ──┘
  *
- * Nothing here puts a story on the public site: that only happens when an issue
- * is published. Withdrawal is the one action that changes the site immediately.
+ *   published ──takedown──▶ takedown ──(issue published)──▶ withdrawn;  takedown ──keep──▶ published
+ *
+ * Nothing here puts a story on the public site or takes one off: that happens
+ * when an issue is published. Emergency withdrawal is the one action that
+ * changes the site immediately.
  */
 export const articleWorkflowEndpoint: Endpoint = {
   path: '/:id/workflow',
@@ -124,6 +128,11 @@ export const articleWorkflowEndpoint: Endpoint = {
         if (!isEditor) return json({ message: 'Only editors can approve stories.' }, 403)
         if (state === 'approved')
           return json({ message: 'Already waiting for the next issue.' }, 409)
+        if (state === 'takedown')
+          return json(
+            { message: 'This story is set to come down. Choose “Keep it on the site” first.' },
+            409,
+          )
         {
           const problems = publishingProblems(latest)
           const open = (await unresolvedComments(req.payload, [id], req)).get(String(id)) ?? 0
@@ -133,6 +142,28 @@ export const articleWorkflowEndpoint: Endpoint = {
           }
         }
         return saveDraft({ workflow: 'approved', reviewNotes: null })
+
+      case 'takedown': {
+        if (!isEditor) return json({ message: 'Only editors can take stories down.' }, 403)
+        if (state === 'takedown') return json({ message: 'Already coming down.' }, 409)
+        const live = await req.payload.findByID({
+          collection: 'articles',
+          id,
+          depth: 0,
+          overrideAccess: true,
+          disableErrors: true,
+        })
+        if (live?._status !== 'published') {
+          return json({ message: 'Only stories on the public site can be taken down.' }, 409)
+        }
+        if (!note) return json({ message: 'Say why it is coming down.' }, 400)
+        return saveDraft({ workflow: 'takedown', reviewNotes: note })
+      }
+
+      case 'keep':
+        if (!isEditor) return json({ message: 'Only editors can change this.' }, 403)
+        if (state !== 'takedown') return json({ message: 'This story isn’t coming down.' }, 409)
+        return saveDraft({ workflow: 'published', reviewNotes: null })
 
       case 'withdraw': {
         if (!canPublishIssues(user)) {

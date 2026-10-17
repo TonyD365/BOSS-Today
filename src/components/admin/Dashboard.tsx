@@ -18,6 +18,7 @@ const STATE_LABELS: Record<string, string> = {
   changes: 'Changes requested',
   approved: 'Waiting for the next issue',
   published: 'Published',
+  takedown: 'Coming down next issue',
   withdrawn: 'Withdrawn',
 }
 
