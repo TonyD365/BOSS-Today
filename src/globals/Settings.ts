@@ -2,6 +2,7 @@ import type { GlobalConfig } from 'payload'
 
 import { withPermission } from '../access'
 import { auditGlobal } from '../hooks/audit'
+import { defaultStandards } from '../lib/standards'
 import { guardGlobalPublishing } from '../hooks/publishing'
 
 const revalidate = async () => {
@@ -14,6 +15,12 @@ const revalidate = async () => {
 }
 
 /** Site-wide text that editors can change without touching code. */
+const isEmpty = (value: unknown) => {
+  const children = (value as { root?: { children?: { children?: unknown[] }[] } } | null)?.root
+    ?.children
+  return !children || children.every((child) => (child.children ?? []).length === 0)
+}
+
 export const Settings: GlobalConfig = {
   slug: 'settings',
   label: 'Site Settings',
@@ -48,6 +55,16 @@ export const Settings: GlobalConfig = {
       type: 'richText',
       label: 'About page',
       admin: { description: 'Shown at /about. Leave empty to hide the page.' },
+    },
+    {
+      name: 'standards',
+      type: 'richText',
+      label: 'Editorial standards',
+      admin: {
+        description:
+          'Shown at /standards: how the paper works (independence, accuracy, corrections, sources…). Starts with a suggested draft; edit it to match how your newsroom works.',
+      },
+      hooks: { afterRead: [({ value }) => (isEmpty(value) ? defaultStandards : value)] },
     },
     {
       name: 'joinUs',

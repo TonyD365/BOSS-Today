@@ -42,6 +42,7 @@ export const siteInfo = (input: {
     { label: 'Calendar', href: '/calendar/' },
     ...(input.hasStaff ? [{ label: 'Our Staff', href: '/staff/' }] : []),
     ...(input.hasContact ? [{ label: 'Contact us', href: '/contact/' }] : []),
+    { label: 'Our standards', href: '/standards/' },
     { label: 'RSS', href: '/subscribe/' },
     ...input.socialLinks.map((l) => ({ label: l.label, href: l.url })),
   ]

@@ -20,6 +20,7 @@ import type { TemplateKind } from '@/design/types'
 import { siteInfo } from '@/design/siteInfo'
 
 import { rssFeed } from './feed'
+import { iconImage, siteShareImage, storyShareImage } from './shareImages'
 import { buildPrintEditions, printStyles } from './print'
 import {
   byNewest,
@@ -46,6 +47,7 @@ import {
   Shell,
   type SiteLinks,
   StaffView,
+  StandardsView,
   SubscribeView,
   TagsView,
   TagView,
@@ -168,9 +170,10 @@ const main = async () => {
       ...(fonts ? [fonts] : []),
       ...(meta.styles ?? []),
     ]
+    const image = meta.image ?? (shareImages ? `${SITE_URL}/share/site.png` : null)
     const html = renderToStaticMarkup(
       <Shell
-        meta={{ ...meta, styles }}
+        meta={{ ...meta, image, styles }}
         site={site}
         publicUrl={PUBLIC_URL}
         links={links}
@@ -185,6 +188,44 @@ const main = async () => {
   }
 
   const { siteName, tagline } = site.settings
+
+  // Link previews and icons. Previews need a full address, so they're skipped without one.
+  const shareImages = Boolean(SITE_URL)
+  await write('icons/icon-192.png', await iconImage(192, siteName.trim()[0] ?? 'B'))
+  await write('icons/icon-512.png', await iconImage(512, siteName.trim()[0] ?? 'B'))
+  await write('icons/apple-touch-icon.png', await iconImage(180, siteName.trim()[0] ?? 'B'))
+  await write('favicon.ico', await iconImage(32, siteName.trim()[0] ?? 'B'))
+  await write(
+    'manifest.webmanifest',
+    JSON.stringify({
+      name: siteName,
+      short_name: siteName,
+      start_url: '/',
+      display: 'standalone',
+      background_color: '#ffffff',
+      theme_color: '#121212',
+      icons: [
+        { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+        { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+      ],
+    }),
+  )
+  if (shareImages) {
+    await write('share/site.png', await siteShareImage({ siteName, tagline }))
+    for (const article of articles) {
+      if (!article.slug) continue
+      const media = article.heroImage
+      await write(
+        `share/article/${article.slug}.png`,
+        await storyShareImage({
+          siteName,
+          title: article.title,
+          section: article.section?.name ?? null,
+          imageUrl: media?.sizes?.hero?.url ?? media?.url ?? null,
+        }),
+      )
+    }
+  }
 
   // The designed front page once one is published; the classic one until then.
   if (site.design.design) {
@@ -236,6 +277,20 @@ const main = async () => {
     }
   }
 
+  // Same section or a shared topic first, then newest; never the story itself.
+  const relatedTo = (article: ExportArticle) => {
+    const topics = new Set(article.tags.map((tag) => tag.id))
+    const score = (other: ExportArticle) =>
+      (other.section?.id === article.section?.id ? 2 : 0) +
+      other.tags.filter((tag) => topics.has(tag.id)).length * 3
+    return articles
+      .filter((other) => other.id !== article.id && other.slug && score(other) > 0)
+      .map((other, index) => ({ other, score: score(other), index }))
+      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .slice(0, 3)
+      .map(({ other }) => other)
+  }
+
   for (const article of articles) {
     if (!article.slug) continue
     await page(
@@ -244,13 +299,14 @@ const main = async () => {
         title: article.title,
         description: article.summary,
         path: `/article/${article.slug}/`,
-        image: article.heroImage?.sizes?.hero?.url ?? article.heroImage?.url ?? null,
+        image: shareImages ? `${SITE_URL}/share/article/${article.slug}.png` : null,
         type: 'article',
       },
       <ArticlePage
         article={article}
         shareUrl={SITE_URL ? `${SITE_URL}/article/${article.slug}/` : undefined}
         contact={links.contact}
+        related={relatedTo(article)}
       />,
     )
   }
@@ -437,6 +493,17 @@ const main = async () => {
     />,
   )
 
+  if (site.settings.standards) {
+    await page(
+      'standards/index.html',
+      {
+        title: 'Our standards',
+        description: `How ${siteName} reports, checks and corrects the news.`,
+        path: '/standards/',
+      },
+      <StandardsView site={site} />,
+    )
+  }
   if (site.settings.about) {
     await page(
       'about/index.html',

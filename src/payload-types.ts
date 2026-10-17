@@ -1421,6 +1421,24 @@ export interface Setting {
     [k: string]: unknown;
   } | null;
   /**
+   * Shown at /standards: how the paper works (independence, accuracy, corrections, sources…). Starts with a suggested draft; edit it to match how your newsroom works.
+   */
+  standards?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
    * Shown at the bottom of the Our Staff page: how to join the newsroom. Leave empty to hide it.
    */
   joinUs?: {
@@ -1498,6 +1516,7 @@ export interface SettingsSelect<T extends boolean = true> {
   siteName?: T;
   tagline?: T;
   about?: T;
+  standards?: T;
   joinUs?: T;
   socialLinks?:
     | T

@@ -1135,3 +1135,31 @@ img {
     sans-serif;
   text-align: center;
 }
+
+/* More to read, under a story */
+
+.related {
+  max-width: 1000px;
+  margin: 8px auto 48px;
+  padding-top: 20px;
+  border-top: 2px solid var(--ink, #121212);
+}
+
+.related__title {
+  margin: 0 0 16px;
+  font: 700 13px / 1.2 var(--font-sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.related__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+@media (max-width: 719px) {
+  .related__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

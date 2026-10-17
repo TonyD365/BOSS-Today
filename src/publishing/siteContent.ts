@@ -214,6 +214,7 @@ export const exportMeta = async (payload: Payload, cmsUrl: string) => {
       siteName: settings.siteName || 'BOSS Today',
       tagline: settings.tagline || 'The student newspaper of Bur Oak Secondary School.',
       about: settings.about ?? null,
+      standards: settings.standards ?? null,
       socialLinks: (settings.socialLinks ?? []).map(({ label, url }) => ({ label, url })),
       footerNote: settings.footerNote ?? '',
       joinUs: settings.joinUs ?? null,

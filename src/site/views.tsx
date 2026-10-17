@@ -82,6 +82,18 @@ export function Shell({
         <meta property="og:description" content={meta.description} />
         <meta property="og:url" content={canonical} />
         {meta.image && <meta property="og:image" content={meta.image} />}
+        {meta.image && <meta name="twitter:image" content={meta.image} />}
+        {meta.image?.includes('/share/') && (
+          <>
+            <meta property="og:image:width" content="1200" />
+            <meta property="og:image:height" content="630" />
+          </>
+        )}
+        <link rel="icon" href="/favicon.ico" sizes="32x32" />
+        <link rel="icon" type="image/png" href="/icons/icon-192.png" sizes="192x192" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <meta name="theme-color" content="#121212" />
         <meta name="twitter:card" content={meta.image ? 'summary_large_image' : 'summary'} />
         <meta name="color-scheme" content="light dark" />
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
@@ -128,6 +140,7 @@ export function Shell({
                 { label: 'Calendar', href: '/calendar/' },
                 ...(links.staff ? [{ label: 'Our Staff', href: '/staff/' }] : []),
                 ...(links.contact ? [{ label: 'Contact us', href: '/contact/' }] : []),
+                { label: 'Our standards', href: '/standards/' },
                 { label: 'RSS', href: '/subscribe/' },
               ]}
             />
@@ -247,22 +260,37 @@ export function ArticlePage({
   article,
   shareUrl,
   contact,
+  related = [],
 }: {
   article: ExportArticle
   shareUrl?: string
   contact: boolean
+  /** A few stories from the same section or on the same topics. */
+  related?: ExportArticle[]
 }) {
   return (
     <>
       <ArticleView article={asArticle(article)} shareUrl={shareUrl} />
       {contact && (
         <p className="article__report">
-          Spotted a mistake?{' '}
+          <a href="/standards/">Our standards</a> · Spotted a mistake?{' '}
           <a href={`/contact/?type=correction&article=${encodeURIComponent(article.slug)}`}>
             Tell us
           </a>
           .
         </p>
+      )}
+      {related.length > 0 && (
+        <section className="related" aria-labelledby="related-title">
+          <h2 id="related-title" className="related__title">
+            More to read
+          </h2>
+          <div className="related__grid">
+            {related.map((item) => (
+              <StoryCard key={item.id} article={asArticle(item)} showSection />
+            ))}
+          </div>
+        </section>
       )}
     </>
   )
@@ -559,6 +587,20 @@ export function AboutView({ site }: { site: ExportMeta }) {
         <p className="article__summary">{site.settings.tagline}</p>
       </header>
       <ArticleBody className="article__body" content={site.settings.about} />
+    </article>
+  )
+}
+
+export function StandardsView({ site }: { site: ExportMeta }) {
+  return (
+    <article className="article">
+      <header className="article__header">
+        <h1>Our standards</h1>
+        <p className="article__summary">
+          How {site.settings.siteName} reports, checks and corrects the news.
+        </p>
+      </header>
+      <ArticleBody className="article__body" content={site.settings.standards} />
     </article>
   )
 }

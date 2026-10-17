@@ -66,6 +66,7 @@ export type ExportMeta = {
     siteName: string
     tagline: string
     about: unknown
+    standards: unknown
     socialLinks: { label: string; url: string }[]
     footerNote: string
     joinUs: unknown
