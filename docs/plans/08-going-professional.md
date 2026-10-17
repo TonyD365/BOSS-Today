@@ -1,6 +1,6 @@
 # 方案八：做成专业的新闻网站
 
-状态：**已批准部分**（2026-10-16）。批准：A3、A4、A5、B1、B2、C1、D1、D2。不做：A1 自己的域名（继续用 bosstoday.pages.dev）、A2 域名邮箱。其余（A6、B3–B5、C2–C4、D3）暂不做。
+状态：**已批准部分**（2026-10-16）。批准：A3、A4、A5、B1、B2、C1、D1、D2。不做：A1 自己的域名（继续用 bosstoday.pages.dev）、A2 域名邮箱、C2 邮件订阅（2026-10-17 决定）。其余（A6、B3–B5、C2–C4、D3）暂不做。
 对手：学校报社只发在 Google Docs 和 Instagram，没有网站。
 
 **已完成**：A3 网站图标和分享预览图、A4 每篇文章的分享图（构建网站时生成，不占 Vercel CPU）、A5 编辑方针页（/standards/，初稿可在 Site settings 里改）、B2 相关报道、C1 Instagram 帖子图和快拍图（文章侧栏一键下载，在浏览器里生成）、B1 整站配色字体（Site settings → Look，难读的颜色会被拒绝）、D1 写稿规范建议（Writing notes → Style suggestions，只提示不阻止）、D2 图集（正文里插入 Photo gallery，2–20 张，可左右滑动；纸质版显示前 4 张）、C3 Google 搜索和新闻（每篇文章的 NewsArticle 结构化数据、Google News 站点地图、Search Console 验证码设置）、C4 纸质版二维码（每篇稿件下方，期刊设置里可关）。
