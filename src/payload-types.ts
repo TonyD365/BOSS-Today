@@ -487,6 +487,7 @@ export interface Issue {
   printEdition?: boolean | null;
   paperSize?: ('letter' | 'tabloid' | 'a4' | 'a3') | null;
   showContents?: boolean | null;
+  showQrCodes?: boolean | null;
   showStaffBox?: boolean | null;
   /**
    * Signed the publisher’s declaration. See Issue sign-offs for every story check.
@@ -1130,6 +1131,7 @@ export interface IssuesSelect<T extends boolean = true> {
   printEdition?: T;
   paperSize?: T;
   showContents?: T;
+  showQrCodes?: T;
   showStaffBox?: T;
   publishedBy?: T;
   publishedAt?: T;
@@ -1493,6 +1495,10 @@ export interface Setting {
     [k: string]: unknown;
   } | null;
   /**
+   * From Google Search Console → Add property → URL prefix → HTML tag: paste only the content="…" value. Lets you see how the site does in Google search.
+   */
+  googleVerification?: string | null;
+  /**
    * Colours and fonts for every page not drawn in the site designer. Dark mode keeps its own dark background and gets a lighter link colour automatically.
    */
   look?: {
@@ -1665,6 +1671,7 @@ export interface SettingsSelect<T extends boolean = true> {
   siteName?: T;
   tagline?: T;
   about?: T;
+  googleVerification?: T;
   look?:
     | T
     | {

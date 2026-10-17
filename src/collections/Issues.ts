@@ -170,6 +170,13 @@ export const Issues: CollectionConfig = {
       admin: { position: 'sidebar', condition: (data) => Boolean(data?.printEdition) },
     },
     {
+      name: 'showQrCodes',
+      type: 'checkbox',
+      defaultValue: true,
+      label: 'QR code under each story, linking to it online',
+      admin: { position: 'sidebar', condition: (data) => Boolean(data?.printEdition) },
+    },
+    {
       name: 'showStaffBox',
       type: 'checkbox',
       defaultValue: true,

@@ -332,3 +332,29 @@ body:has(.paper) {
     600 8pt/1.3 var(--font-sans),
     sans-serif;
 }
+
+/* A QR code under each story, for reading it online */
+.paper__qr {
+  display: flex;
+  align-items: center;
+  gap: 6pt;
+  margin: 6pt 0 0;
+  font: 7pt / 1.3 var(--font-sans);
+  color: #444;
+  text-align: left;
+  text-indent: 0;
+  hyphens: none;
+  break-inside: avoid;
+}
+
+.paper__qr-code {
+  flex: 0 0 auto;
+  width: 0.6in;
+  height: 0.6in;
+}
+
+.paper__qr-code svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

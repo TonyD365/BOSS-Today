@@ -9,6 +9,7 @@
 import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import QRCode from 'qrcode'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
@@ -91,6 +92,20 @@ export const buildPrintEditions = async ({
       })
       if (stories.length === 0) continue
       const staff = issue.print.showStaffBox ? staffBox : []
+      // QR codes need the site's full address to point at.
+      const qrCodes = new Map<number, string>()
+      if (publicUrl && issue.print.showQrCodes) {
+        for (const { article } of stories) {
+          qrCodes.set(
+            article.id,
+            await QRCode.toString(`${publicUrl}/article/${article.slug}/`, {
+              type: 'svg',
+              margin: 0,
+              errorCorrectionLevel: 'M',
+            }),
+          )
+        }
+      }
 
       const render = (toolbar?: React.ReactNode) =>
         renderToStaticMarkup(
@@ -108,6 +123,7 @@ export const buildPrintEditions = async ({
             siteName={site.settings.siteName}
             staff={staff}
             toolbar={toolbar}
+            qrCodes={qrCodes}
           />,
         )
 
@@ -115,7 +131,7 @@ export const buildPrintEditions = async ({
       const fingerprint = createHash('sha256')
         .update(
           JSON.stringify({
-            issue: [issue.title, issue.date, issue.print],
+            issue: [issue.title, issue.date, issue.print, qrCodes.size > 0 ? publicUrl : null],
             stories: stories.map(({ article }) => [article.id, article.updatedAt]),
             staff,
             siteName: site.settings.siteName,

@@ -46,12 +46,15 @@ export function PrintEdition({
   siteName,
   staff,
   toolbar,
+  qrCodes,
 }: {
   issue: PrintIssue
   stories: IssueStory[]
   siteName: string
   staff: { name: string; title: string }[]
   toolbar?: React.ReactNode
+  /** QR codes (SVG) linking each story, by article id, to its page on the website. */
+  qrCodes?: Map<number, string>
 }) {
   const paperSize = issue.paperSize ?? 'letter'
   const paper = PAPER[paperSize]
@@ -78,7 +81,7 @@ export function PrintEdition({
         </header>
 
         <div className="paper__grid">
-          {lead && <Story story={lead} span={leadSpan} lead />}
+          {lead && <Story story={lead} span={leadSpan} lead qr={qrCodes?.get(lead.article.id)} />}
 
           {showSidebar && (
             <aside className="paper__sidebar" style={{ gridColumn: 'span 1' }}>
@@ -109,6 +112,7 @@ export function PrintEdition({
               key={story.article.id}
               story={story}
               span={spanFor(story.width, paper.columns)}
+              qr={qrCodes?.get(story.article.id)}
             />
           ))}
 
@@ -130,7 +134,17 @@ export function PrintEdition({
   )
 }
 
-function Story({ story, span, lead = false }: { story: IssueStory; span: number; lead?: boolean }) {
+function Story({
+  story,
+  span,
+  lead = false,
+  qr,
+}: {
+  story: IssueStory
+  span: number
+  lead?: boolean
+  qr?: string
+}) {
   const { article } = story
   const image = story.showImage ? asMedia(article.heroImage) : undefined
 
@@ -157,6 +171,13 @@ function Story({ story, span, lead = false }: { story: IssueStory; span: number;
           <Byline authors={articleAuthors(article)} linked={false} />
         </p>
         <ArticleBody content={article.content} print />
+        {qr && (
+          <p className="paper__qr">
+            {/* Made by the qrcode library from the story's address; no user input. */}
+            <span className="paper__qr-code" dangerouslySetInnerHTML={{ __html: qr }} />
+            <span>Scan to read this story online, with every photo and video.</span>
+          </p>
+        )}
       </div>
     </article>
   )

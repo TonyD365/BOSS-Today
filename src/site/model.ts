@@ -40,6 +40,7 @@ export type ExportIssue = {
     paperSize: PaperSize
     showContents: boolean
     showStaffBox: boolean
+    showQrCodes: boolean
     announcement: string | null
     stories: { id: number; width: 'full' | 'twoThirds' | 'half' | 'column'; showImage: boolean }[]
   } | null
@@ -73,6 +74,7 @@ export type ExportMeta = {
     about: unknown
     standards: unknown
     look: Look
+    googleVerification: string | null
     socialLinks: { label: string; url: string }[]
     footerNote: string
     joinUs: unknown

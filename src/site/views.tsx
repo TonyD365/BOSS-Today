@@ -34,7 +34,14 @@ export type PageMeta = {
   scripts?: string[]
   /** Extra stylesheets (e.g. the fonts a designed front page uses). */
   styles?: string[]
+  /** Structured data for search engines (schema.org). */
+  jsonLd?: object
+  /** For stories: when it was published and changed, and its section. */
+  article?: { published: string | null; modified: string; section: string | null }
 }
+
+/** JSON inside a script tag, with nothing that could close the tag. */
+const scriptJson = (value: object) => JSON.stringify(value).replace(/</g, '\\u003c')
 
 /** Footer links that depend on what the site has. */
 export type SiteLinks = { staff: boolean; contact: boolean }
@@ -97,6 +104,22 @@ export function Shell({
         <meta name="theme-color" content="#121212" />
         <meta name="twitter:card" content={meta.image ? 'summary_large_image' : 'summary'} />
         <meta name="color-scheme" content="light dark" />
+        {site.settings.googleVerification && (
+          <meta name="google-site-verification" content={site.settings.googleVerification} />
+        )}
+        {meta.article?.published && (
+          <meta property="article:published_time" content={meta.article.published} />
+        )}
+        {meta.article && <meta property="article:modified_time" content={meta.article.modified} />}
+        {meta.article?.section && (
+          <meta property="article:section" content={meta.article.section} />
+        )}
+        {meta.jsonLd && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: scriptJson(meta.jsonLd) }}
+          />
+        )}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <link
           rel="alternate"

@@ -235,18 +235,79 @@ const main = async () => {
     }
   }
 
+  // What Google reads to show a story in search and Google News.
+  const publisher = {
+    '@type': 'NewsMediaOrganization',
+    name: siteName,
+    url: `${SITE_URL}/`,
+    logo: {
+      '@type': 'ImageObject',
+      url: `${SITE_URL}/icons/icon-512.png`,
+      width: 512,
+      height: 512,
+    },
+    ...(site.settings.standards ? { publishingPrinciples: `${SITE_URL}/standards/` } : {}),
+  }
+  const newsArticle = (article: ExportArticle) => ({
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    mainEntityOfPage: `${SITE_URL}/article/${article.slug}/`,
+    headline: article.title.slice(0, 110),
+    description: article.summary,
+    image: [
+      ...(article.heroImage?.url
+        ? [article.heroImage.sizes?.hero?.url ?? article.heroImage.url]
+        : []),
+      ...(shareImages ? [`${SITE_URL}/share/article/${article.slug}.png`] : []),
+    ],
+    datePublished: article.publishedAt ?? undefined,
+    dateModified: article.updatedAt,
+    articleSection: article.section?.name,
+    keywords: article.tags.map((tag) => tag.name).join(', ') || undefined,
+    author: article.authors.map((author) => ({
+      '@type': 'Person',
+      name: author.name,
+      ...(author.slug ? { url: `${SITE_URL}/author/${author.slug}/` } : {}),
+    })),
+    publisher,
+  })
+
+  const homeJsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      { ...publisher, '@id': `${SITE_URL}/#publisher` },
+      {
+        '@type': 'WebSite',
+        name: siteName,
+        url: `${SITE_URL}/`,
+        publisher: { '@id': `${SITE_URL}/#publisher` },
+      },
+    ],
+  }
+
   // The designed front page once one is published; the classic one until then.
   if (site.design.design) {
     const fonts = fontsUrl(designFonts(site.design.design))
     await page(
       'index.html',
-      { title: siteName, description: tagline, path: '/', styles: fonts ? [fonts] : [] },
+      {
+        title: siteName,
+        description: tagline,
+        path: '/',
+        styles: fonts ? [fonts] : [],
+        jsonLd: SITE_URL ? homeJsonLd : undefined,
+      },
       <DesignedHome design={site.design.design} data={data} />,
     )
   } else {
     await page(
       'index.html',
-      { title: siteName, description: tagline, path: '/' },
+      {
+        title: siteName,
+        description: tagline,
+        path: '/',
+        jsonLd: SITE_URL ? homeJsonLd : undefined,
+      },
       <HomeView layout={frontPageLayout(site, articles)} />,
     )
   }
@@ -309,6 +370,12 @@ const main = async () => {
         path: `/article/${article.slug}/`,
         image: shareImages ? `${SITE_URL}/share/article/${article.slug}.png` : null,
         type: 'article',
+        article: {
+          published: article.publishedAt,
+          modified: article.updatedAt,
+          section: article.section?.name ?? null,
+        },
+        jsonLd: SITE_URL ? newsArticle(article) : undefined,
       },
       <ArticlePage
         article={article}
@@ -570,11 +637,38 @@ const main = async () => {
     ].join('\n'),
   )
   if (PUBLIC_URL) {
-    await write('robots.txt', `User-agent: *\nAllow: /\nSitemap: ${PUBLIC_URL}/sitemap.xml\n`)
+    await write(
+      'robots.txt',
+      `User-agent: *\nAllow: /\nSitemap: ${PUBLIC_URL}/sitemap.xml\nSitemap: ${PUBLIC_URL}/news-sitemap.xml\n`,
+    )
+    const changed = new Map(
+      articles.map((article) => [`/article/${article.slug}/`, article.updatedAt]),
+    )
     await write(
       'sitemap.xml',
       `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
-        .map((url) => `  <url><loc>${PUBLIC_URL}${url}</loc></url>`)
+        .map((url) =>
+          changed.get(url)
+            ? `  <url><loc>${PUBLIC_URL}${url}</loc><lastmod>${changed.get(url)}</lastmod></url>`
+            : `  <url><loc>${PUBLIC_URL}${url}</loc></url>`,
+        )
+        .join('\n')}\n</urlset>\n`,
+    )
+    // Google News reads stories from the last two days.
+    const recent = articles.filter(
+      (article) =>
+        article.slug &&
+        article.publishedAt &&
+        Date.now() - new Date(article.publishedAt).getTime() < 2 * 24 * 60 * 60 * 1000,
+    )
+    const xml = (value: string) => value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
+    await write(
+      'news-sitemap.xml',
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">\n${recent
+        .map(
+          (article) =>
+            `  <url><loc>${PUBLIC_URL}/article/${article.slug}/</loc><news:news><news:publication><news:name>${xml(siteName)}</news:name><news:language>en</news:language></news:publication><news:publication_date>${article.publishedAt}</news:publication_date><news:title>${xml(article.title)}</news:title></news:news></url>`,
+        )
         .join('\n')}\n</urlset>\n`,
     )
   }

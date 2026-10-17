@@ -85,6 +85,19 @@ export const Settings: GlobalConfig = {
       admin: { description: 'Shown at /about. Leave empty to hide the page.' },
     },
     {
+      name: 'googleVerification',
+      type: 'text',
+      label: 'Google Search Console code',
+      admin: {
+        description:
+          'From Google Search Console → Add property → URL prefix → HTML tag: paste only the content="…" value. Lets you see how the site does in Google search.',
+      },
+      validate: (value: unknown) =>
+        !value ||
+        /^[A-Za-z0-9_-]{10,100}$/.test(String(value)) ||
+        'Paste only the code between the quotes.',
+    },
+    {
       name: 'look',
       type: 'group',
       label: 'Look',

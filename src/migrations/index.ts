@@ -20,6 +20,7 @@ import * as migration_20261017_011649_editorial_standards from './20261017_01164
 import * as migration_20261017_012600_site_look from './20261017_012600_site_look';
 import * as migration_20261017_133000_design_templates from './20261017_133000_design_templates';
 import * as migration_20261017_134040_staff_positions from './20261017_134040_staff_positions';
+import * as migration_20261017_164006_google_and_qr from './20261017_164006_google_and_qr';
 
 export const migrations = [
   {
@@ -130,6 +131,11 @@ export const migrations = [
   {
     up: migration_20261017_134040_staff_positions.up,
     down: migration_20261017_134040_staff_positions.down,
-    name: '20261017_134040_staff_positions'
+    name: '20261017_134040_staff_positions',
+  },
+  {
+    up: migration_20261017_164006_google_and_qr.up,
+    down: migration_20261017_164006_google_and_qr.down,
+    name: '20261017_164006_google_and_qr'
   },
 ];

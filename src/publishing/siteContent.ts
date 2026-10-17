@@ -221,6 +221,7 @@ export const exportMeta = async (payload: Payload, cmsUrl: string) => {
       socialLinks: (settings.socialLinks ?? []).map(({ label, url }) => ({ label, url })),
       footerNote: settings.footerNote ?? '',
       joinUs: settings.joinUs ?? null,
+      googleVerification: settings.googleVerification ?? null,
     },
     frontPage: {
       lead:
@@ -267,6 +268,7 @@ export const exportMeta = async (payload: Payload, cmsUrl: string) => {
             paperSize: issue.paperSize ?? 'letter',
             showContents: issue.showContents !== false,
             showStaffBox: issue.showStaffBox !== false,
+            showQrCodes: issue.showQrCodes !== false,
             announcement: issue.announcement ?? null,
             stories: (issue.stories ?? []).map((story) => ({
               id: typeof story.article === 'object' ? story.article?.id : story.article,
