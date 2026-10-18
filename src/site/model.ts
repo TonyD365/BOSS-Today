@@ -58,6 +58,8 @@ export type ExportPage = {
 }
 
 export type ExportMeta = {
+  /** Addresses of stories that were on the website and have been taken off. */
+  removedStories: string[]
   generatedAt: string
   design: {
     design: Design | null

@@ -42,6 +42,7 @@ import {
   IssueView,
   LiveShell,
   NotFoundView,
+  RemovedStoryView,
   type PageMeta,
   SearchView,
   SectionView,
@@ -591,6 +592,15 @@ const main = async () => {
     { title: 'Search', description: `Search ${siteName}.`, path: '/search/', noindex: true },
     <SearchView />,
   )
+  // A page where each removed story was, so its old copy stops showing at once.
+  for (const slug of site.removedStories ?? []) {
+    if (articles.some((article) => article.slug === slug)) continue
+    await page(
+      `article/${slug}/index.html`,
+      { title: 'Story removed', description: tagline, path: `/article/${slug}/`, noindex: true },
+      <RemovedStoryView />,
+    )
+  }
   await page(
     '404.html',
     { title: 'Page not found', description: tagline, path: '/404', noindex: true },

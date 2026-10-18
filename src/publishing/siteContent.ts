@@ -1,6 +1,7 @@
 import type { Payload, PayloadRequest, Where } from 'payload'
 
 import { cleanDesign, cleanTemplates } from '../design/sanitize'
+import { REMOVED_KEY } from '../hooks/audit'
 import { cleanLook } from '../lib/look'
 import { positionTitle } from '../lib/positions'
 import type { Design } from '../design/types'
@@ -208,7 +209,36 @@ export const exportMeta = async (payload: Payload, cmsUrl: string) => {
     }),
   ])
 
+  // Stories that were on the website and aren't now (withdrawn, taken down or deleted).
+  const [withdrawn, deleted, live] = await Promise.all([
+    payload.find({
+      collection: 'articles',
+      draft: true,
+      where: { workflow: { equals: 'withdrawn' } },
+      limit: 0,
+      pagination: false,
+      depth: 0,
+      overrideAccess: true,
+      select: { slug: true },
+    }),
+    payload.kv.get<string[]>(REMOVED_KEY),
+    payload.find({
+      collection: 'articles',
+      where: published,
+      limit: 0,
+      pagination: false,
+      depth: 0,
+      overrideAccess: true,
+      select: { slug: true },
+    }),
+  ])
+  const liveSlugs = new Set(live.docs.map((d) => d.slug))
+  const removedStories = [
+    ...new Set([...withdrawn.docs.map((d) => d.slug ?? ''), ...(deleted ?? [])]),
+  ].filter((slug) => slug && !liveSlugs.has(slug))
+
   return {
+    removedStories,
     generatedAt: new Date().toISOString(),
     design: await exportDesign(payload),
     cmsUrl,

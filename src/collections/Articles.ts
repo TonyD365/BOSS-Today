@@ -14,7 +14,13 @@ import {
 } from '../endpoints/articleWorkflow'
 import { newStoryEndpoint } from '../endpoints/newStory'
 import { storyViewsEndpoint } from '../endpoints/readership'
-import { auditDelete, auditPublishing, deleteStoryComments } from '../hooks/audit'
+import {
+  auditDelete,
+  auditPublishing,
+  deleteStoryComments,
+  keepLiveStories,
+  rememberRemovedStory,
+} from '../hooks/audit'
 import { guardPublishing } from '../hooks/publishing'
 import { revalidateAfterChange, revalidateAfterDelete } from '../hooks/revalidate'
 import { storySlug } from '../hooks/slug'
@@ -159,8 +165,8 @@ export const Articles: CollectionConfig = {
     beforeValidate: [storySlug, dropEmptyCorrections],
     beforeChange: [guardPublishing('A story'), syncWorkflow, keepPublishedCorrections],
     afterChange: [revalidateAfterChange, auditPublishing('story')],
-    beforeDelete: [deleteStoryComments],
-    afterDelete: [revalidateAfterDelete, auditDelete('story')],
+    beforeDelete: [keepLiveStories, deleteStoryComments],
+    afterDelete: [revalidateAfterDelete, auditDelete('story'), rememberRemovedStory],
   },
   fields: [
     { name: 'title', type: 'text', required: true, label: 'Headline' },

@@ -694,6 +694,16 @@ export function SubscribeView({
   )
 }
 
+export function RemovedStoryView() {
+  return (
+    <div className="empty">
+      <h1>This story has been removed</h1>
+      <p>It is no longer published by BOSS Today.</p>
+      <a href="/">Go to the front page</a>
+    </div>
+  )
+}
+
 export function NotFoundView() {
   return (
     <div className="empty">

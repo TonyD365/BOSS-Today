@@ -124,6 +124,42 @@ export const auditGlobal =
     return doc
   }
 
+/**
+ * A story on the website can't just be deleted: the website would keep showing
+ * it until the next rebuild. It has to be taken down first.
+ */
+export const keepLiveStories: CollectionBeforeDeleteHook = async ({ id, req }) => {
+  const live = await req.payload.findByID({
+    collection: 'articles',
+    id,
+    depth: 0,
+    overrideAccess: true,
+    disableErrors: true,
+    req,
+    select: { _status: true },
+  })
+  if (live?._status === 'published') {
+    throw new APIError(
+      'This story is on the website. Take it down first (“Take down with the next issue”, or an emergency withdrawal), then delete it.',
+      400,
+      undefined,
+      true,
+    )
+  }
+}
+
+/** Addresses of stories that were on the website once, so it can say they're gone. */
+export const REMOVED_KEY = 'site:removed-stories'
+
+export const rememberRemovedStory: CollectionAfterDeleteHook = async ({ doc, req }) => {
+  if (!doc?.slug || !doc.publishedAt) return doc
+  const removed = (await req.payload.kv.get<string[]>(REMOVED_KEY)) ?? []
+  if (!removed.includes(doc.slug)) {
+    await req.payload.kv.set(REMOVED_KEY, [...removed, doc.slug].slice(-2000))
+  }
+  return doc
+}
+
 /** A story's review comments go with it (they can't exist without one). */
 export const deleteStoryComments: CollectionBeforeDeleteHook = async ({ id, req }) => {
   await req.payload.delete({
